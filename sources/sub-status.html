@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAOW · اشتراک</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+:root{--bg:#050505;--bg-elevated:#0c0c0e;--bg-card:#111113;--border:rgba(255,255,255,.06);--border-hover:rgba(255,255,255,.12);--text:#f4f4f5;--text-secondary:#a1a1aa;--text-muted:#71717a;--accent:#7dd3fc;--accent-dim:rgba(125,211,252,.12);--success:#4ade80;--warning:#fbbf24;--danger:#f87171;--radius:12px;--radius-lg:16px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:440px;margin:0 auto;padding:28px 16px 48px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.brand-mark{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:grid;place-items:center;font-weight:700;font-size:16px;color:#fff}
+.brand-name{font-size:18px;font-weight:600}
+.brand-sub{font-size:12px;color:var(--text-muted)}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 18px 16px;margin-bottom:14px}
+.card-title{font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:14px;letter-spacing:.02em}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13.5px;gap:12px}
+.row:last-child{border-bottom:none}
+.row .k{color:var(--text-muted)}
+.row .v{color:var(--text);text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.badge-ok{background:rgba(74,222,128,.12);color:var(--success)}
+.badge-warn{background:rgba(251,191,36,.12);color:var(--warning)}
+.badge-off{background:rgba(248,113,113,.12);color:var(--danger)}
+.badge-info{background:rgba(125,211,252,.12);color:var(--accent)}
+.bar-wrap{margin-top:12px}
+.bar-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.bar{height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:4px;background:var(--accent);width:0;transition:width .4s ease}
+.qr-box{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px}
+.qr-frame{padding:12px;border-radius:14px;background:#fff;border:1px solid var(--border)}
+.qr-frame img{width:168px;height:168px;display:block;border-radius:6px}
+.qr-hint{margin-top:12px;font-size:12.5px;color:var(--text-muted);text-align:center;line-height:1.6}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;text-decoration:none;font-family:inherit}
+.btn:hover{border-color:var(--border-hover);background:rgba(255,255,255,.04)}
+.btn-primary{background:var(--accent-dim);border-color:rgba(125,211,252,.25);color:var(--accent)}
+.btn-primary:hover{background:rgba(125,211,252,.2)}
+.links{margin-top:8px}
+.link-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-size:12px}
+.link-item code{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:left;color:var(--text-secondary);font-family:ui-monospace,monospace}
+.link-item button{flex-shrink:0;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer}
+.link-item button:hover{color:var(--accent);border-color:rgba(125,211,252,.3)}
+.foot{text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--bg-elevated);border:1px solid var(--border);padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div>
+        <div class="brand-name">SAOW</div>
+        <div class="brand-sub">وضعیت اشتراک</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">اطلاعات حساب</div>
+      <div class="row"><span class="k">نام</span><span class="v" id="name">—</span></div>
+      <div class="row"><span class="k">وضعیت</span><span class="v" id="statusWrap"><span class="badge badge-info" id="status">—</span></span></div>
+      <div class="row"><span class="k">انقضا</span><span class="v" id="expiry">—</span></div>
+      <div class="row"><span class="k">IP همزمان</span><span class="v" id="ips">—</span></div>
+      <div class="bar-wrap">
+        <div class="bar-meta"><span id="usageLabel">مصرف</span><span id="usagePct">۰٪</span></div>
+        <div class="bar"><i id="bar"></i></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">اتصال شما</div>
+      <div class="row"><span class="k">IP کلاینت</span><span class="v" id="clientIp">—</span></div>
+      <div class="row"><span class="k">کشور</span><span class="v" id="country">—</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">QR اشتراک</div>
+      <div class="qr-box">
+        <div class="qr-frame"><img id="qrImg" alt="QR" width="168" height="168" /></div>
+        <p class="qr-hint">اسکن کنید تا لینک ساب به اپ اضافه شود</p>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="btnCopy">کپی لینک ساب</button>
+        <a class="btn" id="btnV2ray" href="#">باز کردن v2rayNG</a>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <a class="btn" id="btnHiddify" href="#">Hiddify</a>
+        <a class="btn" id="btnStreisand" href="#">Streisand</a>
+      </div>
+    </div>
+
+    <div class="card" id="linksCard" style="display:none">
+      <div class="card-title">لینک‌های اتصال</div>
+      <div class="links" id="linksList"></div>
+    </div>
+
+    <p class="foot">Powered by SAOW · <span id="footVer"></span></p>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script>
+  (function () {
+    const DATA = window.__SAOW_SUB__ || {};
+    const fa = (n) => String(n ?? "—").replace(/[0-9]/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg; t.classList.add("show");
+      clearTimeout(t._x); t._x = setTimeout(() => t.classList.remove("show"), 2000);
+    }
+    function statusBadge(s) {
+      const map = {
+        active: ["فعال", "badge-ok"],
+        disabled: ["غیرفعال", "badge-off"],
+        expired: ["منقضی", "badge-off"],
+        "quota-exceeded": ["حجم تمام", "badge-warn"],
+        "daily-quota-exceeded": ["روزانه تمام", "badge-warn"],
+      };
+      const [lab, cls] = map[s] || [s || "—", "badge-info"];
+      return { lab, cls };
+    }
+    const name = DATA.name || "—";
+    document.getElementById("name").textContent = name;
+    const st = statusBadge(DATA.status);
+    const stEl = document.getElementById("status");
+    stEl.textContent = st.lab;
+    stEl.className = "badge " + st.cls;
+    document.getElementById("expiry").textContent = DATA.expiryText || "∞";
+    document.getElementById("ips").textContent = fa(DATA.activeIPs ?? 0) + " / " + fa(DATA.ipLimit ?? 1);
+    document.getElementById("clientIp").textContent = DATA.clientIP || "—";
+    document.getElementById("country").textContent = DATA.country || "—";
+    const usageText = DATA.usageText || "—";
+    const quotaText = DATA.quotaText || "∞";
+    document.getElementById("usageLabel").textContent = usageText + " از " + quotaText;
+    const pct = Math.min(100, Math.max(0, Number(DATA.usagePercent) || 0));
+    document.getElementById("usagePct").textContent = fa(Math.round(pct)) + "٪";
+    const bar = document.getElementById("bar");
+    bar.style.width = pct + "%";
+    if (pct >= 90) bar.style.background = "var(--danger)";
+    else if (pct >= 70) bar.style.background = "var(--warning)";
+    const subUrl = DATA.subUrl || location.href.split("#")[0];
+    document.getElementById("qrImg").src =
+      "https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=0c0c0e&bgcolor=ffffff&margin=6&data=" +
+      encodeURIComponent(subUrl);
+    document.getElementById("btnV2ray").href = "v2rayng://install-config?url=" + encodeURIComponent(subUrl);
+    document.getElementById("btnHiddify").href = "hiddify://import/" + encodeURIComponent(subUrl);
+    document.getElementById("btnStreisand").href = "streisand://import/" + encodeURIComponent(subUrl);
+    document.getElementById("btnCopy").addEventListener("click", () => {
+      navigator.clipboard.writeText(subUrl).then(() => toast("لینک کپی شد")).catch(() => toast("کپی نشد"));
+    });
+    if (DATA.version) document.getElementById("footVer").textContent = "v" + DATA.version;
+    const links = Array.isArray(DATA.links) ? DATA.links : [];
+    if (links.length) {
+      document.getElementById("linksCard").style.display = "";
+      const list = document.getElementById("linksList");
+      list.innerHTML = links.slice(0, 12).map((L, i) => {
+        const text = typeof L === "string" ? L : (L.link || L.url || "");
+        const label = (typeof L === "object" && L.name) ? L.name : ("پیکربندی " + (i + 1));
+        return `<div class="link-item"><span style="color:var(--text-muted);font-size:11px;min-width:4.5rem">${label}</span><code title="${text.replace(/"/g, "&quot;")}">${text.replace(/</g, "")}</code><button type="button" data-link="${encodeURIComponent(text)}" title="کپی">⧉</button></div>`;
+      }).join("");
+      list.querySelectorAll("button[data-link]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          navigator.clipboard.writeText(decodeURIComponent(btn.dataset.link)).then(() => toast("کپی شد"));
+        });
+      });
+    }
+  })();
+  </script>
+</body>
+</html>
