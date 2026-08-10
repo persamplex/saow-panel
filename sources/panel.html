@@ -463,40 +463,21 @@ td.row-actions::before{display:none}
   document.getElementById("burger").addEventListener("click",()=>toggleSidebar());
   document.getElementById("sidebarBackdrop").addEventListener("click",()=>toggleSidebar(true));
 
-  function renderMap(provinces, devices){
-    const data=(provinces||[]).map(p=>({lat:p.lat,long:p.lon,name:p.name,users:p.users||0,value:p.users||0}));
-    const offline=data.filter(m=>!(m.users>0));
-    // نقاط آنلاین: ترجیحاً مختصات واقعی دستگاه، وگرنه مرکز استان
-    const devicePts=[];
-    for(const d of (devices||[])){
-      const g=d.geo||{};
-      let lat=Number(g.lat), lon=Number(g.lon);
-      // فقط داخل ایران
-      const inIr=Number.isFinite(lat)&&Number.isFinite(lon)&&lat>=24.5&&lat<=40&&lon>=43.5&&lon<=64;
-      if(!inIr && d.province){
-        const p=(provinces||[]).find(x=>x.name===d.province);
-        if(p){lat=p.lat;lon=p.lon;}
-      }
-      if(!Number.isFinite(lat)||!Number.isFinite(lon)) continue;
-      const label=[d.province,g.city,d.ip].filter(Boolean).join(" · ");
-      devicePts.push({lat,long:lon,name:label||d.ip||"online",users:1,value:1,ip:d.ip||"",city:g.city||"",province:d.province||""});
-    }
-    // اگر دستگاهی نبود، از شمارش استانی استفاده کن
-    let onlinePts=devicePts;
-    if(!onlinePts.length){
-      onlinePts=data.filter(m=>m.users>0).map(m=>({...m,ip:"",city:"",province:m.name}));
-    }
+  function renderMap(provinces){
+    const data=(provinces||[]).map(p=>({lat:p.lat,long:p.lon,name:p.name,users:Number(p.users)||0,value:Number(p.users)||0}));
+    const online=data.filter(m=>m.users>0);
+    const offline=data.filter(m=>m.users===0);
     if(mapChart){try{mapChart.dispose();}catch{}mapChart=null;}
     const map=anychart.map();map.geoData(anychart.maps.iran);
     map.unboundRegions().enabled(true).fill("#1a1a1e").stroke("1.2 #2a2a30");map.background().fill("transparent");map.padding(0);
-    const sIdle=map.marker(offline);sIdle.name("مراکز استان").type("circle").size(4).fill("rgba(255,255,255,0.18)").stroke("none").labels(false).selectionMode("none");
-    const sActive=map.marker(onlinePts);sActive.name("آنلاین").type("circle").size(8).fill("#7dd3fc").stroke("1.5 #0ea5e9").labels(false).selectionMode("none");
-    [sIdle,sActive].forEach(s=>{s.tooltip().useHtml(true).fontFamily("Vazirmatn,Tahoma,sans-serif").fontSize(13)
+    const sIdle=map.marker(offline);sIdle.name("بدون کاربر").type("circle").size(4).fill("rgba(255,255,255,0.22)").stroke("none").labels(false).selectionMode("none");
+    const sActive=map.marker(online.filter(m=>m.users<3));sActive.name("آنلاین").type("circle").size(8).fill("#7dd3fc").stroke("1.5 #0ea5e9").labels(false).selectionMode("none");
+    const sHot=map.marker(online.filter(m=>m.users>=3));sHot.name("پرترافیک").type("circle").size(10).fill("#f472b6").stroke("1.5 #db2777").labels(false).selectionMode("none");
+    [sIdle,sActive,sHot].forEach(s=>{s.tooltip().useHtml(true).fontFamily("Vazirmatn,Tahoma,sans-serif").fontSize(13)
       .titleFormat(function(){return'<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:14px;font-weight:600">'+this.getData("name")+"</span>";})
       .format(function(){
-        const ip=this.getData("ip"), city=this.getData("city"), prov=this.getData("province"), u=this.getData("users");
-        if(ip) return '<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:12.5px">'+[city,prov,ip].filter(Boolean).join("<br>")+"</span>";
-        const txt=u>0?u+" کاربر آنلاین":"مرکز استان";
+        const u=this.getData("users");
+        const txt=u>0?(u+" کاربر آنلاین"):"بدون کاربر آنلاین";
         return '<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:13px">'+txt+"</span>";
       });});
     map.legend().enabled(true).position("bottom").align("center").padding(8).fontColor("#a1a1aa").fontSize(12).fontFamily("Vazirmatn,Tahoma,sans-serif").itemsLayout("horizontal");
@@ -553,7 +534,7 @@ td.row-actions::before{display:none}
         setPctBar("stD1WriteBar",0);
       }
       if(data.version){document.getElementById("sidebarFoot").textContent="v"+data.version+" · Push Mode";document.getElementById("sysVersion").textContent=data.version;}
-      if(data.map)renderMap(data.map.provinces||[], data.map.online_devices||[]);
+      if(data.map&&data.map.provinces)renderMap(data.map.provinces);
       const act=data.activity||[],tbody=document.getElementById("activityBody");
       if(!act.length)tbody.innerHTML='<tr><td colspan="4" class="empty-msg">هنوز رویدادی ثبت نشده</td></tr>';
       else tbody.innerHTML=act.map(a=>{const[lab,cls]=activityLabel(a.type);return`<tr><td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td><td data-label="رویداد"><span class="badge ${cls}">${lab}</span></td><td data-label="نود" style="color:var(--text-secondary)">${esc(a.node_id||"—")}</td><td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td></tr>`;}).join("");
