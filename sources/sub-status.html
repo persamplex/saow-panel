@@ -73,7 +73,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     <div class="card">
       <div class="card-title">اتصال شما</div>
       <div class="row"><span class="k">IP کلاینت</span><span class="v" id="clientIp">—</span></div>
-      <div class="row"><span class="k">کشور</span><span class="v" id="country">—</span></div>
+      <div class="row"><span class="k">موقعیت</span><span class="v" id="country">—</span></div>
     </div>
 
     <div class="card">
@@ -128,8 +128,55 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     stEl.className = "badge " + st.cls;
     document.getElementById("expiry").textContent = DATA.expiryText || "∞";
     document.getElementById("ips").textContent = fa(DATA.activeIPs ?? 0) + " / " + fa(DATA.ipLimit ?? 1);
-    document.getElementById("clientIp").textContent = DATA.clientIP || "—";
+    document.getElementById("clientIp").textContent = DATA.clientIP || "در حال تشخیص...";
     document.getElementById("country").textContent = DATA.country || "—";
+    // تشخیص IP واقعی از مرورگر (نه فقط هدر edge)
+    (async function detectClientIp() {
+      const endpoints = [
+        "https://api.ipify.org?format=json",
+        "https://ipapi.co/json/",
+        "https://ipwho.is/",
+      ];
+      let ip = null, country = null, city = null;
+      try {
+        const r = await fetch("https://ipwho.is/", { cache: "no-store" });
+        if (r.ok) {
+          const j = await r.json();
+          if (j && j.success !== false) {
+            ip = j.ip || null;
+            country = j.country || j.country_code || null;
+            city = j.city || null;
+          }
+        }
+      } catch {}
+      if (!ip) {
+        try {
+          const r = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
+          if (r.ok) {
+            const j = await r.json();
+            ip = j.ip || null;
+          }
+        } catch {}
+      }
+      if (!ip) {
+        try {
+          const r = await fetch("https://ipapi.co/json/", { cache: "no-store" });
+          if (r.ok) {
+            const j = await r.json();
+            ip = j.ip || null;
+            country = country || j.country_name || j.country || null;
+            city = city || j.city || null;
+          }
+        } catch {}
+      }
+      if (ip) document.getElementById("clientIp").textContent = ip;
+      else if (DATA.clientIP) document.getElementById("clientIp").textContent = DATA.clientIP;
+      else document.getElementById("clientIp").textContent = "—";
+      const geo = [city, country].filter(Boolean).join(" · ");
+      if (geo) document.getElementById("country").textContent = geo;
+      else if (country) document.getElementById("country").textContent = country;
+      else if (DATA.country) document.getElementById("country").textContent = DATA.country;
+    })();
     const usageText = DATA.usageText || "—";
     const quotaText = DATA.quotaText || "∞";
     document.getElementById("usageLabel").textContent = usageText + " از " + quotaText;
