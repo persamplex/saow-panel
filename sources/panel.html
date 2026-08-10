@@ -46,10 +46,25 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .btn-primary:hover{background:rgba(125,211,252,.2)}
 .btn-ghost{background:transparent}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
-.stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
-.stat-label{font-size:13px;color:var(--text-muted);margin-bottom:6px}
+.stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative}
+.stat-label{font-size:13px;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .stat-value{font-size:26px;font-weight:600;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
 .stat-meta{font-size:12px;color:var(--text-muted);margin-top:4px}
+.stat-warn{width:16px;height:16px;border-radius:50%;border:1px solid rgba(251,191,36,.45);color:var(--warning);font-size:11px;display:inline-grid;place-items:center;cursor:help;flex-shrink:0;line-height:1;font-weight:700}
+.stat[data-tip]{cursor:default}
+.stat[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute;left:12px;right:12px;bottom:calc(100% + 8px);
+  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);
+  padding:12px 14px;border-radius:10px;font-size:12px;line-height:1.65;
+  white-space:pre-line;opacity:0;pointer-events:none;transform:translateY(4px);
+  transition:opacity .15s,transform .15s;z-index:30;box-shadow:0 12px 40px rgba(0,0,0,.45);
+  text-align:right;direction:rtl;
+}
+.stat[data-tip]:hover::after{opacity:1;transform:translateY(0)}
+.stat-pct-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:10px;overflow:hidden}
+.stat-pct-bar>i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+
 .map-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
 .map-head{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
 .map-head h2{font-size:15px;font-weight:500;display:flex;align-items:center;gap:10px}
@@ -100,9 +115,35 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .sub-panel.open{display:block}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12.5px;color:var(--text-muted);margin-bottom:6px}
-.field input,.field select,.field textarea{width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;transition:border-color .15s,background .15s}
+.field select{
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a1a1aa' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:left 12px center;
+  padding-left:32px;
+  cursor:pointer;
+}
+.field select option{background:#111113;color:#f4f4f5}
 .field textarea{resize:vertical;min-height:42px;line-height:1.55}
-.field input:focus,.field textarea:focus{border-color:rgba(125,211,252,.4)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:rgba(125,211,252,.45);background:#0a0a0c}
+.field input::placeholder,.field textarea::placeholder{color:var(--text-muted);opacity:.85}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.field-grid{grid-template-columns:1fr}}
+.modal-actions{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  padding:14px 18px 16px;
+  border-top:1px solid var(--border);
+}
+.modal-actions .btn{width:100%;justify-content:center;padding:11px 10px;font-size:13px}
+.modal-actions .btn-span{grid-column:1/-1}
+.modal-actions .btn-danger-soft{border-color:rgba(248,113,113,.25);color:var(--danger)}
+.modal-actions .btn-danger-soft:hover{background:rgba(248,113,113,.1)}
+.modal-actions .btn-warn-soft{border-color:rgba(251,191,36,.3);color:var(--warning)}
+.modal-actions .btn-ok-soft{border-color:rgba(74,222,128,.3);color:var(--success)}
+
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
 .overlay.open{display:flex}
 .modal{background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;animation:modalIn .25s ease}
@@ -192,10 +233,29 @@ td.row-actions::before{display:none}
         <div class="map-body"><div id="iranMapContainer"></div></div>
       </div>
       <div class="stats">
-        <div class="stat"><div class="stat-label">کاربران فعال</div><div class="stat-value" id="stActive">—</div><div class="stat-meta" id="stActiveMeta">از — کل</div></div>
-        <div class="stat"><div class="stat-label">آنلاین الان</div><div class="stat-value" id="stOnline">—</div><div class="stat-meta">IP فعال</div></div>
-        <div class="stat"><div class="stat-label">نودهای سالم</div><div class="stat-value" id="stNodes">—</div><div class="stat-meta" id="stNodesMeta">از — نود</div></div>
-        <div class="stat"><div class="stat-label">ترافیک کل</div><div class="stat-value" id="stTraffic">—</div><div class="stat-meta">ترابایت</div></div>
+        <div class="stat" id="stReqCard">
+          <div class="stat-label">ریکوست ورکر امروز <span class="stat-warn" title="سقف کلودفلر">!</span></div>
+          <div class="stat-value" id="stReq">—</div>
+          <div class="stat-meta" id="stReqMeta">از سقف روزانه</div>
+          <div class="stat-pct-bar"><i id="stReqBar" style="width:0%"></i></div>
+        </div>
+        <div class="stat" id="stD1ReadCard">
+          <div class="stat-label">خواندن D1 امروز <span class="stat-warn" title="سقف کلودفلر">!</span></div>
+          <div class="stat-value" id="stD1Read">—</div>
+          <div class="stat-meta" id="stD1ReadMeta">rows read</div>
+          <div class="stat-pct-bar"><i id="stD1ReadBar" style="width:0%"></i></div>
+        </div>
+        <div class="stat" id="stD1WriteCard">
+          <div class="stat-label">نوشتن D1 امروز <span class="stat-warn" title="سقف کلودفلر">!</span></div>
+          <div class="stat-value" id="stD1Write">—</div>
+          <div class="stat-meta" id="stD1WriteMeta">rows written</div>
+          <div class="stat-pct-bar"><i id="stD1WriteBar" style="width:0%"></i></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">آنلاین · نود سالم</div>
+          <div class="stat-value" id="stOnline">—</div>
+          <div class="stat-meta" id="stNodesMeta">—</div>
+        </div>
       </div>
       <div class="card"><div class="card-head"><h3>آخرین فعالیت‌ها</h3></div>
         <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>رویداد</th><th>نود</th><th>زمان</th></tr></thead>
@@ -284,16 +344,28 @@ td.row-actions::before{display:none}
     <div class="modal-b">
       <input type="hidden" id="editUserId" value="" />
       <div class="field"><label>نام نمایشی</label><input type="text" id="fName" placeholder="مثلاً علی‌رضا" /></div>
-      <div class="field"><label>حجم کل (GB) — ۰ = نامحدود</label><input type="number" id="fQuota" value="10" min="0" step="0.1" /></div>
-      <div class="field"><label>حجم روزانه (GB) — ۰ = نامحدود</label><input type="number" id="fDaily" value="0" min="0" step="0.1" /></div>
-      <div class="field"><label>محدودیت IP همزمان</label><input type="number" id="fIp" value="1" min="1" /></div>
-      <div class="field"><label>روز اعتبار از الان (خالی = ∞)</label><input type="number" id="fDays" value="30" min="0" /></div>
-      <div class="field"><label>سرعت (KB/s) — ۰ = نامحدود</label><input type="number" id="fSpeed" value="0" min="0" /></div>
-      <div class="field"><label>قفل روی نود (forcedNode)</label><select id="fForcedNode"><option value="">— آزاد / همه نودها —</option></select></div>
-      <div class="field"><label>Clean IP (اختیاری)</label><input type="text" id="fCleanIp" placeholder="مثلاً 1.2.3.4" dir="ltr" /></div>
-      <div class="field"><label>یادداشت</label><textarea id="fNotes" rows="2" placeholder="یادداشت داخلی"></textarea></div>
-      <div class="field"><label>مسدودسازی تبلیغات</label><div class="switch on" id="fBlockAds"></div></div>
-      <div class="field"><label>فعال</label><div class="switch on" id="fEnabled"></div></div>
+      <div class="field-grid">
+        <div class="field"><label>حجم کل (GB)</label><input type="number" id="fQuota" value="10" min="0" step="0.1" placeholder="۰ = نامحدود" /></div>
+        <div class="field"><label>حجم روزانه (GB)</label><input type="number" id="fDaily" value="0" min="0" step="0.1" placeholder="۰ = نامحدود" /></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>IP همزمان</label><input type="number" id="fIp" value="1" min="1" /></div>
+        <div class="field"><label>روز اعتبار</label><input type="number" id="fDays" value="30" min="0" placeholder="خالی = ∞" /></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>سقف سرعت (KB/s)</label><input type="number" id="fSpeed" value="0" min="0" placeholder="۰ = نامحدود" /></div>
+        <div class="field"><label>آی‌پی تمیز (اختیاری)</label><input type="text" id="fCleanIp" placeholder="1.2.3.4" dir="ltr" style="text-align:left" /></div>
+      </div>
+      <div class="field">
+        <label>قفل روی یک نود</label>
+        <select id="fForcedNode"><option value="">آزاد — همه نودهای فعال</option></select>
+        <p style="font-size:11.5px;color:var(--text-muted);margin-top:6px;line-height:1.5">در صورت انتخاب، فقط از همین نود کانفیگ می‌گیرد.</p>
+      </div>
+      <div class="field"><label>یادداشت داخلی</label><textarea id="fNotes" rows="2" placeholder="فقط برای ادمین دیده می‌شود"></textarea></div>
+      <div class="field-grid">
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between;padding-top:4px"><label style="margin:0">مسدودسازی تبلیغات</label><div class="switch on" id="fBlockAds"></div></div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between;padding-top:4px"><label style="margin:0">حساب فعال</label><div class="switch on" id="fEnabled"></div></div>
+      </div>
     </div>
     <div class="modal-f"><button class="btn" type="button" id="userModalCancel">انصراف</button><button class="btn btn-primary" type="button" id="userModalSave">ذخیره</button></div>
   </div>
@@ -310,16 +382,16 @@ td.row-actions::before{display:none}
 </div>
 
 <div class="overlay" id="nodeDetailOverlay">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:480px">
     <div class="modal-h"><h3 id="nodeDetailTitle">جزئیات نود</h3><button class="icon-btn" type="button" id="nodeDetailClose">✕</button></div>
     <div class="modal-b" id="nodeDetailBody">
       <p class="empty-msg">در حال بارگذاری...</p>
     </div>
-    <div class="modal-f" style="flex-wrap:wrap">
+    <div class="modal-actions">
       <button class="btn btn-primary" type="button" id="nodeDetailTest">تست ارتباط</button>
       <button class="btn" type="button" id="nodeDetailSync">همگام‌سازی</button>
-      <button class="btn" type="button" id="nodeDetailExclude">خارج از ساب</button>
-      <button class="btn" type="button" id="nodeDetailToggle">قفل / باز</button>
+      <button class="btn btn-warn-soft" type="button" id="nodeDetailExclude">خارج از ساب</button>
+      <button class="btn btn-ok-soft" type="button" id="nodeDetailToggle">قفل / باز</button>
       <button class="btn" type="button" id="nodeDetailUpdate" title="نصب مجدد از گیت‌هاب">آپدیت نود</button>
       <button class="btn" type="button" id="nodeDetailClose2">بستن</button>
     </div>
@@ -397,15 +469,50 @@ td.row-actions::before{display:none}
     try{
       const data=await api("/api/dashboard");lastDashAt=Date.now();if(!data.ok)return;
       const st=data.stats||{};
-      document.getElementById("stActive").textContent=faNum(st.activeUsers??0);
-      document.getElementById("stActiveMeta").textContent="از "+faNum(st.users??0)+" کل";
       document.getElementById("stOnline").textContent=faNum(st.onlineUsers??0);
-      document.getElementById("stNodes").textContent=faNum(st.healthyNodes??0);
-      document.getElementById("stNodesMeta").textContent="از "+faNum(st.nodes??0)+" نود";
-      const tb=st.totalTrafficTB!=null?st.totalTrafficTB:(st.totalTrafficGB||0)/1024;
-      document.getElementById("stTraffic").textContent=faNum(Number(tb).toFixed(2));
+      document.getElementById("stNodesMeta").textContent=faNum(st.healthyNodes??0)+" سالم از "+faNum(st.nodes??0)+" نود · "+faNum(st.activeUsers??0)+" کاربر فعال";
       document.getElementById("navUsersCount").textContent=faNum(st.users??0);
       document.getElementById("navNodesCount").textContent=faNum(st.nodes??0);
+      // CF limits
+      const cf=st.cf||{};
+      const req=cf.requests||{};
+      const d1=cf.d1||{};
+      function fmtN(n){if(n==null||!Number.isFinite(Number(n)))return"—";n=Number(n);if(n>=1e6)return(n/1e6).toFixed(n>=1e7?0:1)+"M";if(n>=1000)return(n/1000).toFixed(n>=10000?0:1)+"K";return String(Math.round(n));}
+      function setPctBar(id,pct){const el=document.getElementById(id);if(!el)return;const p=Math.min(100,Math.max(0,Number(pct)||0));el.style.width=p+"%";el.style.background=p>=90?"var(--danger)":p>=70?"var(--warning)":"var(--accent)";}
+      if(req.pct!=null){
+        document.getElementById("stReq").textContent=faNum(req.pct)+"%";
+        document.getElementById("stReqMeta").textContent=faNum(fmtN(req.used))+" از "+faNum(fmtN(req.limit));
+        setPctBar("stReqBar",req.pct);
+        document.getElementById("stReqCard").setAttribute("data-tip",
+          "ریکوست ورکر مادر (امروز UTC)\nمصرف: "+fmtN(req.used)+"\nسقف: "+fmtN(req.limit)+"\nدرصد: "+req.pct+"%\nمحدوده: "+(req.scope==="worker"?"اسکریپت "+(req.worker||""):"کل اکانت")+"\n\nسقف پیش‌فرض پلن رایگان Workers = ۱۰۰٬۰۰۰/روز.\nبا env: CF_REQUESTS_LIMIT قابل تغییر است.");
+      } else {
+        document.getElementById("stReq").textContent="—";
+        document.getElementById("stReqMeta").textContent=cf.err?"نیاز به CF_TOKEN":"در دسترس نیست";
+        setPctBar("stReqBar",0);
+        document.getElementById("stReqCard").setAttribute("data-tip","برای نمایش مصرف، CF_TOKEN و MOTHER_ACCOUNT_ID را در Worker تنظیم کنید.\n"+(cf.err||""));
+      }
+      if(d1.readPct!=null){
+        document.getElementById("stD1Read").textContent=faNum(d1.readPct)+"%";
+        document.getElementById("stD1ReadMeta").textContent=faNum(fmtN(d1.rowsRead))+" / "+faNum(fmtN(d1.readLimit));
+        setPctBar("stD1ReadBar",d1.readPct);
+        document.getElementById("stD1ReadCard").setAttribute("data-tip",
+          "خواندن ردیف D1 (امروز UTC)\nrowsRead: "+fmtN(d1.rowsRead)+"\nسقف: "+fmtN(d1.readLimit)+"\nدرصد: "+d1.readPct+"%\n\nپلن رایگان D1 معمولاً حدود ۵ میلیون read/روز.\nenv: D1_READ_LIMIT");
+      } else {
+        document.getElementById("stD1Read").textContent="—";
+        document.getElementById("stD1ReadMeta").textContent="—";
+        setPctBar("stD1ReadBar",0);
+      }
+      if(d1.writePct!=null){
+        document.getElementById("stD1Write").textContent=faNum(d1.writePct)+"%";
+        document.getElementById("stD1WriteMeta").textContent=faNum(fmtN(d1.rowsWritten))+" / "+faNum(fmtN(d1.writeLimit));
+        setPctBar("stD1WriteBar",d1.writePct);
+        document.getElementById("stD1WriteCard").setAttribute("data-tip",
+          "نوشتن ردیف D1 (امروز UTC)\nrowsWritten: "+fmtN(d1.rowsWritten)+"\nسقف: "+fmtN(d1.writeLimit)+"\nدرصد: "+d1.writePct+"%\n\nپلن رایگان D1 معمولاً حدود ۱۰۰ هزار write/روز.\nenv: D1_WRITE_LIMIT");
+      } else {
+        document.getElementById("stD1Write").textContent="—";
+        document.getElementById("stD1WriteMeta").textContent="—";
+        setPctBar("stD1WriteBar",0);
+      }
       if(data.version){document.getElementById("sidebarFoot").textContent="v"+data.version+" · Push Mode";document.getElementById("sysVersion").textContent=data.version;}
       if(data.map&&data.map.provinces)renderMap(data.map.provinces);
       const act=data.activity||[],tbody=document.getElementById("activityBody");
@@ -452,7 +559,7 @@ td.row-actions::before{display:none}
   function fillForcedNodeSelect(selected){
     const sel=document.getElementById("fForcedNode");
     const cur=selected||"";
-    const opts=['<option value="">— آزاد / همه نودها —</option>'];
+    const opts=['<option value="">آزاد — همه نودهای فعال</option>'];
     for(const n of (nodesCache.managed||[])){
       const id=n.script_name||n.id;
       opts.push(`<option value="${esc(id)}" ${cur===id||cur===n.id?"selected":""}>${esc(id)}</option>`);
