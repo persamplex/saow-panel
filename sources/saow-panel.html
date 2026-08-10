@@ -213,9 +213,11 @@ td.row-actions::before{display:none}
     </section>
     <section class="section" id="nodes">
       <div class="card">
-        <div class="card-head"><h3>نودهای مدیریت‌شده</h3></div>
-        <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>کاربران فعال</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
-        <tbody id="nodesBody"><tr><td colspan="5" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
+        <div class="card-head"><h3>نودهای مدیریت‌شده</h3>
+          <span style="font-size:12px;color:var(--text-muted)">وضعیت «سالم» بعد از همگام‌سازی موفق با فرزند به‌روز می‌شود</span>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>نسخه</th><th>کاربران</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
+        <tbody id="nodesBody"><tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
       </div>
     </section>
     <section class="section" id="shop">
@@ -297,6 +299,20 @@ td.row-actions::before{display:none}
       <p style="font-size:12px;color:var(--text-muted)">حساب باید غیر از مادر باشد.</p>
     </div>
     <div class="modal-f"><button class="btn" type="button" id="nodeModalCancel">انصراف</button><button class="btn btn-primary" type="button" id="nodeModalSave">ایجاد نود</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="nodeDetailOverlay">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-h"><h3 id="nodeDetailTitle">جزئیات نود</h3><button class="icon-btn" type="button" id="nodeDetailClose">✕</button></div>
+    <div class="modal-b" id="nodeDetailBody">
+      <p class="empty-msg">در حال بارگذاری...</p>
+    </div>
+    <div class="modal-f" style="flex-wrap:wrap">
+      <button class="btn btn-primary" type="button" id="nodeDetailTest">تست ارتباط</button>
+      <button class="btn" type="button" id="nodeDetailSync">همگام‌سازی این نود</button>
+      <button class="btn" type="button" id="nodeDetailClose2">بستن</button>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -459,26 +475,129 @@ td.row-actions::before{display:none}
     }catch(e){toast(e.message||"خطا","err");}
   });
 
+  let selectedNodeId=null;
+  function matchAlive(n){
+    const id=n.id||n.script_name, name=n.script_name||n.id;
+    if(n.online===true) return {lastSeen:n.last_seen,activeUsers:n.active_users,version:n.version,id:n.child_id};
+    if(n.online===false && (n.last_seen||n.version)) return null; // enriched offline
+    for(const a of nodesCache.alive||[]){
+      if(a.id===id||a.id===name) return a;
+      if(a.id&&name&&String(a.id).includes(String(name))) return a;
+      if(n.url&&a.url&&(a.url===n.url||String(a.url).includes(String(name)))) return a;
+    }
+    return null;
+  }
   async function loadNodes(){
     try{
       const data=await api("/api/nodes");nodesCache={managed:data.managed||[],alive:data.alive||[]};
       document.getElementById("navNodesCount").textContent=faNum(nodesCache.managed.length);
       const tbody=document.getElementById("nodesBody"),list=nodesCache.managed;
-      if(!list.length){tbody.innerHTML='<tr><td colspan="5" class="empty-msg">نودی ثبت نشده</td></tr>';return;}
+      if(!list.length){tbody.innerHTML='<tr><td colspan="6" class="empty-msg">نودی ثبت نشده — با «+ افزودن نود» بسازید</td></tr>';return;}
       tbody.innerHTML=list.map(n=>{
-        const id=n.id||n.script_name;let alive=null;
-        for(const a of nodesCache.alive){if(a.id&&(a.id.includes(n.script_name)||a.id===id)){alive=a;break;}if(n.url&&a.url&&a.url.includes(n.script_name)){alive=a;break;}}
+        const id=n.id||n.script_name;
+        const alive=matchAlive(n);
         const disabled=n.is_disabled===1;
-        const statusHtml=disabled?'<span class="badge badge-off">قفل</span>':alive?'<span class="badge badge-ok">سالم</span>':'<span class="badge badge-off">آفلاین</span>';
-        const activeUsers=alive?(alive.activeUsers??alive.active_users??"—"):"—";
-        const lastSeen=alive?relTime(alive.lastSeen||alive.last_seen):"—";
-        return`<tr><td data-label="نام"><code style="font-size:13px">${esc(n.script_name||id)}</code></td><td data-label="وضعیت">${statusHtml}</td><td data-label="کاربران فعال">${faNum(activeUsers)}</td><td data-label="آخرین دیده‌شدن" style="color:var(--text-muted)">${lastSeen}</td>
-          <td class="row-actions" data-label=""><button class="icon-btn" title="قفل/باز" data-nact="toggle" data-nid="${esc(id)}">⏻</button><button class="icon-btn danger" title="حذف" data-nact="del" data-nid="${esc(id)}">✕</button></td></tr>`;
+        const online=n.online===true||!!alive;
+        let statusHtml;
+        if(disabled) statusHtml='<span class="badge badge-off">قفل</span>';
+        else if(online) statusHtml='<span class="badge badge-ok">سالم</span>';
+        else statusHtml='<span class="badge badge-off">آفلاین</span>';
+        const activeUsers=online?(alive?.activeUsers??alive?.active_users??n.active_users??0):(n.active_users??"—");
+        const lastSeenTs=alive?.lastSeen||alive?.last_seen||n.last_seen;
+        const lastSeen=lastSeenTs?relTime(lastSeenTs):"—";
+        const ver=alive?.version||n.version||"—";
+        return`<tr>
+          <td data-label="نام"><code style="font-size:13px">${esc(n.script_name||id)}</code>${n.url?`<br><small style="color:var(--text-muted);font-size:11px">${esc(String(n.url).replace(/^https?:\/\//,"").slice(0,36))}</small>`:""}</td>
+          <td data-label="وضعیت">${statusHtml}</td>
+          <td data-label="نسخه" style="color:var(--text-secondary);font-size:12.5px">${esc(ver)}</td>
+          <td data-label="کاربران">${faNum(activeUsers)}</td>
+          <td data-label="آخرین دیده‌شدن" style="color:var(--text-muted)">${lastSeen}</td>
+          <td class="row-actions" data-label="">
+            <button class="icon-btn" title="جزئیات" data-nact="detail" data-nid="${esc(id)}">ⓘ</button>
+            <button class="icon-btn" title="تست ارتباط" data-nact="test" data-nid="${esc(id)}">⚡</button>
+            <button class="icon-btn" title="همگام‌سازی" data-nact="sync1" data-nid="${esc(id)}">↻</button>
+            <button class="icon-btn" title="قفل/باز" data-nact="toggle" data-nid="${esc(id)}">⏻</button>
+            <button class="icon-btn danger" title="حذف" data-nact="del" data-nid="${esc(id)}">✕</button>
+          </td></tr>`;
       }).join("");
       tbody.querySelectorAll("[data-nact]").forEach(btn=>btn.addEventListener("click",()=>onNodeAction(btn.dataset.nact,btn.dataset.nid)));
     }catch(e){toast("خطا نودها: "+e.message,"err");}
   }
+  function closeNodeDetail(){document.getElementById("nodeDetailOverlay").classList.remove("open");selectedNodeId=null;}
+  document.getElementById("nodeDetailClose").addEventListener("click",closeNodeDetail);
+  document.getElementById("nodeDetailClose2").addEventListener("click",closeNodeDetail);
+  document.getElementById("nodeDetailOverlay").addEventListener("click",e=>{if(e.target===e.currentTarget)closeNodeDetail();});
+  async function openNodeDetail(id){
+    selectedNodeId=id;
+    document.getElementById("nodeDetailTitle").textContent="نود · "+id;
+    document.getElementById("nodeDetailBody").innerHTML='<p class="empty-msg">در حال بارگذاری...</p>';
+    document.getElementById("nodeDetailOverlay").classList.add("open");
+    try{
+      const data=await api("/api/nodes/"+encodeURIComponent(id));
+      const n=data.node||{};
+      const online=!!n.online;
+      const rows=[
+        ["شناسه",n.id||"—"],
+        ["نام اسکریپت",n.script_name||"—"],
+        ["URL",n.url||"—"],
+        ["وضعیت",n.is_disabled===1?"قفل":(online?"سالم / آنلاین":"آفلاین")],
+        ["آخرین دیده‌شدن",n.last_seen?relTime(n.last_seen)+` (${new Date(Number(n.last_seen)).toLocaleString("fa-IR")})`:"هنوز همگام‌سازی موفق نداشته"],
+        ["نسخه فرزند",n.version||"—"],
+        ["کاربران فعال",n.active_users??"—"],
+        ["ظرفیت",n.capacity??"—"],
+        ["خارج از ساب",n.exclude_sub===1?"بله":"خیر"],
+        ["Account ID",n.account_id||"—"],
+        ["DB",n.db_name||n.db_id||"—"],
+        ["ایجاد",n.created_at?new Date(Number(n.created_at)).toLocaleString("fa-IR"):"—"],
+      ];
+      document.getElementById("nodeDetailBody").innerHTML=
+        `<div style="display:grid;gap:8px">`+
+        rows.map(([k,v])=>`<div class="row"><span style="color:var(--text-muted)">${esc(k)}</span><span style="text-align:left;direction:ltr;font-size:12.5px;max-width:60%;word-break:break-all">${esc(String(v))}</span></div>`).join("")+
+        `</div>
+         <p style="font-size:12px;color:var(--text-muted);margin-top:14px;line-height:1.7">
+         اگر وضعیت آفلاین است: ۱) دکمه «تست ارتباط» را بزنید ۲) مطمئن شوید Worker فرزند در کلودفلر فعال است ۳) توکن و URL درست باشد ۴) کرون مادر هر دقیقه همگام می‌کند.
+         </p>
+         <div id="nodeTestResult" style="margin-top:12px"></div>`;
+    }catch(e){
+      document.getElementById("nodeDetailBody").innerHTML=`<p class="empty-msg" style="color:var(--danger)">${esc(e.message)}</p>`;
+    }
+  }
+  async function runNodeTest(id){
+    const box=document.getElementById("nodeTestResult");
+    if(box) box.innerHTML='<p style="font-size:13px;color:var(--text-muted)">در حال تست...</p>';
+    toast("تست ارتباط...","ok");
+    try{
+      const r=await api("/api/nodes/"+encodeURIComponent(id)+"/test",{method:"POST"});
+      const ok=!!r.ok;
+      toast(ok?("متصل · "+(r.latency_ms||"?")+"ms"):("ناموفق: "+(r.err||"")),ok?"ok":"err");
+      if(box){
+        box.innerHTML=`<div class="setting-block" style="padding:12px;margin-top:8px">
+          <div class="row"><span>نتیجه</span><span class="badge ${ok?"badge-ok":"badge-off"}">${ok?"موفق":"ناموفق"}</span></div>
+          <div class="row"><span>تأخیر</span><span>${r.latency_ms!=null?faNum(r.latency_ms)+" ms":"—"}</span></div>
+          <div class="row"><span>URL</span><span style="direction:ltr;font-size:12px">${esc(r.url||"—")}</span></div>
+          <div class="row"><span>نسخه</span><span>${esc(r.version||"—")}</span></div>
+          <div class="row"><span>کاربران فعال</span><span>${faNum(r.active_users??"—")}</span></div>
+          ${r.err?`<div class="row"><span>خطا</span><span style="color:var(--danger)">${esc(r.err)}</span></div>`:""}
+          ${r.body?`<div class="row"><span>پاسخ</span><span style="direction:ltr;font-size:11px;max-width:60%;word-break:break-all">${esc(r.body)}</span></div>`:""}
+        </div>`;
+      }
+      loadNodes();
+    }catch(e){toast(e.message,"err");if(box)box.innerHTML=`<p style="color:var(--danger)">${esc(e.message)}</p>`;}
+  }
+  document.getElementById("nodeDetailTest").addEventListener("click",()=>{if(selectedNodeId)runNodeTest(selectedNodeId);});
+  document.getElementById("nodeDetailSync").addEventListener("click",async()=>{
+    if(!selectedNodeId)return;
+    toast("همگام‌سازی نود...","ok");
+    try{
+      const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/sync",{method:"POST"});
+      toast(r.ok?("همگام شد · "+(r.latency_ms||"?")+"ms"):(r.err||"ناموفق"),r.ok?"ok":"err");
+      openNodeDetail(selectedNodeId);loadNodes();
+    }catch(e){toast(e.message,"err");}
+  });
   async function onNodeAction(act,id){
+    if(act==="detail"){openNodeDetail(id);return;}
+    if(act==="test"){selectedNodeId=id;document.getElementById("nodeDetailOverlay").classList.add("open");document.getElementById("nodeDetailTitle").textContent="تست · "+id;document.getElementById("nodeDetailBody").innerHTML='<div id="nodeTestResult"></div>';runNodeTest(id);return;}
+    if(act==="sync1"){try{const r=await api("/api/nodes/"+encodeURIComponent(id)+"/sync",{method:"POST"});toast(r.ok?("همگام شد · "+(r.latency_ms||"?")+"ms"):(r.err||"ناموفق"),r.ok?"ok":"err");loadNodes();}catch(e){toast(e.message,"err");}return;}
     if(act==="toggle"){try{await api("/api/nodes/"+encodeURIComponent(id)+"/toggle",{method:"POST"});toast("تغییر کرد","ok");loadNodes();}catch(e){toast(e.message,"err");}return;}
     if(act==="del"){if(!confirm("حذف نود از پنل؟"))return;try{await api("/api/nodes/"+encodeURIComponent(id),{method:"DELETE"});toast("حذف شد","ok");loadNodes();}catch(e){toast(e.message,"err");}}
   }
