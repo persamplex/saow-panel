@@ -214,7 +214,10 @@ td.row-actions::before{display:none}
     <section class="section" id="nodes">
       <div class="card">
         <div class="card-head"><h3>نودهای مدیریت‌شده</h3>
-          <span style="font-size:12px;color:var(--text-muted)">وضعیت «سالم» بعد از همگام‌سازی موفق با فرزند به‌روز می‌شود</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--text-muted)">سالم = همگام‌سازی موفق اخیر</span>
+            <button class="btn" type="button" id="btnUpdateAllNodes" style="font-size:12.5px;padding:7px 12px">آپدیت همه نودها</button>
+          </div>
         </div>
         <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>نسخه</th><th>کاربران</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
         <tbody id="nodesBody"><tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
@@ -282,10 +285,14 @@ td.row-actions::before{display:none}
       <input type="hidden" id="editUserId" value="" />
       <div class="field"><label>نام نمایشی</label><input type="text" id="fName" placeholder="مثلاً علی‌رضا" /></div>
       <div class="field"><label>حجم کل (GB) — ۰ = نامحدود</label><input type="number" id="fQuota" value="10" min="0" step="0.1" /></div>
-      <div class="field"><label>حجم روزانه (GB)</label><input type="number" id="fDaily" value="0" min="0" step="0.1" /></div>
-      <div class="field"><label>محدودیت IP</label><input type="number" id="fIp" value="1" min="1" /></div>
-      <div class="field"><label>روز اعتبار (خالی = ∞)</label><input type="number" id="fDays" value="30" min="0" /></div>
+      <div class="field"><label>حجم روزانه (GB) — ۰ = نامحدود</label><input type="number" id="fDaily" value="0" min="0" step="0.1" /></div>
+      <div class="field"><label>محدودیت IP همزمان</label><input type="number" id="fIp" value="1" min="1" /></div>
+      <div class="field"><label>روز اعتبار از الان (خالی = ∞)</label><input type="number" id="fDays" value="30" min="0" /></div>
       <div class="field"><label>سرعت (KB/s) — ۰ = نامحدود</label><input type="number" id="fSpeed" value="0" min="0" /></div>
+      <div class="field"><label>قفل روی نود (forcedNode)</label><select id="fForcedNode"><option value="">— آزاد / همه نودها —</option></select></div>
+      <div class="field"><label>Clean IP (اختیاری)</label><input type="text" id="fCleanIp" placeholder="مثلاً 1.2.3.4" dir="ltr" /></div>
+      <div class="field"><label>یادداشت</label><textarea id="fNotes" rows="2" placeholder="یادداشت داخلی"></textarea></div>
+      <div class="field"><label>مسدودسازی تبلیغات</label><div class="switch on" id="fBlockAds"></div></div>
       <div class="field"><label>فعال</label><div class="switch on" id="fEnabled"></div></div>
     </div>
     <div class="modal-f"><button class="btn" type="button" id="userModalCancel">انصراف</button><button class="btn btn-primary" type="button" id="userModalSave">ذخیره</button></div>
@@ -310,7 +317,10 @@ td.row-actions::before{display:none}
     </div>
     <div class="modal-f" style="flex-wrap:wrap">
       <button class="btn btn-primary" type="button" id="nodeDetailTest">تست ارتباط</button>
-      <button class="btn" type="button" id="nodeDetailSync">همگام‌سازی این نود</button>
+      <button class="btn" type="button" id="nodeDetailSync">همگام‌سازی</button>
+      <button class="btn" type="button" id="nodeDetailExclude">خارج از ساب</button>
+      <button class="btn" type="button" id="nodeDetailToggle">قفل / باز</button>
+      <button class="btn" type="button" id="nodeDetailUpdate" title="نصب مجدد از گیت‌هاب">آپدیت نود</button>
       <button class="btn" type="button" id="nodeDetailClose2">بستن</button>
     </div>
   </div>
@@ -439,6 +449,17 @@ td.row-actions::before{display:none}
     if(act==="sub"){try{const data=await api("/api/users/"+encodeURIComponent(id)+"/sub");let link=data.sub||"";if(link&&!link.startsWith("http"))link=(API_BASE||location.origin)+link;if(link){await navigator.clipboard.writeText(link);toast("لینک ساب کپی شد","ok");}else toast("لینک نیست","err");}catch(e){toast(e.message,"err");}return;}
     if(act==="del"){if(!confirm("حذف کاربر؟"))return;try{await api("/api/users/"+encodeURIComponent(id),{method:"DELETE"});toast("حذف شد","ok");loadUsers();try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"delete",user_id:id,message:"حذف کاربر"})});}catch{}}catch(e){toast(e.message,"err");}}
   }
+  function fillForcedNodeSelect(selected){
+    const sel=document.getElementById("fForcedNode");
+    const cur=selected||"";
+    const opts=['<option value="">— آزاد / همه نودها —</option>'];
+    for(const n of (nodesCache.managed||[])){
+      const id=n.script_name||n.id;
+      opts.push(`<option value="${esc(id)}" ${cur===id||cur===n.id?"selected":""}>${esc(id)}</option>`);
+    }
+    if(cur&&!opts.some(o=>o.includes(`value="${esc(cur)}"`))) opts.push(`<option value="${esc(cur)}" selected>${esc(cur)}</option>`);
+    sel.innerHTML=opts.join("");
+  }
   function openUserModal(user){
     document.getElementById("editUserId").value=user?user.id:"";
     document.getElementById("userModalTitle").textContent=user?"ویرایش کاربر":"افزودن کاربر جدید";
@@ -447,9 +468,15 @@ td.row-actions::before{display:none}
     document.getElementById("fDaily").value=user?((user.dailyQuotaBytes||0)/GB):0;
     document.getElementById("fIp").value=user?(user.ipLimit||1):1;
     document.getElementById("fSpeed").value=user?(user.speedLimitKBps||0):0;
+    document.getElementById("fCleanIp").value=user?(user.cleanIp||""):"";
+    document.getElementById("fNotes").value=user?(user.notes||""):"";
     if(user&&user.expiry){document.getElementById("fDays").value=Math.max(0,Math.ceil((Date.parse(user.expiry)-Date.now())/86400000));}
     else document.getElementById("fDays").value=user?"":30;
     const sw=document.getElementById("fEnabled");if(!user||user.enabled!==false)sw.classList.add("on");else sw.classList.remove("on");
+    const ads=document.getElementById("fBlockAds");if(!user||user.blockAds!==false)ads.classList.add("on");else ads.classList.remove("on");
+    fillForcedNodeSelect(user?(user.forcedNode||""):"");
+    // ensure nodes list available for select
+    if(!(nodesCache.managed||[]).length){api("/api/nodes").then(d=>{nodesCache={managed:d.managed||[],alive:d.alive||[]};fillForcedNodeSelect(user?(user.forcedNode||""):"");}).catch(()=>{});}
     document.getElementById("userOverlay").classList.add("open");
   }
   function closeUserModal(){document.getElementById("userOverlay").classList.remove("open");}
@@ -457,6 +484,7 @@ td.row-actions::before{display:none}
   document.getElementById("userModalCancel").addEventListener("click",closeUserModal);
   document.getElementById("userOverlay").addEventListener("click",e=>{if(e.target===e.currentTarget)closeUserModal();});
   document.getElementById("fEnabled").addEventListener("click",function(){this.classList.toggle("on");});
+  document.getElementById("fBlockAds").addEventListener("click",function(){this.classList.toggle("on");});
   document.getElementById("userModalSave").addEventListener("click",async()=>{
     const id=document.getElementById("editUserId").value;
     const name=document.getElementById("fName").value.trim();
@@ -467,7 +495,11 @@ td.row-actions::before{display:none}
     const daysRaw=document.getElementById("fDays").value;
     const enabled=document.getElementById("fEnabled").classList.contains("on");
     let expiry=null;if(daysRaw!==""&&Number(daysRaw)>0)expiry=new Date(Date.now()+Number(daysRaw)*86400000).toISOString();
-    const body={name:name||undefined,quotaBytes:Math.round(quotaGB*GB),dailyQuotaBytes:Math.round(dailyGB*GB),ipLimit,speedLimitKBps:speed,enabled,expiry};
+    const cleanIp=document.getElementById("fCleanIp").value.trim();
+    const notes=document.getElementById("fNotes").value.trim();
+    const forcedNode=document.getElementById("fForcedNode").value.trim();
+    const blockAds=document.getElementById("fBlockAds").classList.contains("on");
+    const body={name:name||undefined,quotaBytes:Math.round(quotaGB*GB),dailyQuotaBytes:Math.round(dailyGB*GB),ipLimit,speedLimitKBps:speed,enabled,expiry,cleanIp,notes,forcedNode,blockAds};
     try{
       if(id){await api("/api/users/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(body)});toast("به‌روز شد","ok");}
       else{await api("/api/users",{method:"POST",body:JSON.stringify(body)});toast("ایجاد شد","ok");try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"create",user_name:name,message:"ایجاد کاربر"})});}catch{}}
@@ -513,10 +545,10 @@ td.row-actions::before{display:none}
           <td data-label="کاربران">${faNum(activeUsers)}</td>
           <td data-label="آخرین دیده‌شدن" style="color:var(--text-muted)">${lastSeen}</td>
           <td class="row-actions" data-label="">
-            <button class="icon-btn" title="جزئیات" data-nact="detail" data-nid="${esc(id)}">ⓘ</button>
+            <button class="icon-btn" title="مدیریت نود" data-nact="detail" data-nid="${esc(id)}">⚙</button>
             <button class="icon-btn" title="تست ارتباط" data-nact="test" data-nid="${esc(id)}">⚡</button>
             <button class="icon-btn" title="همگام‌سازی" data-nact="sync1" data-nid="${esc(id)}">↻</button>
-            <button class="icon-btn" title="قفل/باز" data-nact="toggle" data-nid="${esc(id)}">⏻</button>
+            <button class="icon-btn" title="${disabled?"باز کردن":"قفل کردن"}" data-nact="toggle" data-nid="${esc(id)}">${disabled?"🔓":"🔒"}</button>
             <button class="icon-btn danger" title="حذف" data-nact="del" data-nid="${esc(id)}">✕</button>
           </td></tr>`;
       }).join("");
@@ -540,16 +572,20 @@ td.row-actions::before{display:none}
         ["شناسه",n.id||"—"],
         ["نام اسکریپت",n.script_name||"—"],
         ["URL",n.url||"—"],
-        ["وضعیت",n.is_disabled===1?"قفل":(online?"سالم / آنلاین":"آفلاین")],
+        ["وضعیت",n.is_disabled===1?"🔒 قفل":(online?"✅ سالم / آنلاین":"⚠️ آفلاین")],
         ["آخرین دیده‌شدن",n.last_seen?relTime(n.last_seen)+` (${new Date(Number(n.last_seen)).toLocaleString("fa-IR")})`:"هنوز همگام‌سازی موفق نداشته"],
         ["نسخه فرزند",n.version||"—"],
         ["کاربران فعال",n.active_users??"—"],
         ["ظرفیت",n.capacity??"—"],
-        ["خارج از ساب",n.exclude_sub===1?"بله":"خیر"],
+        ["خارج از ساب",n.exclude_sub===1?"بله (در ساب نمی‌آید)":"خیر (در ساب هست)"],
         ["Account ID",n.account_id||"—"],
         ["DB",n.db_name||n.db_id||"—"],
         ["ایجاد",n.created_at?new Date(Number(n.created_at)).toLocaleString("fa-IR"):"—"],
       ];
+      const exclBtn=document.getElementById("nodeDetailExclude");
+      if(exclBtn) exclBtn.textContent=n.exclude_sub===1?"ورود به ساب":"خارج از ساب";
+      const togBtn=document.getElementById("nodeDetailToggle");
+      if(togBtn) togBtn.textContent=n.is_disabled===1?"🔓 باز کردن":"🔒 قفل کردن";
       document.getElementById("nodeDetailBody").innerHTML=
         `<div style="display:grid;gap:8px">`+
         rows.map(([k,v])=>`<div class="row"><span style="color:var(--text-muted)">${esc(k)}</span><span style="text-align:left;direction:ltr;font-size:12.5px;max-width:60%;word-break:break-all">${esc(String(v))}</span></div>`).join("")+
@@ -593,6 +629,50 @@ td.row-actions::before{display:none}
       toast(r.ok?("همگام شد · "+(r.latency_ms||"?")+"ms"):(r.err||"ناموفق"),r.ok?"ok":"err");
       openNodeDetail(selectedNodeId);loadNodes();
     }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("nodeDetailExclude").addEventListener("click",async()=>{
+    if(!selectedNodeId)return;
+    try{
+      const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/exclude-sub",{method:"POST"});
+      toast(r.exclude_sub===1?"خارج از ساب شد":"وارد چرخه ساب شد","ok");
+      openNodeDetail(selectedNodeId);loadNodes();
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("nodeDetailToggle").addEventListener("click",async()=>{
+    if(!selectedNodeId)return;
+    try{
+      const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/toggle",{method:"POST"});
+      toast(r.is_disabled===1?"قفل شد":"باز شد","ok");
+      openNodeDetail(selectedNodeId);loadNodes();
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("nodeDetailUpdate").addEventListener("click",async()=>{
+    if(!selectedNodeId)return;
+    if(!confirm("آپدیت/نصب مجدد این نود؟ ممکن است چند دقیقه طول بکشد."))return;
+    toast("در حال آپدیت نود...","ok");
+    try{
+      const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/update",{method:"POST"});
+      toast(r.ok?("آپدیت شد → "+(r.new||"")):(r.err||"ناموفق"),r.ok?"ok":"err");
+      closeNodeDetail();loadNodes();
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnUpdateAllNodes").addEventListener("click",async()=>{
+    const list=nodesCache.managed||[];
+    if(!list.length){toast("نودی نیست","err");return;}
+    if(!confirm("آپدیت همه نودها ("+list.length+")؟ عملیات سنگین است."))return;
+    const btn=document.getElementById("btnUpdateAllNodes");
+    btn.disabled=true;btn.textContent="در حال آپدیت...";
+    let ok=0,fail=0;
+    for(const n of list){
+      const id=n.id||n.script_name;
+      try{
+        const r=await api("/api/nodes/"+encodeURIComponent(id)+"/update",{method:"POST"});
+        if(r.ok)ok++;else fail++;
+      }catch{fail++;}
+    }
+    btn.disabled=false;btn.textContent="آپدیت همه نودها";
+    toast("آپدیت: "+ok+" موفق / "+fail+" ناموفق",fail?"err":"ok");
+    loadNodes();
   });
   async function onNodeAction(act,id){
     if(act==="detail"){openNodeDetail(id);return;}
