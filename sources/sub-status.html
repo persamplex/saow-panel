@@ -128,54 +128,88 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     stEl.className = "badge " + st.cls;
     document.getElementById("expiry").textContent = DATA.expiryText || "∞";
     document.getElementById("ips").textContent = fa(DATA.activeIPs ?? 0) + " / " + fa(DATA.ipLimit ?? 1);
-    document.getElementById("clientIp").textContent = DATA.clientIP || "در حال تشخیص...";
-    document.getElementById("country").textContent = DATA.country || "—";
-    // تشخیص IP واقعی از مرورگر (نه فقط هدر edge)
+    document.getElementById("clientIp").textContent = "در حال تشخیص...";
+    document.getElementById("country").textContent = "—";
+    // فقط از مرورگر — هدر CF روی workers.dev اغلب IP اشتباه (edge/مسیر) می‌دهد
     (async function detectClientIp() {
-      const endpoints = [
-        "https://api.ipify.org?format=json",
-        "https://ipapi.co/json/",
-        "https://ipwho.is/",
-      ];
-      let ip = null, country = null, city = null;
-      try {
-        const r = await fetch("https://ipwho.is/", { cache: "no-store" });
-        if (r.ok) {
+      function isV4(s) {
+        return /^\d{1,3}(?:\.\d{1,3}){3}$/.test(String(s || "").trim());
+      }
+      async function tryJson(url, map) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 4500);
+        try {
+          const r = await fetch(url, { cache: "no-store", signal: ctrl.signal, credentials: "omit" });
+          if (!r.ok) return null;
           const j = await r.json();
-          if (j && j.success !== false) {
-            ip = j.ip || null;
-            country = j.country || j.country_code || null;
-            city = j.city || null;
+          return map(j);
+        } catch { return null; }
+        finally { clearTimeout(t); }
+      }
+      async function tryText(url) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 4500);
+        try {
+          const r = await fetch(url, { cache: "no-store", signal: ctrl.signal, credentials: "omit" });
+          if (!r.ok) return null;
+          const txt = (await r.text()).trim().replace(/"/g, "");
+          return isV4(txt) ? { ip: txt } : null;
+        } catch { return null; }
+        finally { clearTimeout(t); }
+      }
+
+      // موازی: چند منبع مستقل (مستقیم از مرورگر، نه از ورکر)
+      const jobs = [
+        tryJson("https://api.ipify.org?format=json", j => j && isV4(j.ip) ? { ip: j.ip } : null),
+        tryText("https://ipv4.icanhazip.com"),
+        tryText("https://ifconfig.me/ip"),
+        tryJson("https://ipwho.is/", j => {
+          if (!j || j.success === false || !isV4(j.ip)) return null;
+          return { ip: j.ip, country: j.country || j.country_code || null, city: j.city || null, source: "ipwho" };
+        }),
+        tryJson("https://ipapi.co/json/", j => {
+          if (!j || j.error || !isV4(j.ip)) return null;
+          return { ip: j.ip, country: j.country_name || j.country || null, city: j.city || null, source: "ipapi" };
+        }),
+        tryJson("https://ipinfo.io/json", j => {
+          if (!j || !isV4(j.ip)) return null;
+          const loc = (j.city && j.country) ? { city: j.city, country: j.country } : {};
+          return { ip: j.ip, country: j.country || null, city: j.city || null, source: "ipinfo" };
+        }),
+      ];
+      const results = (await Promise.all(jobs)).filter(Boolean);
+      // اولویت: نتیجه‌ای که هم IP و هم geo دارد، وگرنه اولین IP معتبر
+      let best = results.find(r => r.ip && (r.country || r.city)) || results.find(r => r.ip) || null;
+      // اگر چند IP مختلف بود، آن‌هایی که geo ایران دارند را ترجیح بده
+      const ir = results.filter(r => r.ip && /iran|ir|tehran|تهران/i.test(String(r.country || "") + " " + String(r.city || "")));
+      if (ir.length) best = ir.find(r => r.city) || ir[0];
+
+      if (best && best.ip) {
+        document.getElementById("clientIp").textContent = best.ip;
+        // geo جدا در صورت نبود
+        let country = best.country || null;
+        let city = best.city || null;
+        if (!country) {
+          for (const g of results) {
+            if (g.ip === best.ip && (g.country || g.city)) { country = g.country; city = g.city; break; }
           }
         }
-      } catch {}
-      if (!ip) {
-        try {
-          const r = await fetch("https://api.ipify.org?format=json", { cache: "no-store" });
-          if (r.ok) {
-            const j = await r.json();
-            ip = j.ip || null;
-          }
-        } catch {}
+        if (!country) {
+          // lookup geo for chosen IP
+          try {
+            const g = await tryJson("https://ipwho.is/" + encodeURIComponent(best.ip), j => {
+              if (!j || j.success === false) return null;
+              return { country: j.country || j.country_code, city: j.city };
+            });
+            if (g) { country = g.country; city = g.city; }
+          } catch {}
+        }
+        const geo = [city, country].filter(Boolean).join(" · ");
+        document.getElementById("country").textContent = geo || country || "—";
+      } else {
+        document.getElementById("clientIp").textContent = "تشخیص نشد";
+        document.getElementById("country").textContent = "—";
       }
-      if (!ip) {
-        try {
-          const r = await fetch("https://ipapi.co/json/", { cache: "no-store" });
-          if (r.ok) {
-            const j = await r.json();
-            ip = j.ip || null;
-            country = country || j.country_name || j.country || null;
-            city = city || j.city || null;
-          }
-        } catch {}
-      }
-      if (ip) document.getElementById("clientIp").textContent = ip;
-      else if (DATA.clientIP) document.getElementById("clientIp").textContent = DATA.clientIP;
-      else document.getElementById("clientIp").textContent = "—";
-      const geo = [city, country].filter(Boolean).join(" · ");
-      if (geo) document.getElementById("country").textContent = geo;
-      else if (country) document.getElementById("country").textContent = country;
-      else if (DATA.country) document.getElementById("country").textContent = DATA.country;
     })();
     const usageText = DATA.usageText || "—";
     const quotaText = DATA.quotaText || "∞";
