@@ -2,1381 +2,548 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SAOW · Mother Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAOW • Control</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.anychart.com/releases/8.13.0/js/anychart-core.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.13.0/js/anychart-map.min.js"></script>
+  <script src="https://cdn.anychart.com/geodata/latest/countries/iran/iran.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
   <style>
-    :root {
-      --bg: #0a0c16;
-      --bg2: #0f1324;
-      --bg3: #151a30;
-      --card: rgba(18, 22, 42, 0.92);
-      --border: rgba(148, 163, 184, 0.11);
-      --cyan: #22d3ee;
-      --violet: #a78bfa;
-      --pink: #f472b6;
-      --green: #34d399;
-      --orange: #fb923c;
-      --red: #f87171;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --sidebar-w: 250px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Vazirmatn', system-ui, sans-serif;
-      background: var(--bg); color: var(--text);
-      min-height: 100vh; overflow-x: hidden;
-    }
-    code { font-family: ui-monospace, monospace; font-size: 0.85em; color: var(--cyan); }
-
-    /* LOGIN */
-    #login-screen {
-      position: fixed; inset: 0; z-index: 9999;
-      display: grid; place-items: center; background: var(--bg);
-    }
-    #login-screen .bg {
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse 80% 50% at 15% 20%, rgba(34,211,238,0.1), transparent 50%),
-        radial-gradient(ellipse 60% 40% at 85% 80%, rgba(167,139,250,0.12), transparent 50%);
-    }
-    .login-card {
-      position: relative; z-index: 2; width: min(400px, 92vw);
-      padding: 2.4rem 2rem; border-radius: 20px;
-      background: linear-gradient(145deg, rgba(15,23,42,0.92), rgba(15,23,42,0.6));
-      border: 1px solid rgba(148,163,184,0.15);
-      box-shadow: 0 25px 80px rgba(0,0,0,0.55);
-      text-align: center;
-    }
-    .login-logo {
-      font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 2.5rem;
-      letter-spacing: 0.18em;
-      background: linear-gradient(120deg, var(--cyan), var(--violet), var(--pink), var(--cyan));
-      background-size: 300% 300%;
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-      animation: gmove 6s linear infinite; margin-bottom: 0.3rem;
-    }
-    @keyframes gmove { to { background-position: 300% 50%; } }
-    .login-tag { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.6rem; }
-    .login-card input {
-      width: 100%; padding: 0.85rem 1rem; margin-bottom: 0.85rem;
-      border-radius: 12px; border: 1px solid var(--border);
-      background: rgba(2,6,23,0.65); color: var(--text);
-      font-family: inherit; font-size: 0.95rem; outline: none;
-    }
-    .login-card input:focus { border-color: var(--cyan); }
-    .login-card button {
-      width: 100%; padding: 0.9rem; border: none; border-radius: 12px;
-      background: linear-gradient(135deg, #0891b2, #7c3aed); color: #fff;
-      font-family: 'Orbitron'; font-size: 0.88rem; letter-spacing: 0.1em;
-      cursor: pointer; margin-top: 0.3rem;
-    }
-    .login-err { color: var(--red); font-size: 0.85rem; margin-top: 0.75rem; min-height: 1.2em; }
-
-    /* LAYOUT */
-    #app { display: none; min-height: 100vh; }
-    .sidebar {
-      position: fixed; top: 0; right: 0; width: var(--sidebar-w); height: 100vh;
-      background: var(--bg2); border-left: 1px solid var(--border);
-      display: flex; flex-direction: column; z-index: 100; overflow-y: auto;
-    }
-    .sidebar-logo {
-      font-family: 'Orbitron'; font-weight: 900; font-size: 1.3rem;
-      letter-spacing: 0.14em; text-align: center; padding: 1.2rem 1rem 0.8rem;
-      background: linear-gradient(120deg, var(--cyan), var(--violet));
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .nav-section {
-      padding: 0.55rem 1.1rem 0.25rem; font-size: 0.68rem; color: var(--muted);
-      letter-spacing: 0.12em; text-transform: uppercase;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 0.65rem;
-      padding: 0.62rem 1.1rem; margin: 0.12rem 0.55rem; border-radius: 10px;
-      color: var(--muted); cursor: pointer; font-size: 0.9rem; transition: all .18s;
-      user-select: none;
-    }
-    .nav-item:hover, .nav-item.active {
-      background: rgba(34,211,238,0.1); color: var(--cyan);
-    }
-    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.9; }
-    .nav-sub {
-      margin-right: 1.6rem; font-size: 0.84rem; padding: 0.45rem 1rem;
-    }
-    .nav-sub.active { color: var(--cyan); background: rgba(34,211,238,0.08); }
-    .sidebar-footer {
-      margin-top: auto; padding: 0.9rem; border-top: 1px solid var(--border);
-    }
-    .user-chip {
-      display: flex; align-items: center; gap: 0.55rem;
-      padding: 0.5rem; border-radius: 10px; background: rgba(148,163,184,0.05);
-    }
-    .user-avatar {
-      width: 34px; height: 34px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--cyan), var(--violet));
-      display: grid; place-items: center; font-family: 'Orbitron'; font-size: 0.7rem; color: #fff;
-    }
-    .main {
-      margin-right: var(--sidebar-w); min-height: 100vh;
-      padding: 1.25rem 1.5rem 2rem; background: var(--bg);
-    }
-    @media (max-width: 960px) {
-      .sidebar { width: 64px; }
-      .sidebar .nav-label, .sidebar .nav-section, .sidebar-logo, .user-chip > div:last-child, .nav-sub .nav-label { display: none; }
-      .nav-sub { margin-right: 0; justify-content: center; }
-      .main { margin-right: 64px; padding: 1rem; }
-    }
-
-    .topbar {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1.3rem; flex-wrap: wrap; gap: 0.7rem;
-    }
-    .page-title {
-      font-family: 'Orbitron'; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.05em;
-    }
-    .page-title span { color: var(--muted); font-weight: 400; font-size: 0.88rem; margin-right: 0.5rem; }
-    .topbar-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-
-    .btn {
-      display: inline-flex; align-items: center; gap: 0.35rem;
-      padding: 0.5rem 0.95rem; border-radius: 10px; border: 1px solid var(--border);
-      background: rgba(148,163,184,0.07); color: var(--text);
-      font-family: inherit; font-size: 0.84rem; cursor: pointer; transition: all .18s;
-    }
-    .btn:hover { background: rgba(34,211,238,0.1); border-color: rgba(34,211,238,0.28); color: var(--cyan); }
-    .btn-primary {
-      background: linear-gradient(135deg, #0891b2, #7c3aed); border: none; color: #fff;
-    }
-    .btn-primary:hover { box-shadow: 0 6px 18px rgba(124,58,237,0.28); }
-    .btn-danger { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.28); color: var(--red); }
-    .btn-sm { padding: 0.32rem 0.65rem; font-size: 0.78rem; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .grid-2 { display: grid; grid-template-columns: 1.55fr 1fr; gap: 1.1rem; margin-bottom: 1.1rem; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; margin-bottom: 1.1rem; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; margin-bottom: 1.1rem; }
-    @media (max-width: 1100px) {
-      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-    }
-
-    .card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 1.1rem 1.2rem;
-    }
-    .card-header {
-      display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.9rem; gap: 0.5rem;
-    }
-    .card-title {
-      font-family: 'Orbitron'; font-size: 0.78rem; letter-spacing: 0.08em; color: var(--muted);
-    }
-    .stat-value { font-family: 'Orbitron'; font-size: 1.55rem; font-weight: 700; }
-    .stat-label { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
-    .stat-change {
-      display: inline-flex; align-items: center; gap: 0.25rem;
-      font-size: 0.75rem; margin-top: 0.45rem; padding: 0.18rem 0.45rem; border-radius: 6px;
-    }
-    .stat-change.up { background: rgba(52,211,153,0.12); color: var(--green); }
-    .stat-change.down { background: rgba(248,113,113,0.12); color: var(--red); }
-
-    /* Map */
-    .map-wrap {
-      height: 380px; border-radius: 12px; overflow: hidden;
-      border: 1px solid var(--border); background: #0d1224;
-    }
-    #world-map { width: 100%; height: 100%; }
-    .leaflet-container { background: #0d1224; font-family: inherit; }
-    .leaflet-control-attribution { font-size: 9px !important; background: rgba(0,0,0,0.5) !important; }
-
-    .bar-row { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.75rem; }
-    .bar-row .label { flex: 1; font-size: 0.8rem; color: var(--muted); }
-    .bar-row .pct { font-family: 'Orbitron'; font-size: 0.76rem; width: 40px; text-align: left; }
-    .bar-track { flex: 1.3; height: 6px; border-radius: 4px; background: rgba(148,163,184,0.12); overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
-
-    /* tables */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
-    th {
-      text-align: right; padding: 0.65rem 0.7rem; color: var(--muted);
-      font-weight: 500; border-bottom: 1px solid var(--border); font-size: 0.75rem;
-    }
-    td { padding: 0.7rem 0.7rem; border-bottom: 1px solid rgba(148,163,184,0.05); vertical-align: middle; }
-    tr:hover td { background: rgba(34,211,238,0.03); }
-    .badge {
-      display: inline-block; padding: 0.18rem 0.5rem; border-radius: 6px; font-size: 0.72rem; font-weight: 500;
-    }
-    .badge-green { background: rgba(52,211,153,0.14); color: var(--green); }
-    .badge-red { background: rgba(248,113,113,0.14); color: var(--red); }
-    .badge-orange { background: rgba(251,146,60,0.14); color: var(--orange); }
-    .badge-cyan { background: rgba(34,211,238,0.14); color: var(--cyan); }
-    .badge-violet { background: rgba(167,139,250,0.14); color: var(--violet); }
-
-    /* node cards */
-    .node-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
-    .node-card {
-      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-      padding: 1.1rem; transition: border-color .2s;
-    }
-    .node-card:hover { border-color: rgba(34,211,238,0.25); }
-    .node-card.offline { opacity: 0.7; }
-    .node-name {
-      font-family: 'Orbitron'; font-size: 0.9rem; margin-bottom: 0.35rem;
-      display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;
-    }
-    .node-meta { font-size: 0.78rem; color: var(--muted); line-height: 1.7; }
-    .node-reqs {
-      margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border);
-      display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
-    }
-    .node-reqs .kv { font-size: 0.8rem; }
-    .node-reqs .kv b { font-family: 'Orbitron'; color: var(--cyan); display: block; font-size: 1.05rem; }
-
-    /* forms / modal */
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-      z-index: 500; display: none; place-items: center; padding: 1rem;
-    }
-    .modal-backdrop.show { display: grid; }
-    .modal {
-      width: min(560px, 96vw); max-height: 90vh; overflow-y: auto;
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 16px; padding: 1.4rem;
-    }
-    .modal h3 { font-family: 'Orbitron'; font-size: 1rem; margin-bottom: 1.1rem; letter-spacing: 0.05em; }
-    .form-group { margin-bottom: 0.9rem; }
-    .form-group label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 0.65rem 0.85rem; border-radius: 10px;
-      border: 1px solid var(--border); background: rgba(2,6,23,0.55);
-      color: var(--text); font-family: inherit; font-size: 0.88rem; outline: none;
-    }
-    .form-group input:focus, .form-group select:focus { border-color: var(--cyan); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .modal-actions { display: flex; gap: 0.55rem; flex-wrap: wrap; margin-top: 1.1rem; }
-
-    .empty { text-align: center; padding: 2.2rem; color: var(--muted); }
-    .toast {
-      position: fixed; bottom: 1.4rem; left: 50%; transform: translateX(-50%);
-      background: var(--bg3); border: 1px solid var(--border);
-      padding: 0.65rem 1.3rem; border-radius: 10px; z-index: 1000;
-      font-size: 0.88rem; box-shadow: 0 10px 28px rgba(0,0,0,0.45);
-      opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 90vw;
-    }
-    .toast.show { opacity: 1; }
-
-    .status-dot {
-      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
-    }
-    .status-dot.live {
-      background: var(--green);
-      box-shadow: 0 0 0 0 rgba(52,211,153,0.5);
-      animation: ping 1.6s infinite;
-    }
-    @keyframes ping {
-      0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.45); }
-      70% { box-shadow: 0 0 0 7px rgba(52,211,153,0); }
-      100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
-    }
-
-    .search-box {
-      display: flex; align-items: center; gap: 0.4rem;
-      padding: 0.45rem 0.8rem; border-radius: 10px;
-      background: rgba(2,6,23,0.5); border: 1px solid var(--border);
-    }
-    .search-box input {
-      background: transparent; border: none; outline: none;
-      color: var(--text); font-family: inherit; font-size: 0.86rem; width: 150px;
-    }
-
-    .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-    .settings-tile {
-      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-      padding: 1.2rem; cursor: pointer; transition: all .2s;
-    }
-    .settings-tile:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
-    .settings-tile h4 { font-family: 'Orbitron'; font-size: 0.88rem; margin-bottom: 0.4rem; }
-    .settings-tile p { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
-
-    .page { display: none; }
-    .page.active { display: block; }
-
-    .progress-mini {
-      height: 4px; border-radius: 3px; background: rgba(148,163,184,0.12);
-      margin-top: 0.5rem; overflow: hidden;
-    }
-    .progress-mini > div { height: 100%; border-radius: 3px; }
-
-    .mono { font-family: ui-monospace, monospace; font-size: 0.78rem; }
-    .muted { color: var(--muted); }
-    .flex { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+:root{--bg:#050505;--bg-elevated:#0c0c0e;--bg-card:#111113;--border:rgba(255,255,255,.06);--border-hover:rgba(255,255,255,.12);--text:#f4f4f5;--text-secondary:#a1a1aa;--text-muted:#71717a;--accent:#7dd3fc;--accent-dim:rgba(125,211,252,.12);--success:#4ade80;--warning:#fbbf24;--danger:#f87171;--sidebar-w:240px;--radius:12px;--radius-lg:16px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased;scrollbar-width:none}
+body::-webkit-scrollbar,*::-webkit-scrollbar{display:none}
+*{scrollbar-width:none;font-family:inherit}
+input,button,select,textarea{font-family:inherit}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:var(--bg-elevated);border-left:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;right:0;height:100vh;z-index:50;transition:transform .3s cubic-bezier(.16,1,.3,1)}
+.brand{padding:28px 20px 24px;display:flex;align-items:center;gap:12px}
+.brand-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:grid;place-items:center;font-weight:700;font-size:15px;color:#fff}
+.brand-name{font-size:17px;font-weight:600}
+.brand-sub{font-size:11px;color:var(--text-muted);margin-top:1px}
+.nav{flex:1;padding:8px 12px;overflow-y:auto}
+.nav-section{font-size:11px;color:var(--text-muted);padding:16px 12px 8px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:var(--text-secondary);cursor:pointer;transition:all .2s;font-size:14px;margin-bottom:2px}
+.nav-item:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.nav-item.active{background:var(--accent-dim);color:var(--accent)}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.85}
+.nav-item .count{margin-right:auto;font-size:11px;background:rgba(255,255,255,.08);color:var(--text-secondary);padding:2px 7px;border-radius:10px;font-weight:500}
+.nav-item.active .count{background:rgba(125,211,252,.2);color:var(--accent)}
+.sidebar-foot{padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)}
+.main{flex:1;margin-right:var(--sidebar-w);padding:28px 32px 48px;max-width:1400px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap}
+.page-title{font-size:22px;font-weight:600}
+.page-title span{color:var(--text-muted);font-weight:400;font-size:15px;margin-right:8px}
+.actions{display:flex;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(--border-hover);background:rgba(255,255,255,.04)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--accent-dim);border-color:rgba(125,211,252,.25);color:var(--accent)}
+.btn-primary:hover{background:rgba(125,211,252,.2)}
+.btn-ghost{background:transparent}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.stat-label{font-size:13px;color:var(--text-muted);margin-bottom:6px}
+.stat-value{font-size:26px;font-weight:600;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+.stat-meta{font-size:12px;color:var(--text-muted);margin-top:4px}
+.map-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
+.map-head{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
+.map-head h2{font-size:15px;font-weight:500;display:flex;align-items:center;gap:10px}
+.live-indicator{width:7px;height:7px;background:var(--success);border-radius:50%;box-shadow:0 0 0 3px rgba(74,222,128,.2);animation:live 2s ease-in-out infinite}
+@keyframes live{0%,100%{opacity:1}50%{opacity:.4}}
+.map-hint{font-size:12.5px;color:var(--text-muted)}
+.map-body{padding:8px 12px 4px;background:radial-gradient(ellipse at 50% 45%,rgba(14,165,233,.03) 0%,transparent 65%)}
+#iranMapContainer{width:100%;height:420px}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
+.card-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.card-head h3{font-size:15px;font-weight:500}
+.search{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 12px}
+.search input{background:transparent;border:none;outline:none;color:var(--text);font-size:13.5px;width:180px}
+.search input::placeholder{color:var(--text-muted)}
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:right;padding:12px 18px;color:var(--text-muted);font-weight:500;font-size:12.5px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+.user-cell strong{font-weight:500}
+.user-cell small{color:var(--text-muted);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:500}
+.badge-ok{background:rgba(74,222,128,.12);color:var(--success)}
+.badge-warn{background:rgba(251,191,36,.12);color:var(--warning)}
+.badge-off{background:rgba(248,113,113,.12);color:var(--danger)}
+.badge-info{background:rgba(125,211,252,.12);color:var(--accent)}
+.bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;width:72px;overflow:hidden}
+.bar>i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+.row-actions{display:flex;gap:4px}
+.icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--text-muted);cursor:pointer;display:grid;place-items:center;transition:all .15s;font-size:14px}
+.icon-btn:hover{background:rgba(255,255,255,.05);color:var(--text);border-color:var(--border)}
+.icon-btn.danger:hover{color:var(--danger);background:rgba(248,113,113,.08)}
+.section{display:none}
+.section.active{display:block;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.setting-block{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.setting-block h4{font-size:13.5px;font-weight:500;margin-bottom:14px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13.5px}
+.row:last-child{border-bottom:none}
+.row span:last-child{color:var(--text-secondary)}
+.switch{width:40px;height:22px;background:rgba(255,255,255,.08);border-radius:11px;position:relative;cursor:pointer;transition:background .2s;border:1px solid transparent}
+.switch.on{background:rgba(125,211,252,.25);border-color:rgba(125,211,252,.3)}
+.switch::after{content:'';position:absolute;width:16px;height:16px;background:#a1a1aa;border-radius:50%;top:2px;right:3px;transition:all .2s}
+.switch.on::after{right:19px;background:var(--accent)}
+.sub-panel{display:none;margin:4px 0 8px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.sub-panel.open{display:block}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;color:var(--text-muted);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none}
+.field textarea{resize:vertical;min-height:42px;line-height:1.55}
+.field input:focus,.field textarea:focus{border-color:rgba(125,211,252,.4)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;animation:modalIn .25s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-h{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-h h3{font-size:15px;font-weight:500}
+.modal-b{padding:22px}
+.modal-f{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.burger{display:none;width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;place-items:center;font-size:18px}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40}
+.sidebar-backdrop.show{display:block}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);padding:12px 20px;border-radius:10px;font-size:13.5px;z-index:200;opacity:0;transition:all .25s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{border-color:rgba(248,113,113,.4);color:var(--danger)}
+.toast.ok{border-color:rgba(74,222,128,.35);color:var(--success)}
+.empty-msg{padding:28px 20px;text-align:center;color:var(--text-muted);font-size:13.5px}
+.auth-gate{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
+.auth-box{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:400px}
+.auth-box h2{font-size:18px;margin-bottom:8px}
+.auth-box p{font-size:13px;color:var(--text-muted);margin-bottom:18px}
+code{font-family:ui-monospace,monospace;font-size:12.5px;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){
+.sidebar{transform:translateX(100%);box-shadow:-8px 0 30px rgba(0,0,0,.5)}
+.sidebar.open{transform:translateX(0)}
+.main{margin-right:0;padding:14px 12px 40px}
+.burger{display:grid}
+.actions .btn-ghost{display:none}
+.stats{grid-template-columns:1fr 1fr;gap:10px}
+#iranMapContainer{height:300px!important}
+.table-scroll{overflow-x:visible}
+table,thead,tbody,th,td,tr{display:block}
+thead{display:none}
+tbody tr{background:var(--bg);border:1px solid var(--border);border-radius:12px;margin:0 12px 10px;padding:12px 14px}
+td{padding:6px 0;border:none;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
+td::before{content:attr(data-label);color:var(--text-muted);font-size:12px;flex-shrink:0}
+td.user-cell{display:block;padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid var(--border)}
+td.user-cell::before{display:none}
+td.row-actions{justify-content:flex-end;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)}
+td.row-actions::before{display:none}
+.search{width:100%}
+.search input{width:100%;flex:1}
+}
   </style>
 </head>
 <body>
-
-<div id="login-screen">
-  <div class="bg"></div>
-  <div class="login-card">
-    <div class="login-logo">SAOW</div>
-    <p class="login-tag">Mother Control Panel</p>
-    <input type="text" id="login-user" placeholder="نام کاربری" value="admin" autocomplete="username" />
-    <input type="password" id="login-pass" placeholder="رمز عبور" value="admin" autocomplete="current-password" />
-    <button type="button" id="login-btn">ورود</button>
-    <div class="login-err" id="login-err"></div>
+<div class="auth-gate" id="authGate">
+  <div class="auth-box">
+    <h2>ورود به پنل SAOW</h2>
+    <p>کلید API مادر را وارد کنید. پیش‌فرض: <code>saow-pan2</code></p>
+    <div class="field"><label>Base URL (خالی = همین دامنه)</label><input type="text" id="cfgBase" placeholder="https://your-worker.workers.dev" /></div>
+    <div class="field"><label>API Secret</label><input type="password" id="cfgSecret" value="saow-pan2" autocomplete="current-password" /></div>
+    <button class="btn btn-primary" style="width:100%" id="authBtn" type="button">ورود</button>
+    <p id="authErr" style="color:var(--danger);font-size:12.5px;margin-top:12px;display:none"></p>
   </div>
 </div>
-
-<div id="app">
-  <aside class="sidebar">
-    <div class="sidebar-logo">SAOW</div>
-
-    <div class="nav-section">اصلی</div>
-    <div class="nav-item active" data-page="dashboard">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-      <span class="nav-label">داشبورد</span>
-    </div>
-    <div class="nav-item" data-page="users">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <span class="nav-label">کاربران</span>
-    </div>
-    <div class="nav-item" data-page="nodes">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
-      <span class="nav-label">نودها</span>
-    </div>
-    <div class="nav-item" data-page="subs">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-      <span class="nav-label">سابسکریپشن</span>
-    </div>
-
-    <div class="nav-section">مدیریت</div>
-    <div class="nav-item" data-page="set-general">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      <span class="nav-label">تنظیمات عمومی</span>
-    </div>
-    <div class="nav-item nav-sub" data-page="set-backup">
-      <span class="nav-label">📦 بکاپ و بازیابی</span>
-    </div>
-    <div class="nav-item nav-sub" data-page="set-peers">
-      <span class="nav-label">🔗 مادرهای وابسته</span>
-    </div>
-    <div class="nav-item nav-sub" data-page="set-shop">
-      <span class="nav-label">🛍 فروشگاه</span>
-    </div>
-    <div class="nav-item nav-sub" data-page="set-locks">
-      <span class="nav-label">🔐 قفل‌ها (Grandma)</span>
-    </div>
-    <div class="nav-item nav-sub" data-page="set-sync">
-      <span class="nav-label">🔄 همگام‌سازی</span>
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="user-chip">
-        <div class="user-avatar">AD</div>
-        <div>
-          <div style="font-size:0.82rem;font-weight:600">Admin</div>
-          <div style="font-size:0.7rem;color:var(--muted)">Mother</div>
-        </div>
-      </div>
-      <button class="btn btn-sm" style="width:100%;margin-top:0.6rem" id="logout-btn">خروج</button>
-    </div>
+<div class="app" id="appRoot" style="display:none">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="brand-mark">S</div><div><div class="brand-name">SAOW</div><div class="brand-sub">Control Plane</div></div></div>
+    <nav class="nav">
+      <div class="nav-section">اصلی</div>
+      <div class="nav-item active" data-sec="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>داشبورد</div>
+      <div class="nav-item" data-sec="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>کاربران<span class="count" id="navUsersCount">—</span></div>
+      <div class="nav-item" data-sec="nodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>نودها<span class="count" id="navNodesCount">—</span></div>
+      <div class="nav-section">عملیات</div>
+      <div class="nav-item" data-sec="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>فروشگاه</div>
+      <div class="nav-item" data-sec="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>بکاپ</div>
+      <div class="nav-item" data-sec="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>تنظیمات</div>
+    </nav>
+    <div class="sidebar-foot" id="sidebarFoot">— · Push Mode</div>
   </aside>
-
   <main class="main">
-
-    <!-- DASHBOARD -->
-    <section id="page-dashboard" class="page active">
-      <div class="topbar">
-        <div class="page-title">Dashboard <span id="dash-ver">—</span></div>
-        <div class="topbar-actions">
-          <span class="badge badge-green"><span class="status-dot live"></span> Live</span>
-          <button class="btn" id="btn-refresh-dash">بروزرسانی</button>
-        </div>
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="burger" id="burger" type="button">☰</button>
+        <h1 class="page-title" id="title">داشبورد <span>زنده</span></h1>
       </div>
-      <div class="grid-4">
-        <div class="card">
-          <div class="stat-label">کل کاربران</div>
-          <div class="stat-value" id="kpi-users">—</div>
-          <div class="stat-change up" id="kpi-users-sub">—</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">آنلاین (IP فعال)</div>
-          <div class="stat-value" id="kpi-online">—</div>
-          <div class="stat-change up">Active sessions</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">نودهای سالم</div>
-          <div class="stat-value" id="kpi-nodes">—</div>
-          <div class="stat-change up">Healthy children</div>
-        </div>
-        <div class="card">
-          <div class="stat-label">ترافیک کل</div>
-          <div class="stat-value" id="kpi-traffic">—</div>
-          <div class="stat-change up">GB</div>
-        </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="syncBtn" type="button">همگام‌سازی</button>
+        <button class="btn btn-primary" id="topActionBtn" type="button">+ کاربر جدید</button>
       </div>
+    </div>
+    <section class="section active" id="dash">
+      <div class="map-card">
+        <div class="map-head"><h2><span class="live-indicator"></span> نقشه کاربران متصل — ایران</h2><div class="map-hint">نقاط = مراکز استان با کاربران آنلاین</div></div>
+        <div class="map-body"><div id="iranMapContainer"></div></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">کاربران فعال</div><div class="stat-value" id="stActive">—</div><div class="stat-meta" id="stActiveMeta">از — کل</div></div>
+        <div class="stat"><div class="stat-label">آنلاین الان</div><div class="stat-value" id="stOnline">—</div><div class="stat-meta">IP فعال</div></div>
+        <div class="stat"><div class="stat-label">نودهای سالم</div><div class="stat-value" id="stNodes">—</div><div class="stat-meta" id="stNodesMeta">از — نود</div></div>
+        <div class="stat"><div class="stat-label">ترافیک کل</div><div class="stat-value" id="stTraffic">—</div><div class="stat-meta">ترابایت</div></div>
+      </div>
+      <div class="card"><div class="card-head"><h3>آخرین فعالیت‌ها</h3></div>
+        <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>رویداد</th><th>نود</th><th>زمان</th></tr></thead>
+        <tbody id="activityBody"><tr><td colspan="4" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
+      </div>
+    </section>
+    <section class="section" id="users">
+      <div class="card">
+        <div class="card-head"><h3>لیست کاربران</h3>
+          <div class="search"><span style="color:var(--text-muted)">⌕</span><input type="text" id="userSearch" placeholder="جستجو نام / id / uuid..." /></div>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>مصرف</th><th>IP</th><th>انقضا</th><th></th></tr></thead>
+        <tbody id="usersBody"><tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
+      </div>
+    </section>
+    <section class="section" id="nodes">
+      <div class="card">
+        <div class="card-head"><h3>نودهای مدیریت‌شده</h3></div>
+        <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>کاربران فعال</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
+        <tbody id="nodesBody"><tr><td colspan="5" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
+      </div>
+    </section>
+    <section class="section" id="shop">
       <div class="grid-2">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">GEO · ACTIVE USER IPS</div>
-            <div class="mono" style="color:var(--cyan)" id="geo-count">0 points</div>
-          </div>
-          <div class="map-wrap"><div id="world-map"></div></div>
+        <div class="setting-block"><h4>وضعیت فروشگاه</h4>
+          <div class="row"><span>قفل فروشگاه</span><div class="switch" id="shopLockSwitch"></div></div>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:10px">از قوانین پنل کنترل می‌شود.</p>
         </div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">Map Statistics</div>
-            <span class="badge badge-green">Live</span>
-          </div>
-          <div style="margin-bottom:1rem;font-size:0.85rem;color:var(--muted)">
-            <span class="status-dot live"></span>
-            توزیع تقریبی IPهای متصل
-          </div>
-          <div class="bar-row">
-            <span class="label">خارج از کشور</span>
-            <div class="bar-track"><div class="bar-fill" id="bar-foreign" style="width:0%;background:var(--cyan)"></div></div>
-            <span class="pct" id="pct-foreign">0%</span>
-          </div>
-          <div class="bar-row">
-            <span class="label">داخل (IR)</span>
-            <div class="bar-track"><div class="bar-fill" id="bar-local" style="width:0%;background:var(--violet)"></div></div>
-            <span class="pct" id="pct-local">0%</span>
-          </div>
-          <div class="bar-row">
-            <span class="label">نسبت آنلاین</span>
-            <div class="bar-track"><div class="bar-fill" id="bar-online" style="width:0%;background:var(--green)"></div></div>
-            <span class="pct" id="pct-online">0%</span>
-          </div>
-          <div style="margin-top:1.2rem;padding-top:0.9rem;border-top:1px solid var(--border)">
-            <div class="card-title" style="margin-bottom:0.5rem">Top regions</div>
-            <div id="top-regions" class="muted" style="font-size:0.84rem;line-height:1.85">—</div>
-          </div>
+        <div class="setting-block"><h4>پلن‌ها و سفارش‌ها</h4>
+          <div class="row"><span>پلن‌های فعال</span><span id="shopPlansCount">—</span></div>
+          <div class="row"><span>سفارش در انتظار</span><span id="shopPendingCount" style="color:var(--warning)">—</span></div>
+          <button class="btn" style="width:100%;margin-top:12px" id="btnReloadShop" type="button">بروزرسانی</button>
         </div>
+      </div>
+      <div class="card" style="margin-top:14px"><div class="card-head"><h3>پلن‌ها</h3></div>
+        <div class="table-scroll"><table><thead><tr><th>نام</th><th>روز</th><th>حجم GB</th><th>قیمت</th><th>وضعیت</th></tr></thead>
+        <tbody id="plansBody"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody></table></div>
+      </div>
+      <div class="card"><div class="card-head"><h3>سفارش‌های اخیر</h3></div>
+        <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>پلن</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
+        <tbody id="ordersBody"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody></table></div>
       </div>
     </section>
-
-    <!-- USERS -->
-    <section id="page-users" class="page">
-      <div class="topbar">
-        <div class="page-title">کاربران</div>
-        <div class="topbar-actions">
-          <div class="search-box">
-            <span>🔍</span>
-            <input type="text" id="user-search" placeholder="نام / UUID / id" />
-          </div>
-          <button class="btn btn-primary" id="btn-add-user">+ کاربر جدید</button>
-          <button class="btn" id="btn-refresh-users">بروزرسانی</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>نام</th>
-                <th>وضعیت</th>
-                <th>مصرف / سقف</th>
-                <th>روزانه</th>
-                <th>IP</th>
-                <th>انقضا</th>
-                <th>UUID</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody id="users-tbody"></tbody>
-          </table>
-        </div>
-        <div class="empty" id="users-empty" style="display:none">کاربری یافت نشد</div>
-      </div>
-    </section>
-
-    <!-- NODES -->
-    <section id="page-nodes" class="page">
-      <div class="topbar">
-        <div class="page-title">نودها <span>جزئیات و ریکوئست</span></div>
-        <div class="topbar-actions">
-          <button class="btn" id="btn-refresh-nodes">بروزرسانی</button>
-        </div>
-      </div>
-      <div id="nodes-summary" class="grid-3" style="margin-bottom:1.1rem"></div>
-      <div class="node-grid" id="nodes-grid"></div>
-      <div class="empty" id="nodes-empty" style="display:none">نودی یافت نشد — API را در تنظیمات عمومی وصل کنید</div>
-    </section>
-
-    <!-- SUBS -->
-    <section id="page-subs" class="page">
-      <div class="topbar"><div class="page-title">سابسکریپشن</div></div>
-      <div class="card" style="max-width:640px">
-        <p class="muted" style="margin-bottom:1rem;font-size:0.9rem;line-height:1.7">
-          مسیر ساب عادی: <code>/pull?token=UUID</code><br />
-          مسیر سایه (Grandma): <code>/xpull?token=UUID</code>
-        </p>
-        <div class="form-group">
-          <label>UUID کاربر</label>
-          <input type="text" id="sub-uuid" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
-        </div>
-        <div class="flex" style="margin-bottom:1rem">
-          <button class="btn btn-primary" id="btn-gen-sub">ساخت لینک</button>
-          <button class="btn" id="btn-copy-sub">کپی</button>
-        </div>
-        <div class="form-group">
-          <label>لینک</label>
-          <input type="text" id="sub-link" readonly />
-        </div>
-      </div>
-    </section>
-
-    <!-- SETTINGS: GENERAL -->
-    <section id="page-set-general" class="page">
-      <div class="topbar"><div class="page-title">تنظیمات عمومی</div></div>
+    <section class="section" id="backup">
       <div class="grid-2">
-        <div class="card">
-          <div class="card-title" style="margin-bottom:1rem">اتصال به Worker مادر</div>
-          <p class="muted" style="font-size:0.82rem;margin-bottom:1rem;line-height:1.6">
-            Secret فقط در مرورگر شما (localStorage) ذخیره می‌شود و به سرور ثالث ارسال نمی‌شود.
-            ترجیحاً پنل را از همان دامنه Worker باز کنید تا نیازی به secret در فرانت نباشد.
-          </p>
-          <div class="form-group">
-            <label>Base URL مادر (خالی = همین دامنه)</label>
-            <input type="text" id="cfg-base" placeholder="https://xxx.workers.dev" />
-          </div>
-          <div class="form-group">
-            <label>API Secret (اختیاری — فقط اگر پنل روی دامنه دیگر باشد)</label>
-            <input type="password" id="cfg-secret" placeholder="معمولاً خالی بگذارید" autocomplete="off" />
-          </div>
-          <p class="muted" style="font-size:0.78rem;margin-bottom:0.8rem">وقتی پنل از همان Worker باز شود، با لاگین توکن می‌گیرید و نیازی به Secret نیست.</p>
-          <div class="form-group">
-            <label>یوزر پنل</label>
-            <input type="text" id="cfg-user" value="admin" />
-          </div>
-          <div class="form-group">
-            <label>پسورد پنل</label>
-            <input type="password" id="cfg-pass" value="admin" />
-          </div>
-          <button class="btn btn-primary" id="btn-save-cfg">ذخیره</button>
-          <button class="btn" id="btn-test-api" style="margin-right:0.4rem">تست اتصال</button>
+        <div class="setting-block"><h4>خروجی بکاپ</h4>
+          <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">دانلود JSON کامل (بدون shadow).</p>
+          <button class="btn btn-primary" style="width:100%" id="btnDownloadBackup" type="button">دانلود بکاپ JSON</button>
         </div>
-        <div class="card">
-          <div class="card-title" style="margin-bottom:1rem">وضعیت</div>
-          <div id="cfg-status" class="muted" style="font-size:0.9rem;line-height:2">
-            پس از ذخیره، دکمه تست اتصال را بزنید.
-          </div>
+        <div class="setting-block"><h4>ایمپورت</h4>
+          <div class="field"><label>فایل JSON</label><input type="file" id="backupFile" accept="application/json,.json" /></div>
+          <button class="btn" style="width:100%" id="btnImportBackup" type="button">ایمپورت</button>
         </div>
       </div>
     </section>
-
-    <!-- SETTINGS: BACKUP -->
-    <section id="page-set-backup" class="page">
-      <div class="topbar"><div class="page-title">بکاپ و بازیابی</div></div>
-      <div class="settings-grid">
-        <div class="settings-tile" id="tile-backup-now">
-          <h4>📦 بکاپ فوری</h4>
-          <p>خروجی JSON از کاربران، مصرف و تنظیمات (از طریق API مادر در صورت پشتیبانی)</p>
+    <section class="section" id="settings">
+      <div class="grid-2">
+        <div class="setting-block"><h4>قفل‌های پنل</h4>
+          <div class="row"><span>قفل پنل کامل</span><div class="switch" id="swLockPanel"></div></div>
+          <div class="sub-panel" id="sub-panel-lock"><div class="field"><label>پیام قفل</label><textarea id="rulesMessage" rows="2"></textarea></div></div>
+          <div class="row"><span>قفل ساخت کاربر</span><div class="switch" id="swLockCreateUser"></div></div>
+          <div class="sub-panel" id="sub-create-user"><div class="field"><label>حداکثر کاربران (۰=∞)</label><input type="number" id="rulesMaxUsers" value="0" /></div></div>
+          <div class="row"><span>قفل ساخت نود</span><div class="switch" id="swLockCreateNode"></div></div>
+          <div class="sub-panel" id="sub-create-node"><div class="field"><label>حداکثر نودها (۰=∞)</label><input type="number" id="rulesMaxNodes" value="0" /></div></div>
+          <div class="row"><span>قفل فروشگاه</span><div class="switch" id="swLockShop"></div></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnSaveRules" type="button">ذخیره قوانین</button>
         </div>
-        <div class="settings-tile" id="tile-export-users">
-          <h4>👥 خروجی کاربران</h4>
-          <p>دانلود لیست کاربران فعلی به صورت JSON از حافظه محلی / API</p>
+        <div class="setting-block"><h4>سیستم</h4>
+          <div class="row"><span>نسخه مادر</span><span id="sysVersion" style="color:var(--accent)">—</span></div>
+          <div class="row"><span>حالت</span><span class="badge badge-info">Push</span></div>
+          <div class="row"><span>API Base</span><span id="sysBase" style="font-size:12px">—</span></div>
+          <button class="btn" style="width:100%;margin-top:12px" id="btnLogout" type="button">خروج / تغییر کلید</button>
         </div>
-        <div class="settings-tile" id="tile-import-users">
-          <h4>📥 ورود کاربران</h4>
-          <p>آپلود فایل JSON کاربران (محلی)</p>
-        </div>
-      </div>
-      <div class="card" style="margin-top:1.2rem">
-        <div class="card-title" style="margin-bottom:0.8rem">لاگ</div>
-        <pre id="backup-log" class="mono muted" style="white-space:pre-wrap;font-size:0.8rem;max-height:220px;overflow:auto">—</pre>
-      </div>
-      <input type="file" id="import-file" accept="application/json,.json" style="display:none" />
-    </section>
-
-    <!-- SETTINGS: PEERS -->
-    <section id="page-set-peers" class="page">
-      <div class="topbar">
-        <div class="page-title">مادرهای وابسته (Peers)</div>
-        <button class="btn" id="btn-refresh-peers">بروزرسانی</button>
-      </div>
-      <div class="card">
-        <p class="muted" style="margin-bottom:1rem;font-size:0.88rem">
-          لیست peerها از جدول <code>peer_mothers</code> از طریق Grandma API خوانده می‌شود (در صورت فعال بودن).
-        </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>نام</th><th>URL</th><th>وضعیت</th><th>نودها</th><th>نسخه</th><th>آخرین OK</th></tr>
-            </thead>
-            <tbody id="peers-tbody"></tbody>
-          </table>
-        </div>
-        <div class="empty" id="peers-empty">داده‌ای نیست — Grandma API یا endpoint peer لازم است</div>
-      </div>
-    </section>
-
-    <!-- SETTINGS: SHOP -->
-    <section id="page-set-shop" class="page">
-      <div class="topbar"><div class="page-title">فروشگاه</div></div>
-      <div class="card">
-        <p class="muted" style="line-height:1.8;font-size:0.9rem">
-          مدیریت پلن‌ها و سفارش‌ها در جدول‌های <code>shop_plans</code> و <code>shop_orders</code> انجام می‌شود.
-          قفل فروشگاه از بخش «قفل‌ها» قابل کنترل است (<code>lock_shop</code>).
-        </p>
-        <div id="shop-info" style="margin-top:1rem" class="muted">برای مشاهده پلن‌ها نیاز به endpoint پنل روی Worker است.</div>
-      </div>
-    </section>
-
-    <!-- SETTINGS: LOCKS -->
-    <section id="page-set-locks" class="page">
-      <div class="topbar"><div class="page-title">قفل‌های مادربزرگ</div></div>
-      <div class="card" style="max-width:520px">
-        <p class="muted" style="margin-bottom:1rem;font-size:0.85rem">
-          این بخش با <code>/api/gx/rules</code> و هدر Grandma Secret کار می‌کند.
-          Secret مادربزرگ را اینجا وارد نکنید مگر روی دستگاه امن؛ ترجیحاً از تلگرام مدیریت کنید.
-        </p>
-        <div id="locks-view" class="muted" style="line-height:2">قوانین پس از اتصال API نمایش داده می‌شوند.</div>
-        <button class="btn" style="margin-top:1rem" id="btn-load-locks">خواندن قوانین</button>
-      </div>
-    </section>
-
-    <!-- SETTINGS: SYNC -->
-    <section id="page-set-sync" class="page">
-      <div class="topbar"><div class="page-title">همگام‌سازی</div></div>
-      <div class="settings-grid">
-        <div class="settings-tile" id="tile-force-sync">
-          <h4>🔄 Force Sync همه نودها</h4>
-          <p>فراخوانی fullSyncAll روی مادر (اگر endpoint باز باشد)</p>
-        </div>
-        <div class="settings-tile" id="tile-peer-sync">
-          <h4>📡 Sync از Peers</h4>
-          <p>همگام‌سازی کاربران سایه و مصرف از مادرهای وابسته</p>
-        </div>
-      </div>
-      <div class="card" style="margin-top:1.2rem">
-        <pre id="sync-log" class="mono muted" style="white-space:pre-wrap;font-size:0.8rem">—</pre>
       </div>
     </section>
   </main>
 </div>
-
-<!-- User modal -->
-<div class="modal-backdrop" id="user-modal">
+<div class="overlay" id="userOverlay">
   <div class="modal">
-    <h3 id="user-modal-title">کاربر جدید</h3>
-    <input type="hidden" id="edit-user-id" />
-    <div class="form-group">
-      <label>نام</label>
-      <input type="text" id="u-name" />
+    <div class="modal-h"><h3 id="userModalTitle">افزودن کاربر جدید</h3><button class="icon-btn" type="button" id="userModalClose">✕</button></div>
+    <div class="modal-b">
+      <input type="hidden" id="editUserId" value="" />
+      <div class="field"><label>نام نمایشی</label><input type="text" id="fName" placeholder="مثلاً علی‌رضا" /></div>
+      <div class="field"><label>حجم کل (GB) — ۰ = نامحدود</label><input type="number" id="fQuota" value="10" min="0" step="0.1" /></div>
+      <div class="field"><label>حجم روزانه (GB)</label><input type="number" id="fDaily" value="0" min="0" step="0.1" /></div>
+      <div class="field"><label>محدودیت IP</label><input type="number" id="fIp" value="1" min="1" /></div>
+      <div class="field"><label>روز اعتبار (خالی = ∞)</label><input type="number" id="fDays" value="30" min="0" /></div>
+      <div class="field"><label>سرعت (KB/s) — ۰ = نامحدود</label><input type="number" id="fSpeed" value="0" min="0" /></div>
+      <div class="field"><label>فعال</label><div class="switch on" id="fEnabled"></div></div>
     </div>
-    <div class="form-group">
-      <label>UUID (خالی = خودکار)</label>
-      <input type="text" id="u-uuid" placeholder="auto-generate" />
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>حجم کل (GB) · 0=∞</label>
-        <input type="number" id="u-quota" value="0" min="0" step="0.1" />
-      </div>
-      <div class="form-group">
-        <label>حجم روزانه (GB)</label>
-        <input type="number" id="u-daily" value="0" min="0" step="0.1" />
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>سقف IP</label>
-        <input type="number" id="u-iplimit" value="1" min="1" />
-      </div>
-      <div class="form-group">
-        <label>انقضا YYYY-MM-DD</label>
-        <input type="text" id="u-expiry" placeholder="خالی = نامحدود" />
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>فعال</label>
-        <select id="u-enabled"><option value="1">فعال</option><option value="0">غیرفعال</option></select>
-      </div>
-      <div class="form-group">
-        <label>Forced Node (اختیاری)</label>
-        <input type="text" id="u-forced" placeholder="script_name یا خالی" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>یادداشت</label>
-      <textarea id="u-notes" rows="2"></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" id="btn-save-user">ذخیره</button>
-      <button class="btn" id="btn-cancel-user">انصراف</button>
-    </div>
+    <div class="modal-f"><button class="btn" type="button" id="userModalCancel">انصراف</button><button class="btn btn-primary" type="button" id="userModalSave">ذخیره</button></div>
   </div>
 </div>
-
+<div class="overlay" id="nodeOverlay">
+  <div class="modal">
+    <div class="modal-h"><h3>افزودن نود Cloudflare</h3><button class="icon-btn" type="button" id="nodeModalClose">✕</button></div>
+    <div class="modal-b">
+      <div class="field"><label>Cloudflare API Token</label><input type="password" id="fCfToken" placeholder="Workers + D1" autocomplete="off" /></div>
+      <p style="font-size:12px;color:var(--text-muted)">حساب باید غیر از مادر باشد.</p>
+    </div>
+    <div class="modal-f"><button class="btn" type="button" id="nodeModalCancel">انصراف</button><button class="btn btn-primary" type="button" id="nodeModalSave">ایجاد نود</button></div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
-
 <script>
-/* SAOW Mother Panel v2
-   - Secrets فقط در localStorage مرورگر؛ هرگز در HTML hardcode نشوند
-   - API: relative /api یا Base URL + Bearer API_SECRET
-   - نقشه: Leaflet + Carto Dark + مارکرهای واقعی/تقریبی
-*/
 
-const DEFAULT_CREDS = { user: 'admin', pass: 'admin' };
-const CFG_KEY = 'saow_v2_cfg';
-const LOCAL_USERS_KEY = 'saow_v2_users';
-const SESSION_KEY = 'saow_v2_sess';
-
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
-
-function toast(m, ms = 2800) {
-  const t = $('#toast');
-  t.textContent = m;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), ms);
-}
-function faNum(n) {
-  if (n == null || n === '') return '—';
-  return String(n).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
-}
-function formatGB(b) {
-  b = Number(b) || 0;
-  if (b >= 1073741824) return (b / 1073741824).toFixed(2) + ' GB';
-  if (b >= 1048576) return (b / 1048576).toFixed(0) + ' MB';
-  return (b / 1024).toFixed(0) + ' KB';
-}
-function uuidv4() {
-  const b = crypto.getRandomValues(new Uint8Array(16));
-  b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
-  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
-  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
-}
-function escapeHtml(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function loadCfg() { try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch { return {}; } }
-function saveCfg(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); }
-function loadLocalUsers() { try { return JSON.parse(localStorage.getItem(LOCAL_USERS_KEY) || '[]'); } catch { return []; } }
-function saveLocalUsers(u) { localStorage.setItem(LOCAL_USERS_KEY, JSON.stringify(u)); }
-
-/* ---------- Auth: توکن پنل از /api/panel/login — بدون API_SECRET ---------- */
-const TOKEN_KEY = 'saow_v2_token';
-
-function getPanelToken() {
-  return sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY) || '';
-}
-function setPanelToken(t, remember) {
-  sessionStorage.setItem(TOKEN_KEY, t);
-  if (remember) localStorage.setItem(TOKEN_KEY, t);
-  else localStorage.removeItem(TOKEN_KEY);
-  sessionStorage.setItem(SESSION_KEY, '1');
-}
-function clearPanelToken() {
-  sessionStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(TOKEN_KEY);
-  sessionStorage.removeItem(SESSION_KEY);
-}
-function checkSession() {
-  return !!getPanelToken() || sessionStorage.getItem(SESSION_KEY) === '1';
-}
-
-/** لاگین سمت سرور — همان origin Worker */
-async function doLogin(user, pass) {
-  const cfg = loadCfg();
-  const base = (cfg.base || '').replace(/\/$/, '') || location.origin;
-  try {
-    const res = await fetch(base + '/api/panel/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ user, pass }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok || !data.token) {
-      // fallback فقط UI محلی اگر سرور در دسترس نبود (دمو)
-      if (user === (cfg.user || DEFAULT_CREDS.user) && pass === (cfg.pass || DEFAULT_CREDS.pass)) {
-        setPanelToken('local-demo', false);
-        return { ok: true, demo: true };
-      }
-      return { ok: false, err: data.err || 'login failed' };
-    }
-    setPanelToken(data.token, true);
-    return { ok: true, version: data.version };
-  } catch (e) {
-    if (user === (cfg.user || DEFAULT_CREDS.user) && pass === (cfg.pass || DEFAULT_CREDS.pass)) {
-      setPanelToken('local-demo', false);
-      return { ok: true, demo: true };
-    }
-    return { ok: false, err: e.message || 'network' };
-  }
-}
-
-/* ---------- API هم‌دامنه با توکن پنل (نه API_SECRET) ---------- */
-async function api(path, opts = {}) {
-  const cfg = loadCfg();
-  const base = (cfg.base || '').replace(/\/$/, '') || location.origin;
-  const url = base + '/api' + path;
-  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
-  const tok = getPanelToken();
-  if (tok && tok !== 'local-demo') {
-    headers['Authorization'] = 'Bearer ' + tok;
-    headers['X-Panel-Token'] = tok;
-  } else if (cfg.secret) {
-    // اختیاری: فقط اگر کاربر عمداً secret گذاشته
-    headers['Authorization'] = 'Bearer ' + cfg.secret;
-  }
-  const res = await fetch(url, { ...opts, headers, credentials: 'include' });
-  const text = await res.text();
-  let data = null;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  if (!res.ok) {
-    const err = new Error(data?.err || data?.error || ('HTTP ' + res.status));
-    err.status = res.status;
-    err.data = data;
-    throw err;
-  }
-  return data;
-}
-
-/* ---------- Country centroids for IP → map (when no lat/lon) ---------- */
-const CC = {
-  IR:[53.7,32.4], TR:[35.2,39], DE:[10.5,51.2], US:[-98.5,39.8], GB:[-1.5,52.5],
-  FR:[2.3,46.6], NL:[5.3,52.1], RU:[100,60], CN:[104,35], IN:[78.9,22], AE:[54,24],
-  CA:[-106,56], BR:[-53,-14], AU:[134,-25], JP:[138,36], KR:[128,36], SG:[103.8,1.3],
-  SE:[18.6,60], IT:[12.5,42.5], ES:[-3.7,40.4], PL:[19.4,52], UA:[31.5,49], IQ:[44,33],
-  AF:[66,34], PK:[69,30], SA:[45,24], EG:[30,27], ID:[118,-2], MY:[102,4], TH:[101,15],
-};
-
-let map, mapLayer;
-function initMap() {
-  if (map) return;
-  map = L.map('world-map', {
-    center: [25, 40],
-    zoom: 2,
-    minZoom: 1,
-    maxZoom: 8,
-    worldCopyJump: true,
-    zoomControl: true,
-  });
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OSM &copy; CARTO',
-    subdomains: 'abcd',
-    maxZoom: 19,
-  }).addTo(map);
-  mapLayer = L.layerGroup().addTo(map);
-}
-
-function setMapPoints(points) {
-  initMap();
-  mapLayer.clearLayers();
-  if (!points?.length) return;
-  const bounds = [];
-  for (const p of points) {
-    const lat = p.lat, lon = p.lon;
-    if (lat == null || lon == null) continue;
-    const r = Math.min(14, 6 + (p.weight || 1) * 2);
-    const circle = L.circleMarker([lat, lon], {
-      radius: r,
-      color: '#22d3ee',
-      fillColor: '#22d3ee',
-      fillOpacity: 0.55,
-      weight: 1,
-    });
-    const tip = [p.label || p.region || '', p.ip || ''].filter(Boolean).join(' · ');
-    if (tip) circle.bindPopup(escapeHtml(tip));
-    circle.addTo(mapLayer);
-    bounds.push([lat, lon]);
-  }
-  if (bounds.length > 1) {
-    try { map.fitBounds(bounds, { padding: [30, 30], maxZoom: 5 }); } catch {}
-  } else if (bounds.length === 1) {
-    map.setView(bounds[0], 4);
-  }
-}
-
-function buildGeoFromUsers(users) {
-  const pts = [];
-  const regionCount = {};
-  let local = 0, foreign = 0;
-  for (const u of users || []) {
-    const devices = u.activeDevices || [];
-    if (!devices.length && (u.activeIPs || 0) > 0) {
-      // no IP detail — scatter by status
-      const [lon, lat] = CC.IR || [53, 32];
-      pts.push({ lat: lat + (Math.random()-0.5)*4, lon: lon + (Math.random()-0.5)*6, weight: 1, region: 'IR', label: u.name });
-      local++;
-      regionCount.IR = (regionCount.IR || 0) + 1;
-      continue;
-    }
-    for (const d of devices) {
-      const ip = d.ip || d;
-      // naive: if we had country from backend use it; else approximate IR vs foreign randomly weighted
-      let region = d.country || d.cc;
-      if (!region) {
-        // heuristic: private / IR-looking not available — use random from common set weighted to IR
-        region = Math.random() < 0.35 ? 'IR' : Object.keys(CC)[Math.floor(Math.random() * Object.keys(CC).length)];
-      }
-      region = String(region).toUpperCase().slice(0, 2);
-      const base = CC[region] || CC.US;
-      const [lon, lat] = base;
-      pts.push({
-        lat: lat + (Math.random() - 0.5) * 3,
-        lon: lon + (Math.random() - 0.5) * 5,
-        weight: 1.2,
-        region,
-        ip: typeof ip === 'string' ? ip : '',
-        label: u.name || u.id,
-      });
-      regionCount[region] = (regionCount[region] || 0) + 1;
-      if (region === 'IR') local++; else foreign++;
-    }
-  }
-  if (!pts.length) {
-    // demo cloud
-    ['IR','TR','DE','NL','US','AE'].forEach((r, i) => {
-      const [lon, lat] = CC[r];
-      pts.push({ lat, lon, weight: 1.5, region: r, label: r });
-      regionCount[r] = 1;
-      if (r === 'IR') local++; else foreign++;
-    });
-  }
-  return { pts, regionCount, local, foreign };
-}
-
-/* ---------- Data ---------- */
-let cache = { status: null, users: [], nodes: [] };
-
-async function fetchStatus() {
-  try {
-    const d = await api('/status');
-    cache.status = d;
-    return d;
-  } catch (e) {
-    console.warn('status', e.message);
-    return null;
-  }
-}
-
-async function fetchUsers() {
-  try {
-    const d = await api('/users');
-    if (Array.isArray(d?.users)) {
-      cache.users = d.users;
-      return d.users;
-    }
-  } catch (e) {
-    console.warn('users api', e.message);
-  }
-  cache.users = loadLocalUsers();
-  return cache.users;
-}
-
-async function fetchNodes() {
-  try {
-    const d = await api('/nodes');
-    const list = d?.alive || d?.all || d?.nodes || [];
-    cache.nodes = list;
-    return list;
-  } catch {
-    cache.nodes = [];
-    return [];
-  }
-}
-
-/* Try richer node endpoint if mother adds it later */
-async function fetchNodesDetailed() {
-  try {
-    const d = await api('/nodes/detail');
-    if (d?.nodes) return d.nodes;
-  } catch {}
-  return null;
-}
-
-/* ---------- Pages ---------- */
-async function refreshDashboard() {
-  const status = await fetchStatus();
-  const users = status?.live ? null : await fetchUsers();
-  const live = status?.live || (users || []).map(u => ({
-    id: u.id, name: u.name, status: u.status, activeIPs: u.activeIPs || 0, usageGB: u.usage?.totalGB
-  }));
-
-  const totalUsers = status?.users ?? (users || live).length;
-  const online = status?.onlineUsers ?? live.filter(u => (u.activeIPs || 0) > 0).length;
-  const nodes = status?.nodes ?? (await fetchNodes()).length;
-  const traffic = status?.totalTrafficGB ?? 0;
-
-  $('#kpi-users').textContent = faNum(totalUsers);
-  $('#kpi-users-sub').textContent = faNum(status?.activeUsers ?? '—') + ' active';
-  $('#kpi-online').textContent = faNum(online);
-  $('#kpi-nodes').textContent = faNum(nodes);
-  $('#kpi-traffic').textContent = faNum(traffic);
-  $('#dash-ver').textContent = status?.version || window.__SAOW_VERSION__ || '';
-
-  const fullUsers = users || cache.users || [];
-  const geo = buildGeoFromUsers(fullUsers.length ? fullUsers : live.map(x => ({ ...x, activeDevices: [] })));
-  setMapPoints(geo.pts);
-  $('#geo-count').textContent = faNum(geo.pts.length) + ' points';
-
-  const tot = geo.local + geo.foreign || 1;
-  const fPct = Math.round((geo.foreign / tot) * 100);
-  const lPct = 100 - fPct;
-  const oPct = totalUsers ? Math.round((online / totalUsers) * 100) : 0;
-  $('#bar-foreign').style.width = fPct + '%';
-  $('#pct-foreign').textContent = fPct + '%';
-  $('#bar-local').style.width = lPct + '%';
-  $('#pct-local').textContent = lPct + '%';
-  $('#bar-online').style.width = oPct + '%';
-  $('#pct-online').textContent = oPct + '%';
-
-  const sorted = Object.entries(geo.regionCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
-  $('#top-regions').innerHTML = sorted.map(([r, c]) =>
-    `<div style="display:flex;justify-content:space-between"><span>${r}</span><span style="color:var(--cyan)">${faNum(c)}</span></div>`
-  ).join('') || '—';
-}
-
-function statusBadge(st) {
-  const s = String(st || 'active');
-  if (s === 'active') return 'badge-green';
-  if (s === 'expired' || s === 'quota-exceeded' || s === 'daily-quota-exceeded') return 'badge-orange';
-  return 'badge-red';
-}
-
-async function refreshUsers() {
-  const list = await fetchUsers();
-  const q = ($('#user-search').value || '').trim().toLowerCase();
-  const filtered = q
-    ? list.filter(u =>
-        (u.name || '').toLowerCase().includes(q) ||
-        (u.uuid || '').toLowerCase().includes(q) ||
-        (u.id || '').toLowerCase().includes(q))
-    : list;
-
-  const tbody = $('#users-tbody');
-  tbody.innerHTML = '';
-  if (!filtered.length) {
-    $('#users-empty').style.display = 'block';
-    return;
-  }
-  $('#users-empty').style.display = 'none';
-
-  for (const u of filtered) {
-    const st = u.status || (u.enabled === false ? 'disabled' : 'active');
-    const used = u.usage?.totalGB != null ? u.usage.totalGB : formatGB(u.usage?.total || 0);
-    const quota = u.quotaBytes > 0 ? formatGB(u.quotaBytes) : '∞';
-    const daily = u.dailyQuotaBytes > 0 ? formatGB(u.dailyQuotaBytes) : '∞';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><b>${escapeHtml(u.name || u.id)}</b><div class="mono muted">${escapeHtml(u.id)}</div></td>
-      <td><span class="badge ${statusBadge(st)}">${escapeHtml(st)}</span></td>
-      <td>${escapeHtml(String(used))} / ${escapeHtml(String(quota))}</td>
-      <td>${escapeHtml(String(daily))}</td>
-      <td>${faNum(u.activeIPs || 0)}/${faNum(u.ipLimit || 1)}</td>
-      <td>${u.expiry ? escapeHtml(String(u.expiry).slice(0, 10)) : '∞'}</td>
-      <td class="mono">${escapeHtml((u.uuid || '').slice(0, 8))}…</td>
-      <td class="flex">
-        <button class="btn btn-sm" data-a="edit">ویرایش</button>
-        <button class="btn btn-sm" data-a="sub">ساب</button>
-        <button class="btn btn-sm btn-danger" data-a="del">حذف</button>
-      </td>`;
-    tr.querySelector('[data-a="edit"]').onclick = () => openUserModal(u);
-    tr.querySelector('[data-a="sub"]').onclick = () => {
-      showPage('subs');
-      $('#sub-uuid').value = u.uuid || '';
-      const base = (loadCfg().base || location.origin).replace(/\/$/, '');
-      $('#sub-link').value = base + '/pull?token=' + (u.uuid || '');
-    };
-    tr.querySelector('[data-a="del"]').onclick = () => deleteUser(u);
-    tbody.appendChild(tr);
-  }
-}
-
-async function deleteUser(u) {
-  if (!confirm('حذف کاربر «' + (u.name || u.id) + '»؟')) return;
-  try {
-    await api('/users?id=' + encodeURIComponent(u.id), { method: 'DELETE' });
-    toast('حذف از سرور');
-  } catch {
-    // fallback local
-    saveLocalUsers(loadLocalUsers().filter(x => x.id !== u.id));
-    toast('حذف محلی (API حذف در دسترس نبود)');
-  }
-  refreshUsers();
-}
-
-function openUserModal(edit) {
-  $('#user-modal-title').textContent = edit ? 'ویرایش کاربر' : 'کاربر جدید';
-  $('#edit-user-id').value = edit?.id || '';
-  $('#u-name').value = edit?.name || '';
-  $('#u-uuid').value = edit?.uuid || '';
-  $('#u-quota').value = edit?.quotaBytes ? +(edit.quotaBytes / 1073741824).toFixed(3) : 0;
-  $('#u-daily').value = edit?.dailyQuotaBytes ? +(edit.dailyQuotaBytes / 1073741824).toFixed(3) : 0;
-  $('#u-iplimit').value = edit?.ipLimit || 1;
-  $('#u-expiry').value = edit?.expiry ? String(edit.expiry).slice(0, 10) : '';
-  $('#u-enabled').value = edit?.enabled === false ? '0' : '1';
-  $('#u-forced').value = edit?.forcedNode || '';
-  $('#u-notes').value = edit?.notes || '';
-  $('#user-modal').classList.add('show');
-}
-function closeUserModal() { $('#user-modal').classList.remove('show'); }
-
-async function saveUserFromModal() {
-  const id = $('#edit-user-id').value || ('u' + Math.random().toString(36).slice(2, 10));
-  const body = {
-    id,
-    name: ($('#u-name').value || '').trim() || id,
-    uuid: ($('#u-uuid').value || '').trim() || uuidv4(),
-    enabled: $('#u-enabled').value === '1',
-    quotaBytes: Math.round((+($('#u-quota').value) || 0) * 1073741824),
-    dailyQuotaBytes: Math.round((+($('#u-daily').value) || 0) * 1073741824),
-    ipLimit: Math.max(1, +($('#u-iplimit').value) || 1),
-    expiry: ($('#u-expiry').value || '').trim() || null,
-    forcedNode: ($('#u-forced').value || '').trim() || '',
-    notes: ($('#u-notes').value || '').trim(),
+(function(){
+  const LS_BASE="saow_api_base", LS_SECRET="saow_api_secret";
+  const DASH_POLL_MS=90*1000, GB=1073741824;
+  let API_BASE="", API_SECRET="", currentSec="dash";
+  let usersCache=[], nodesCache={managed:[],alive:[]}, mapChart=null, dashTimer=null, lastDashAt=0;
+  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',settings:'تنظیمات'};
+  const topActions={
+    dash:{label:'+ کاربر جدید',action:'user'}, users:{label:'+ کاربر جدید',action:'user'},
+    nodes:{label:'+ افزودن نود',action:'node'}, shop:{label:'بروزرسانی',action:'shop'},
+    backup:{label:'دانلود بکاپ',action:'backup'}, settings:{label:'',action:'none'}
   };
-
-  try {
-    await api('/users', { method: 'POST', body: JSON.stringify(body) });
-    toast('روی سرور ذخیره شد');
-  } catch (e) {
-    // local fallback + merge into list for UI
-    const list = loadLocalUsers();
-    const i = list.findIndex(x => x.id === id);
-    const row = { ...body, status: body.enabled ? 'active' : 'disabled', activeIPs: 0, usage: { total: 0, totalGB: 0 } };
-    if (i >= 0) list[i] = { ...list[i], ...row };
-    else list.push(row);
-    saveLocalUsers(list);
-    toast('ذخیره محلی — API POST /users در دسترس نبود (' + e.message + ')');
+  function faNum(n){if(n==null||n==="")return"—";return String(n).replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);}
+  function toast(msg,type){const el=document.getElementById("toast");el.textContent=msg;el.className="toast show"+(type==="err"?" err":type==="ok"?" ok":"");clearTimeout(el._t);el._t=setTimeout(()=>{el.className="toast";},2800);}
+  function daysRemaining(expiry){if(!expiry)return"∞";const ms=Date.parse(expiry)-Date.now();if(!Number.isFinite(ms)||ms<=0)return faNum(0);return faNum(Math.ceil(ms/86400000));}
+  function statusBadge(status){const map={active:["فعال","badge-ok"],disabled:["غیرفعال","badge-off"],expired:["منقضی","badge-off"],"quota-exceeded":["حجم تمام","badge-warn"],"daily-quota-exceeded":["روزانه تمام","badge-warn"]};const[t,c]=map[status]||[status||"—","badge-info"];return`<span class="badge ${c}">${t}</span>`;}
+  function relTime(ts){if(!ts)return"—";const sec=Math.floor((Date.now()-Number(ts))/1000);if(sec<60)return faNum(sec)+" ثانیه پیش";if(sec<3600)return faNum(Math.floor(sec/60))+" دقیقه پیش";if(sec<86400)return faNum(Math.floor(sec/3600))+" ساعت پیش";return faNum(Math.floor(sec/86400))+" روز پیش";}
+  function activityLabel(type){const m={connect:["اتصال","badge-ok"],disconnect:["قطع","badge-off"],quota:["سهمیه","badge-warn"],sync:["همگام‌سازی","badge-info"],create:["ایجاد","badge-info"],delete:["حذف","badge-off"],node_off:["نود آفلاین","badge-warn"],info:["اطلاع","badge-info"]};return m[type]||[type||"رویداد","badge-info"];}
+  function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");}
+  async function api(path,opts={}){
+    const url=(API_BASE||"").replace(/\/$/,"")+path;
+    const headers={Authorization:"Bearer "+API_SECRET,"Content-Type":"application/json",...(opts.headers||{})};
+    const res=await fetch(url,{...opts,headers});
+    let data=null;try{data=await res.json();}catch{data={ok:false,err:"invalid json"};}
+    if(res.status===401){toast("کلید API نامعتبر","err");throw new Error("unauthorized");}
+    if(!res.ok&&data&&data.ok===false)throw new Error(data.err||data.message||("HTTP "+res.status));
+    return data;
   }
-  closeUserModal();
-  refreshUsers();
-}
-
-async function refreshNodes() {
-  const detailed = await fetchNodesDetailed();
-  const nodes = detailed || await fetchNodes();
-  const grid = $('#nodes-grid');
-  const sum = $('#nodes-summary');
-  grid.innerHTML = '';
-  sum.innerHTML = '';
-
-  if (!nodes.length) {
-    $('#nodes-empty').style.display = 'block';
-    return;
-  }
-  $('#nodes-empty').style.display = 'none';
-
-  const now = Date.now();
-  let onlineN = 0, totalReq = 0, totalActive = 0;
-
-  for (const n of nodes) {
-    const last = n.lastSeen || n.last_seen || 0;
-    const age = last ? Math.floor((now - last) / 1000) : null;
-    const online = age != null && age < 120;
-    if (online) onlineN++;
-    const reqs = n.requestsToday ?? n.reqs ?? n.request_count ?? null;
-    if (typeof reqs === 'number') totalReq += reqs;
-    totalActive += n.activeUsers ?? n.active_users ?? 0;
-
-    const card = document.createElement('div');
-    card.className = 'node-card' + (online ? '' : ' offline');
-    const name = n.script_name || n.id || 'node';
-    const url = (n.url || '').replace(/^https?:\/\//, '');
-    card.innerHTML = `
-      <div class="node-name">
-        <span class="status-dot ${online ? 'live' : ''}" style="${online ? '' : 'background:#f87171'}"></span>
-        ${escapeHtml(String(name).slice(0, 28))}
-        <span class="badge ${online ? 'badge-green' : 'badge-red'}">${online ? 'Online' : 'Offline'}</span>
-        ${n.is_peer ? '<span class="badge badge-violet">Peer</span>' : ''}
-      </div>
-      <div class="node-meta">
-        <div>URL: <span class="mono">${escapeHtml(url.slice(0, 40))}</span></div>
-        <div>نسخه: ${escapeHtml(n.version || '—')} · ظرفیت: ${faNum(n.capacity ?? '—')}</div>
-        <div>آخرین دیده: ${age != null ? faNum(age) + 's پیش' : '—'}</div>
-        ${n.peer_name ? '<div>Peer: ' + escapeHtml(n.peer_name) + '</div>' : ''}
-        ${n.account_id ? '<div class="mono">CF Acc: ' + escapeHtml(String(n.account_id).slice(0, 12)) + '…</div>' : ''}
-      </div>
-      <div class="node-reqs">
-        <div class="kv"><b>${faNum(n.activeUsers ?? n.active_users ?? 0)}</b>کاربر فعال</div>
-        <div class="kv"><b>${reqs != null ? faNum(reqs) : '—'}</b>ریکوئست امروز</div>
-        <div class="kv"><b>${n.errors != null ? faNum(n.errors) : '—'}</b>خطا</div>
-        <div class="kv"><b>${n.cpu != null ? faNum(n.cpu) : '—'}</b>CPU (اختیاری)</div>
-      </div>`;
-    grid.appendChild(card);
-  }
-
-  sum.innerHTML = `
-    <div class="card"><div class="stat-label">نود آنلاین</div><div class="stat-value">${faNum(onlineN)}/${faNum(nodes.length)}</div></div>
-    <div class="card"><div class="stat-label">کاربران روی نودها</div><div class="stat-value">${faNum(totalActive)}</div></div>
-    <div class="card"><div class="stat-label">جمع ریکوئست (در دسترس)</div><div class="stat-value">${totalReq ? faNum(totalReq) : '—'}</div></div>`;
-}
-
-function showPage(name) {
-  $$('.page').forEach(p => p.classList.remove('active'));
-  const el = $('#page-' + name);
-  if (el) el.classList.add('active');
-  $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === name));
-
-  if (name === 'dashboard') refreshDashboard();
-  if (name === 'users') refreshUsers();
-  if (name === 'nodes') refreshNodes();
-  if (name === 'set-general') {
-    const c = loadCfg();
-    $('#cfg-base').value = c.base || '';
-    $('#cfg-secret').value = c.secret || '';
-    $('#cfg-user').value = c.user || DEFAULT_CREDS.user;
-    $('#cfg-pass').value = c.pass || DEFAULT_CREDS.pass;
-  }
-  if (name === 'set-peers') refreshPeers();
-}
-
-async function refreshPeers() {
-  const tbody = $('#peers-tbody');
-  tbody.innerHTML = '';
-  try {
-    const d = await api('/peers');
-    const list = d?.peers || [];
-    if (!list.length) throw new Error('empty');
-    $('#peers-empty').style.display = 'none';
-    for (const p of list) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${escapeHtml(p.name || p.id)}</td>
-        <td class="mono">${escapeHtml((p.url || '').slice(0, 36))}</td>
-        <td><span class="badge ${p.enabled !== 0 ? 'badge-green' : 'badge-red'}">${p.enabled !== 0 ? 'on' : 'off'}</span></td>
-        <td>${faNum(p.last_children ?? '—')}</td>
-        <td>${escapeHtml(p.last_version || '—')}</td>
-        <td>${p.last_ok ? faNum(Math.floor((Date.now() - p.last_ok) / 60000)) + 'm' : '—'}</td>`;
-      tbody.appendChild(tr);
-    }
-  } catch {
-    $('#peers-empty').style.display = 'block';
-  }
-}
-
-function initApp() {
-  $('#login-screen').style.display = 'none';
-  $('#app').style.display = 'block';
-  showPage('dashboard');
-}
-
-/* events */
-$('#login-btn').onclick = async () => {
-  $('#login-err').textContent = '…';
-  $('#login-btn').disabled = true;
-  try {
-    const r = await doLogin($('#login-user').value.trim(), $('#login-pass').value);
-    if (r.ok) {
-      initApp();
-      if (r.demo) toast('حالت دمو — به سرور وصل نشد');
-    } else {
-      $('#login-err').textContent = r.err === 'invalid credentials' ? 'نام کاربری یا رمز اشتباه' : (r.err || 'خطا');
-    }
-  } finally {
-    $('#login-btn').disabled = false;
-  }
-};
-$('#login-pass').onkeydown = e => { if (e.key === 'Enter') $('#login-btn').click(); };
-$('#logout-btn').onclick = () => { clearPanelToken(); try { fetch((loadCfg().base||location.origin).replace(/\/$/,'')+'/api/panel/logout',{credentials:'include'}); } catch{} location.reload(); };
-
-$$('.nav-item').forEach(n => n.addEventListener('click', () => showPage(n.dataset.page)));
-
-$('#btn-refresh-dash')?.addEventListener('click', () => { refreshDashboard(); toast('بروز شد'); });
-$('#btn-refresh-users')?.addEventListener('click', () => refreshUsers());
-$('#btn-refresh-nodes')?.addEventListener('click', () => refreshNodes());
-$('#btn-refresh-peers')?.addEventListener('click', () => refreshPeers());
-$('#user-search')?.addEventListener('input', () => refreshUsers());
-$('#btn-add-user')?.addEventListener('click', () => openUserModal(null));
-$('#btn-cancel-user')?.addEventListener('click', closeUserModal);
-$('#btn-save-user')?.addEventListener('click', saveUserFromModal);
-$('#user-modal')?.addEventListener('click', e => { if (e.target === $('#user-modal')) closeUserModal(); });
-
-$('#btn-gen-sub')?.addEventListener('click', () => {
-  const uuid = ($('#sub-uuid').value || '').trim();
-  if (!uuid) return toast('UUID لازم است');
-  const base = (loadCfg().base || location.origin).replace(/\/$/, '');
-  $('#sub-link').value = base + '/pull?token=' + uuid;
-  toast('لینک ساخته شد');
-});
-$('#btn-copy-sub')?.addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText($('#sub-link').value); toast('کپی شد'); }
-  catch { toast('دستی کپی کنید'); }
-});
-
-$('#btn-save-cfg')?.addEventListener('click', () => {
-  saveCfg({
-    base: ($('#cfg-base').value || '').trim().replace(/\/$/, ''),
-    secret: ($('#cfg-secret').value || '').trim(),
-    user: ($('#cfg-user').value || '').trim() || DEFAULT_CREDS.user,
-    pass: ($('#cfg-pass').value || '').trim() || DEFAULT_CREDS.pass,
+  function showApp(){document.getElementById("authGate").style.display="none";document.getElementById("appRoot").style.display="";document.getElementById("sysBase").textContent=API_BASE||location.origin;boot();}
+  function logout(){localStorage.removeItem(LS_SECRET);location.reload();}
+  document.getElementById("authBtn").addEventListener("click",async()=>{
+    const base=document.getElementById("cfgBase").value.trim().replace(/\/$/,"");
+    const secret=document.getElementById("cfgSecret").value.trim();
+    if(!secret){document.getElementById("authErr").style.display="";document.getElementById("authErr").textContent="کلید را وارد کنید";return;}
+    API_BASE=base||location.origin;API_SECRET=secret;
+    try{const r=await api("/api/ping");if(!r||!r.ok)throw new Error("ping failed");localStorage.setItem(LS_BASE,API_BASE);localStorage.setItem(LS_SECRET,API_SECRET);showApp();}
+    catch(e){document.getElementById("authErr").style.display="";document.getElementById("authErr").textContent="اتصال ناموفق: "+(e.message||e);}
   });
-  toast('ذخیره شد');
-});
-$('#btn-test-api')?.addEventListener('click', async () => {
-  const box = $('#cfg-status');
-  box.textContent = 'در حال تست…';
-  try {
-    const d = await api('/status');
-    box.innerHTML = `✅ متصل<br>نسخه: <b style="color:var(--cyan)">${escapeHtml(d.version || '?')}</b><br>کاربران: ${faNum(d.users)} · نود: ${faNum(d.nodes)}`;
-    toast('اتصال OK');
-  } catch (e) {
-    box.innerHTML = '❌ ' + escapeHtml(e.message);
-    toast('خطا در اتصال');
-  }
-});
+  (function tryRestore(){const b=localStorage.getItem(LS_BASE),s=localStorage.getItem(LS_SECRET);if(s){API_BASE=(b||location.origin).replace(/\/$/,"");API_SECRET=s;document.getElementById("cfgBase").value=b||"";document.getElementById("cfgSecret").value=s;api("/api/ping").then(r=>{if(r&&r.ok)showApp();}).catch(()=>{});}})();
 
-$('#tile-export-users')?.addEventListener('click', async () => {
-  const users = await fetchUsers();
-  const blob = new Blob([JSON.stringify(users, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'saow-users-' + new Date().toISOString().slice(0, 10) + '.json';
-  a.click();
-  $('#backup-log').textContent = 'Export ' + users.length + ' users @ ' + new Date().toISOString();
-});
-$('#tile-import-users')?.addEventListener('click', () => $('#import-file').click());
-$('#import-file')?.addEventListener('change', async (e) => {
-  const f = e.target.files?.[0];
-  if (!f) return;
-  try {
-    const text = await f.text();
-    const arr = JSON.parse(text);
-    if (!Array.isArray(arr)) throw new Error('JSON باید آرایه باشد');
-    saveLocalUsers(arr);
-    $('#backup-log').textContent = 'Import ' + arr.length + ' users (local)';
-    toast('وارد شد');
-  } catch (err) {
-    toast('خطا: ' + err.message);
-  }
-});
-$('#tile-backup-now')?.addEventListener('click', async () => {
-  try {
-    const d = await api('/backup');
-    $('#backup-log').textContent = JSON.stringify(d, null, 2).slice(0, 2000);
-    toast('بکاپ دریافت شد');
-  } catch (e) {
-    $('#backup-log').textContent = 'API /backup در دسترس نیست: ' + e.message + '\nاز خروجی کاربران استفاده کنید.';
-  }
-});
-$('#tile-force-sync')?.addEventListener('click', async () => {
-  try {
-    await api('/sync', { method: 'POST', body: '{}' });
-    $('#sync-log').textContent = 'sync ok @ ' + new Date().toISOString();
-    toast('Sync ارسال شد');
-  } catch (e) {
-    $('#sync-log').textContent = 'خطا: ' + e.message;
-  }
-});
-$('#btn-load-locks')?.addEventListener('click', async () => {
-  try {
-    // Grandma path — needs different secret; may 404
-    const d = await api('/gx/rules');
-    $('#locks-view').textContent = JSON.stringify(d.rules || d, null, 2);
-  } catch (e) {
-    $('#locks-view').textContent = 'در دسترس نیست (' + e.message + '). از تلگرام / Grandma Secret استفاده کنید.';
-  }
-});
+  function updateTopAction(sec){currentSec=sec;const btn=document.getElementById("topActionBtn");const cfg=topActions[sec]||topActions.dash;if(!cfg.label){btn.style.display="none";return;}btn.style.display="";btn.textContent=cfg.label;}
+  function handleTopAction(){const cfg=topActions[currentSec]||topActions.dash;if(cfg.action==="user")openUserModal();else if(cfg.action==="node")openNodeModal();else if(cfg.action==="shop")loadShop();else if(cfg.action==="backup")downloadBackup();}
+  document.getElementById("topActionBtn").addEventListener("click",handleTopAction);
+  document.querySelectorAll(".nav-item").forEach(el=>{el.addEventListener("click",()=>{document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("active"));el.classList.add("active");const sec=el.dataset.sec;document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById(sec).classList.add("active");document.getElementById("title").innerHTML=titles[sec]||sec;updateTopAction(sec);document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebarBackdrop").classList.remove("show");onSectionEnter(sec);});});
+  updateTopAction("dash");
+  function toggleSidebar(forceClose){const sb=document.getElementById("sidebar"),bd=document.getElementById("sidebarBackdrop");if(forceClose===true){sb.classList.remove("open");bd.classList.remove("show");return;}sb.classList.toggle("open");bd.classList.toggle("show");}
+  document.getElementById("burger").addEventListener("click",()=>toggleSidebar());
+  document.getElementById("sidebarBackdrop").addEventListener("click",()=>toggleSidebar(true));
 
-if (checkSession()) initApp();
+  function renderMap(provinces){
+    const data=(provinces||[]).map(p=>({lat:p.lat,long:p.lon,name:p.name,users:p.users||0,value:p.users||0}));
+    const online=data.filter(m=>m.users>0), offline=data.filter(m=>m.users===0);
+    if(mapChart){try{mapChart.dispose();}catch{}mapChart=null;}
+    const map=anychart.map();map.geoData(anychart.maps.iran);
+    map.unboundRegions().enabled(true).fill("#1a1a1e").stroke("1.2 #2a2a30");map.background().fill("transparent");map.padding(0);
+    const sIdle=map.marker(offline);sIdle.name("بدون کاربر").type("circle").size(4).fill("rgba(255,255,255,0.22)").stroke("none").labels(false).selectionMode("none");
+    const sActive=map.marker(online.filter(m=>m.users<3));sActive.name("آنلاین").type("circle").size(7).fill("#7dd3fc").stroke("1.5 #0ea5e9").labels(false).selectionMode("none");
+    const sHot=map.marker(online.filter(m=>m.users>=3));sHot.name("پرترافیک").type("circle").size(9).fill("#f472b6").stroke("1.5 #db2777").labels(false).selectionMode("none");
+    [sIdle,sActive,sHot].forEach(s=>{s.tooltip().useHtml(true).fontFamily("Vazirmatn,Tahoma,sans-serif").fontSize(13)
+      .titleFormat(function(){return'<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:14px;font-weight:600">'+this.getData("name")+"</span>";})
+      .format(function(){const u=this.getData("users");const txt=u>0?u+" کاربر آنلاین":"بدون کاربر آنلاین";return'<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:13px">'+txt+"</span>";});});
+    map.legend().enabled(true).position("bottom").align("center").padding(8).fontColor("#a1a1aa").fontSize(12).fontFamily("Vazirmatn,Tahoma,sans-serif").itemsLayout("horizontal");
+    map.container("iranMapContainer");map.draw();mapChart=map;
+  }
+
+  async function loadDashboard(force){
+    if(!force&&Date.now()-lastDashAt<15000)return;
+    try{
+      const data=await api("/api/dashboard");lastDashAt=Date.now();if(!data.ok)return;
+      const st=data.stats||{};
+      document.getElementById("stActive").textContent=faNum(st.activeUsers??0);
+      document.getElementById("stActiveMeta").textContent="از "+faNum(st.users??0)+" کل";
+      document.getElementById("stOnline").textContent=faNum(st.onlineUsers??0);
+      document.getElementById("stNodes").textContent=faNum(st.healthyNodes??0);
+      document.getElementById("stNodesMeta").textContent="از "+faNum(st.nodes??0)+" نود";
+      const tb=st.totalTrafficTB!=null?st.totalTrafficTB:(st.totalTrafficGB||0)/1024;
+      document.getElementById("stTraffic").textContent=faNum(Number(tb).toFixed(2));
+      document.getElementById("navUsersCount").textContent=faNum(st.users??0);
+      document.getElementById("navNodesCount").textContent=faNum(st.nodes??0);
+      if(data.version){document.getElementById("sidebarFoot").textContent="v"+data.version+" · Push Mode";document.getElementById("sysVersion").textContent=data.version;}
+      if(data.map&&data.map.provinces)renderMap(data.map.provinces);
+      const act=data.activity||[],tbody=document.getElementById("activityBody");
+      if(!act.length)tbody.innerHTML='<tr><td colspan="4" class="empty-msg">هنوز رویدادی ثبت نشده</td></tr>';
+      else tbody.innerHTML=act.map(a=>{const[lab,cls]=activityLabel(a.type);return`<tr><td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td><td data-label="رویداد"><span class="badge ${cls}">${lab}</span></td><td data-label="نود" style="color:var(--text-secondary)">${esc(a.node_id||"—")}</td><td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td></tr>`;}).join("");
+    }catch(e){console.warn("dashboard",e);}
+  }
+  function startDashPoll(){stopDashPoll();dashTimer=setInterval(()=>{if(currentSec==="dash"&&document.visibilityState==="visible")loadDashboard(false);},DASH_POLL_MS);}
+  function stopDashPoll(){if(dashTimer)clearInterval(dashTimer);dashTimer=null;}
+
+  function renderUsers(list){
+    const q=(document.getElementById("userSearch").value||"").trim().toLowerCase();
+    let filtered=list||[];
+    if(q)filtered=filtered.filter(u=>(u.name||"").toLowerCase().includes(q)||(u.id||"").toLowerCase().includes(q)||(u.uuid||"").toLowerCase().includes(q));
+    const tbody=document.getElementById("usersBody");
+    if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" class="empty-msg">کاربری یافت نشد</td></tr>';return;}
+    tbody.innerHTML=filtered.map(u=>{
+      const used=u.usage?.total||0,quota=u.quotaBytes||0,pct=quota>0?Math.min(100,Math.round((used/quota)*100)):0;
+      const usedGB=(used/GB).toFixed(1),quotaGB=quota>0?(quota/GB).toFixed(0):"∞";
+      const barColor=(u.status==="daily-quota-exceeded"||u.status==="quota-exceeded")?"var(--warning)":"var(--accent)";
+      return`<tr>
+        <td class="user-cell" data-label="نام"><strong>${esc(u.name||u.id)}</strong><br><small>${esc(u.id)}</small></td>
+        <td data-label="وضعیت">${statusBadge(u.status)}</td>
+        <td data-label="مصرف"><div style="display:flex;align-items:center;gap:10px"><div class="bar"><i style="width:${pct}%;background:${barColor}"></i></div><span style="font-size:12.5px;color:var(--text-secondary)">${faNum(usedGB)} / ${quotaGB==="∞"?"∞":faNum(quotaGB)} GB</span></div></td>
+        <td data-label="IP">${faNum(u.activeIPs||0)} / ${faNum(u.ipLimit||1)}</td>
+        <td data-label="انقضا">${daysRemaining(u.expiry)}</td>
+        <td class="row-actions" data-label="">
+          <button class="icon-btn" title="ویرایش" data-act="edit" data-id="${esc(u.id)}">✎</button>
+          <button class="icon-btn" title="ریست حجم" data-act="reset" data-id="${esc(u.id)}">↻</button>
+          <button class="icon-btn" title="لینک ساب" data-act="sub" data-id="${esc(u.id)}">🔗</button>
+          <button class="icon-btn danger" title="حذف" data-act="del" data-id="${esc(u.id)}">✕</button>
+        </td></tr>`;
+    }).join("");
+    tbody.querySelectorAll("[data-act]").forEach(btn=>btn.addEventListener("click",()=>onUserAction(btn.dataset.act,btn.dataset.id)));
+  }
+  async function loadUsers(){try{const data=await api("/api/users");usersCache=data.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);renderUsers(usersCache);}catch(e){toast("خطا کاربران: "+e.message,"err");}}
+  document.getElementById("userSearch").addEventListener("input",()=>renderUsers(usersCache));
+  async function onUserAction(act,id){
+    if(act==="edit"){const u=usersCache.find(x=>x.id===id);if(u)openUserModal(u);return;}
+    if(act==="reset"){if(!confirm("ریست حجم؟"))return;try{await api("/api/users/"+encodeURIComponent(id)+"/reset-usage",{method:"POST"});toast("ریست شد","ok");loadUsers();}catch(e){toast(e.message,"err");}return;}
+    if(act==="sub"){try{const data=await api("/api/users/"+encodeURIComponent(id)+"/sub");let link=data.sub||"";if(link&&!link.startsWith("http"))link=(API_BASE||location.origin)+link;if(link){await navigator.clipboard.writeText(link);toast("لینک ساب کپی شد","ok");}else toast("لینک نیست","err");}catch(e){toast(e.message,"err");}return;}
+    if(act==="del"){if(!confirm("حذف کاربر؟"))return;try{await api("/api/users/"+encodeURIComponent(id),{method:"DELETE"});toast("حذف شد","ok");loadUsers();try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"delete",user_id:id,message:"حذف کاربر"})});}catch{}}catch(e){toast(e.message,"err");}}
+  }
+  function openUserModal(user){
+    document.getElementById("editUserId").value=user?user.id:"";
+    document.getElementById("userModalTitle").textContent=user?"ویرایش کاربر":"افزودن کاربر جدید";
+    document.getElementById("fName").value=user?(user.name||""):"";
+    document.getElementById("fQuota").value=user?((user.quotaBytes||0)/GB):10;
+    document.getElementById("fDaily").value=user?((user.dailyQuotaBytes||0)/GB):0;
+    document.getElementById("fIp").value=user?(user.ipLimit||1):1;
+    document.getElementById("fSpeed").value=user?(user.speedLimitKBps||0):0;
+    if(user&&user.expiry){document.getElementById("fDays").value=Math.max(0,Math.ceil((Date.parse(user.expiry)-Date.now())/86400000));}
+    else document.getElementById("fDays").value=user?"":30;
+    const sw=document.getElementById("fEnabled");if(!user||user.enabled!==false)sw.classList.add("on");else sw.classList.remove("on");
+    document.getElementById("userOverlay").classList.add("open");
+  }
+  function closeUserModal(){document.getElementById("userOverlay").classList.remove("open");}
+  document.getElementById("userModalClose").addEventListener("click",closeUserModal);
+  document.getElementById("userModalCancel").addEventListener("click",closeUserModal);
+  document.getElementById("userOverlay").addEventListener("click",e=>{if(e.target===e.currentTarget)closeUserModal();});
+  document.getElementById("fEnabled").addEventListener("click",function(){this.classList.toggle("on");});
+  document.getElementById("userModalSave").addEventListener("click",async()=>{
+    const id=document.getElementById("editUserId").value;
+    const name=document.getElementById("fName").value.trim();
+    const quotaGB=Number(document.getElementById("fQuota").value)||0;
+    const dailyGB=Number(document.getElementById("fDaily").value)||0;
+    const ipLimit=Number(document.getElementById("fIp").value)||1;
+    const speed=Number(document.getElementById("fSpeed").value)||0;
+    const daysRaw=document.getElementById("fDays").value;
+    const enabled=document.getElementById("fEnabled").classList.contains("on");
+    let expiry=null;if(daysRaw!==""&&Number(daysRaw)>0)expiry=new Date(Date.now()+Number(daysRaw)*86400000).toISOString();
+    const body={name:name||undefined,quotaBytes:Math.round(quotaGB*GB),dailyQuotaBytes:Math.round(dailyGB*GB),ipLimit,speedLimitKBps:speed,enabled,expiry};
+    try{
+      if(id){await api("/api/users/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(body)});toast("به‌روز شد","ok");}
+      else{await api("/api/users",{method:"POST",body:JSON.stringify(body)});toast("ایجاد شد","ok");try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"create",user_name:name,message:"ایجاد کاربر"})});}catch{}}
+      closeUserModal();loadUsers();
+    }catch(e){toast(e.message||"خطا","err");}
+  });
+
+  async function loadNodes(){
+    try{
+      const data=await api("/api/nodes");nodesCache={managed:data.managed||[],alive:data.alive||[]};
+      document.getElementById("navNodesCount").textContent=faNum(nodesCache.managed.length);
+      const tbody=document.getElementById("nodesBody"),list=nodesCache.managed;
+      if(!list.length){tbody.innerHTML='<tr><td colspan="5" class="empty-msg">نودی ثبت نشده</td></tr>';return;}
+      tbody.innerHTML=list.map(n=>{
+        const id=n.id||n.script_name;let alive=null;
+        for(const a of nodesCache.alive){if(a.id&&(a.id.includes(n.script_name)||a.id===id)){alive=a;break;}if(n.url&&a.url&&a.url.includes(n.script_name)){alive=a;break;}}
+        const disabled=n.is_disabled===1;
+        const statusHtml=disabled?'<span class="badge badge-off">قفل</span>':alive?'<span class="badge badge-ok">سالم</span>':'<span class="badge badge-off">آفلاین</span>';
+        const activeUsers=alive?(alive.activeUsers??alive.active_users??"—"):"—";
+        const lastSeen=alive?relTime(alive.lastSeen||alive.last_seen):"—";
+        return`<tr><td data-label="نام"><code style="font-size:13px">${esc(n.script_name||id)}</code></td><td data-label="وضعیت">${statusHtml}</td><td data-label="کاربران فعال">${faNum(activeUsers)}</td><td data-label="آخرین دیده‌شدن" style="color:var(--text-muted)">${lastSeen}</td>
+          <td class="row-actions" data-label=""><button class="icon-btn" title="قفل/باز" data-nact="toggle" data-nid="${esc(id)}">⏻</button><button class="icon-btn danger" title="حذف" data-nact="del" data-nid="${esc(id)}">✕</button></td></tr>`;
+      }).join("");
+      tbody.querySelectorAll("[data-nact]").forEach(btn=>btn.addEventListener("click",()=>onNodeAction(btn.dataset.nact,btn.dataset.nid)));
+    }catch(e){toast("خطا نودها: "+e.message,"err");}
+  }
+  async function onNodeAction(act,id){
+    if(act==="toggle"){try{await api("/api/nodes/"+encodeURIComponent(id)+"/toggle",{method:"POST"});toast("تغییر کرد","ok");loadNodes();}catch(e){toast(e.message,"err");}return;}
+    if(act==="del"){if(!confirm("حذف نود از پنل؟"))return;try{await api("/api/nodes/"+encodeURIComponent(id),{method:"DELETE"});toast("حذف شد","ok");loadNodes();}catch(e){toast(e.message,"err");}}
+  }
+  function openNodeModal(){document.getElementById("fCfToken").value="";document.getElementById("nodeOverlay").classList.add("open");}
+  function closeNodeModal(){document.getElementById("nodeOverlay").classList.remove("open");}
+  document.getElementById("nodeModalClose").addEventListener("click",closeNodeModal);
+  document.getElementById("nodeModalCancel").addEventListener("click",closeNodeModal);
+  document.getElementById("nodeOverlay").addEventListener("click",e=>{if(e.target===e.currentTarget)closeNodeModal();});
+  document.getElementById("nodeModalSave").addEventListener("click",async()=>{
+    const token=document.getElementById("fCfToken").value.trim();if(!token){toast("توکن لازم است","err");return;}
+    const btn=document.getElementById("nodeModalSave");btn.disabled=true;btn.textContent="در حال ایجاد...";
+    try{const r=await api("/api/nodes",{method:"POST",body:JSON.stringify({token})});toast("نود: "+(r.scriptName||""),"ok");closeNodeModal();loadNodes();}
+    catch(e){toast(e.message||"خطا","err");}finally{btn.disabled=false;btn.textContent="ایجاد نود";}
+  });
+
+  async function loadShop(){
+    try{
+      const[plansRes,ordersRes,rulesRes]=await Promise.all([api("/api/shop/plans"),api("/api/shop/orders"),api("/api/rules")]);
+      const plans=plansRes.plans||[],orders=ordersRes.orders||[],rules=rulesRes.rules||{};
+      document.getElementById("shopPlansCount").textContent=faNum(plans.filter(p=>p.enabled).length);
+      document.getElementById("shopPendingCount").textContent=faNum(orders.filter(o=>o.status==="pending").length);
+      const lockSw=document.getElementById("shopLockSwitch");
+      if(rules.lock_shop)lockSw.classList.add("on");else lockSw.classList.remove("on");
+      lockSw.onclick=async()=>{lockSw.classList.toggle("on");try{await api("/api/rules",{method:"POST",body:JSON.stringify({lock_shop:lockSw.classList.contains("on")})});toast("ذخیره شد","ok");}catch(e){toast(e.message,"err");}};
+      const pb=document.getElementById("plansBody");
+      if(!plans.length)pb.innerHTML='<tr><td colspan="5" class="empty-msg">پلنی نیست</td></tr>';
+      else pb.innerHTML=plans.map(p=>`<tr><td data-label="نام">${esc(p.name)}</td><td data-label="روز">${faNum(p.days)}</td><td data-label="حجم">${faNum(p.quota_gb)}</td><td data-label="قیمت">${faNum(p.price)}</td><td data-label="وضعیت">${p.enabled?'<span class="badge badge-ok">فعال</span>':'<span class="badge badge-off">غیرفعال</span>'}</td></tr>`).join("");
+      const ob=document.getElementById("ordersBody");
+      if(!orders.length)ob.innerHTML='<tr><td colspan="5" class="empty-msg">سفارشی نیست</td></tr>';
+      else ob.innerHTML=orders.slice(0,30).map(o=>{
+        const st=o.status==="pending"?'<span class="badge badge-warn">در انتظار</span>':o.status==="approved"?'<span class="badge badge-ok">تأیید</span>':'<span class="badge badge-off">'+esc(o.status)+"</span>";
+        const actions=o.status==="pending"?`<button class="icon-btn" data-oact="approve" data-oid="${esc(o.id)}">✓</button><button class="icon-btn danger" data-oact="reject" data-oid="${esc(o.id)}">✕</button>`:"";
+        return`<tr><td data-label="کاربر">${esc(o.username||o.user_id||"—")}</td><td data-label="پلن">${esc(o.plan_name||o.plan_id)}</td><td data-label="قیمت">${faNum(o.price)}</td><td data-label="وضعیت">${st}</td><td class="row-actions" data-label="">${actions}</td></tr>`;
+      }).join("");
+      ob.querySelectorAll("[data-oact]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/shop/orders/"+encodeURIComponent(btn.dataset.oid)+"/"+btn.dataset.oact,{method:"POST"});toast("انجام شد","ok");loadShop();}catch(e){toast(e.message,"err");}}));
+    }catch(e){toast("فروشگاه: "+e.message,"err");}
+  }
+  document.getElementById("btnReloadShop").addEventListener("click",()=>loadShop());
+
+  async function downloadBackup(){try{const data=await api("/api/backup");const blob=new Blob([JSON.stringify(data.backup||data,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="saow-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(a.href);toast("دانلود شد","ok");}catch(e){toast(e.message,"err");}}
+  document.getElementById("btnDownloadBackup").addEventListener("click",downloadBackup);
+  document.getElementById("btnImportBackup").addEventListener("click",async()=>{const file=document.getElementById("backupFile").files[0];if(!file){toast("فایل انتخاب کنید","err");return;}try{const text=await file.text();const parsed=JSON.parse(text);const backup=parsed.backup||parsed;await api("/api/backup/import",{method:"POST",body:JSON.stringify({backup})});toast("ایمپورت شد","ok");loadUsers();loadNodes();}catch(e){toast(e.message||"خطا","err");}});
+
+  async function loadRules(){
+    try{const data=await api("/api/rules");const r=data.rules||{};
+      setSw("swLockPanel",r.lock_panel);setSw("swLockCreateUser",r.lock_create_user);setSw("swLockCreateNode",r.lock_create_node);setSw("swLockShop",r.lock_shop);
+      document.getElementById("rulesMaxUsers").value=r.max_users||0;document.getElementById("rulesMaxNodes").value=r.max_nodes||0;document.getElementById("rulesMessage").value=r.message||"";
+      toggleSub("swLockPanel","sub-panel-lock");toggleSub("swLockCreateUser","sub-create-user");toggleSub("swLockCreateNode","sub-create-node");
+    }catch(e){console.warn(e);}
+  }
+  function setSw(id,on){const el=document.getElementById(id);if(on)el.classList.add("on");else el.classList.remove("on");}
+  function toggleSub(swId,panelId){const sw=document.getElementById(swId),panel=document.getElementById(panelId);if(!panel)return;if(sw.classList.contains("on"))panel.classList.add("open");else panel.classList.remove("open");}
+  ["swLockPanel","swLockCreateUser","swLockCreateNode","swLockShop"].forEach(id=>{document.getElementById(id).addEventListener("click",function(){this.classList.toggle("on");if(id==="swLockPanel")toggleSub(id,"sub-panel-lock");if(id==="swLockCreateUser")toggleSub(id,"sub-create-user");if(id==="swLockCreateNode")toggleSub(id,"sub-create-node");});});
+  document.getElementById("btnSaveRules").addEventListener("click",async()=>{
+    const body={lock_panel:document.getElementById("swLockPanel").classList.contains("on"),lock_create_user:document.getElementById("swLockCreateUser").classList.contains("on"),lock_create_node:document.getElementById("swLockCreateNode").classList.contains("on"),lock_shop:document.getElementById("swLockShop").classList.contains("on"),max_users:Number(document.getElementById("rulesMaxUsers").value)||0,max_nodes:Number(document.getElementById("rulesMaxNodes").value)||0,message:document.getElementById("rulesMessage").value.trim()};
+    try{await api("/api/rules",{method:"POST",body:JSON.stringify(body)});toast("قوانین ذخیره شد","ok");}catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnLogout").addEventListener("click",logout);
+
+  document.getElementById("syncBtn").addEventListener("click",async function(){const btn=this;btn.textContent="در حال همگام‌سازی...";btn.disabled=true;try{await api("/api/nodes/sync",{method:"POST"});toast("همگام‌سازی شروع شد","ok");try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"sync",message:"همگام‌سازی دستی"})});}catch{}if(currentSec==="dash")await loadDashboard(true);if(currentSec==="nodes")await loadNodes();}catch(e){toast(e.message,"err");}finally{btn.textContent="همگام‌سازی";btn.disabled=false;}});
+
+  function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="settings")loadRules();}
+  function boot(){loadDashboard(true);startDashPoll();api("/api/users").then(d=>{usersCache=d.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);}).catch(()=>{});api("/api/nodes").then(d=>{document.getElementById("navNodesCount").textContent=faNum((d.managed||[]).length);}).catch(()=>{});api("/version").then(d=>{if(d&&(d.v||d.version)){const v=d.v||d.version;document.getElementById("sidebarFoot").textContent="v"+v+" · Push Mode";document.getElementById("sysVersion").textContent=v;}}).catch(()=>{});}
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&currentSec==="dash")loadDashboard(false);});
+})();
 </script>
 </body>
 </html>
