@@ -4,7 +4,7 @@
  * فروش + اطلاع‌رسانی + پروکسی ساب تست
  * Bindings: BOT_TOKEN, MOTHER_URL, MOTHER_SECRET, ADMIN_CHAT_ID (optional)
  */
-const VERSION = "1.2.0-tg";
+const VERSION = "1.2.1-tg";
 
 async function tg(token, method, body, isForm) {
   const opts = { method: "POST" };
@@ -215,21 +215,37 @@ async function showShop(token, chatId, env, settings, msgId) {
     if (!cats[c]) cats[c] = [];
     cats[c].push(p);
   }
-  let text = `🛒 <b>فروشگاه</b>\nیک پلن انتخاب کنید:\n`;
-  const kb = [];
-  for (const [cat, list] of Object.entries(cats)) {
-    text += `\n<b>📁 ${esc(cat)}</b>\n`;
-    for (const p of list) {
-      const price = fa(Number(p.price) || 0);
-      kb.push([
-        {
-          text: `${p.name} · ${price} تومان · ${fa(p.days || 30)}روز`,
-          callback_data: `buy:${p.id}`,
-        },
-      ]);
-    }
+  const catNames = Object.keys(cats);
+  // اگر فقط یک دسته است مستقیم پلن‌ها
+  if (catNames.length === 1) {
+    return showShopCategory(token, chatId, env, settings, msgId, catNames[0], cats[catNames[0]]);
   }
+  let text = `🛒 <b>فروشگاه</b>\n\nیک <b>دسته‌بندی</b> انتخاب کنید:`;
+  const kb = catNames.map((c) => [
+    { text: `📁 ${c} (${fa(cats[c].length)})`, callback_data: `cat:${encodeURIComponent(c)}` },
+  ]);
   kb.push([{ text: "🔙 منو", callback_data: "user_home" }]);
+  return msgId ? edit(token, chatId, msgId, text, kb) : send(token, chatId, text, kb);
+}
+
+async function showShopCategory(token, chatId, env, settings, msgId, catName, list) {
+  if (!list) {
+    const data = await motherApi(env, "/api/shop/plans?enabled=1");
+    const plans = data.plans || [];
+    list = plans.filter((p) => ((p.category || "عمومی").trim() || "عمومی") === catName);
+  }
+  let text = `📁 <b>${esc(catName)}</b>\nیک پلن انتخاب کنید:`;
+  const kb = [];
+  for (const p of list) {
+    const price = fa(String(Math.round(Number(p.price) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+    kb.push([
+      {
+        text: `${p.name} · ${price} تومان · ${fa(p.days || 30)}روز`,
+        callback_data: `buy:${p.id}`,
+      },
+    ]);
+  }
+  kb.push([{ text: "🔙 دسته‌ها", callback_data: "user_shop" }]);
   return msgId ? edit(token, chatId, msgId, text, kb) : send(token, chatId, text, kb);
 }
 
@@ -241,12 +257,12 @@ async function showBuyInfo(token, chatId, env, planId, settings, msgId, userId) 
   }
   const card = settings.shop_card_number || "—";
   const holder = settings.shop_card_holder || "—";
-  const price = fa(Number(plan.price) || 0);
+  const price = fa(String(Math.round(Number(plan.price) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ",")) + " تومان";
   let text =
     `💳 <b>پرداخت پلن ${esc(plan.name)}</b>\n\n` +
     `📅 ${fa(plan.days || 30)} روز · 📦 ${fa(plan.quota_gb || 0)} GB\n` +
     `📱 محدودیت IP: ${fa(plan.ip_limit || 1)}\n` +
-    `💰 مبلغ: <b>${price} تومان</b>\n\n` +
+    `💰 مبلغ: <b>${price}</b>\n\n` +
     `به کارت زیر واریز کنید:\n` +
     `🏦 <code>${esc(card)}</code>\n` +
     `👤 ${esc(holder)}\n\n` +
@@ -446,6 +462,10 @@ async function handleCallback(env, cq) {
     ]);
   }
 
+  if (data.startsWith("cat:")) {
+    const catName = decodeURIComponent(data.slice(4));
+    return showShopCategory(token, chatId, env, settings, msgId, catName, null);
+  }
   if (data.startsWith("buy:")) {
     return showBuyInfo(token, chatId, env, data.slice(4), settings, msgId, fromId);
   }
