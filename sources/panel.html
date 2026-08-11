@@ -231,43 +231,91 @@ td.row-actions::before{display:none}
 .search input{width:100%;flex:1}
 }
   
-.stat{position:relative;overflow:hidden}
-.stat-pct-bar{position:relative;height:5px;background:rgba(255,255,255,.06);border-radius:3px;margin-top:10px;overflow:hidden}
-.stat-pct-bar>i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#22c55e,#7dd3fc);transition:width .8s cubic-bezier(.16,1,.3,1);position:relative}
-.stat-pct-bar>i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:barShine 2.2s ease-in-out infinite}
-.stat.health-ok .stat-pct-bar>i{background:linear-gradient(90deg,#16a34a,#4ade80)}
-.stat.health-warn .stat-pct-bar>i{background:linear-gradient(90deg,#d97706,#fbbf24)}
-.stat.health-bad .stat-pct-bar>i{background:linear-gradient(90deg,#dc2626,#f87171)}
-.stat.health-ok{box-shadow:inset 0 0 0 1px rgba(74,222,128,.12)}
-.stat.health-warn{box-shadow:inset 0 0 0 1px rgba(251,191,36,.14)}
-.stat.health-bad{box-shadow:inset 0 0 0 1px rgba(248,113,113,.16)}
-@keyframes barShine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-.logs-filters{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr auto;gap:10px;padding:4px 16px 14px;align-items:end}
-.logs-filters .lf-field{display:flex;flex-direction:column;gap:5px;min-width:0}
-.logs-filters label{font-size:11.5px;color:var(--text-muted)}
-.logs-filters input,.logs-filters select{
-  width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:8px;
-  color:var(--text);font-size:13px;font-family:inherit;outline:none
+
+/* stats bars — smooth, no stutter */
+.stat{position:relative}
+.stat-pct-bar{height:4px;background:rgba(255,255,255,.07);border-radius:99px;margin-top:12px;overflow:hidden}
+.stat-pct-bar>i{
+  display:block;height:100%;width:0%;border-radius:99px;
+  background:var(--accent);
+  transition:width .55s cubic-bezier(.22,1,.36,1), background-color .35s ease;
+  will-change:width;
 }
-.logs-filters input:focus{border-color:rgba(125,211,252,.4)}
-@media(max-width:900px){
-  .logs-filters{grid-template-columns:1fr 1fr}
+.stat.health-ok .stat-pct-bar>i{background:#4ade80}
+.stat.health-warn .stat-pct-bar>i{background:#fbbf24}
+.stat.health-bad .stat-pct-bar>i{background:#f87171}
+.stat.health-ok{box-shadow:inset 0 0 0 1px rgba(74,222,128,.1)}
+.stat.health-warn{box-shadow:inset 0 0 0 1px rgba(251,191,36,.12)}
+.stat.health-bad{box-shadow:inset 0 0 0 1px rgba(248,113,113,.14)}
+
+/* YouTube-style log search */
+.ylog-bar{display:flex;gap:10px;align-items:center;padding:4px 16px 12px;flex-wrap:wrap}
+.ylog-search{
+  flex:1;min-width:160px;display:flex;align-items:center;gap:8px;
+  background:var(--bg);border:1px solid var(--border);border-radius:24px;padding:8px 14px;
+  transition:border-color .15s,box-shadow .15s
 }
-@media(max-width:768px){
-  .logs-filters{grid-template-columns:1fr}
-  /* دکمه جزئیات لاگ روبه‌روی کاربر */
-  #logsBody tr,#activityBody tr{display:grid;grid-template-columns:1fr auto;grid-template-areas:"user act" "event event" "msg msg" "node node" "time time";gap:6px 10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04)}
-  #logsBody td,#activityBody td{border:none;padding:0}
-  #logsBody td[data-label="کاربر"],#activityBody td[data-label="کاربر"]{grid-area:user}
-  #logsBody td.row-actions,#activityBody td.row-actions{grid-area:act;justify-self:end;align-self:start}
-  #logsBody td[data-label="رویداد"],#activityBody td[data-label="رویداد"]{grid-area:event}
-  #logsBody td[data-label="پیام"]{grid-area:msg}
-  #logsBody td[data-label="نود"],#activityBody td[data-label="نود"]{grid-area:node}
-  #logsBody td[data-label="زمان"],#activityBody td[data-label="زمان"]{grid-area:time}
+.ylog-search:focus-within{border-color:rgba(125,211,252,.45);box-shadow:0 0 0 3px rgba(125,211,252,.08)}
+.ylog-search svg{width:16px;height:16px;color:var(--text-muted);flex-shrink:0}
+.ylog-search input{flex:1;border:none;background:transparent;outline:none;color:var(--text);font-size:13.5px;font-family:inherit;min-width:0}
+.ylog-filter-btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;
+  border:1px solid var(--border);background:var(--bg-card);color:var(--text-secondary);
+  font-size:13px;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap
 }
+.ylog-filter-btn:hover{border-color:var(--border-hover);color:var(--text)}
+.ylog-filter-btn.active{border-color:rgba(125,211,252,.4);color:var(--accent);background:var(--accent-dim)}
+.ylog-filter-btn .badge-count{
+  min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:#0a0a0a;
+  font-size:11px;font-weight:600;display:inline-grid;place-items:center
+}
+.ylog-panel{
+  display:none;margin:0 16px 14px;padding:14px 16px;background:var(--bg);
+  border:1px solid var(--border);border-radius:12px;animation:fade .2s ease
+}
+.ylog-panel.open{display:block}
+.ylog-group{margin-bottom:14px}
+.ylog-group:last-child{margin-bottom:0}
+.ylog-group-title{font-size:11.5px;color:var(--text-muted);margin-bottom:8px;font-weight:500}
+.ylog-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ylog-chip{
+  padding:6px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;
+  color:var(--text-secondary);font-size:12.5px;font-family:inherit;cursor:pointer;transition:all .15s
+}
+.ylog-chip:hover{border-color:var(--border-hover);color:var(--text)}
+.ylog-chip.on{background:var(--accent-dim);border-color:rgba(125,211,252,.35);color:var(--accent);font-weight:500}
+.ylog-extra{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:4px}
+.ylog-extra input{
+  width:100%;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);
+  border-radius:8px;color:var(--text);font-size:12.5px;font-family:inherit;outline:none
+}
+.ylog-extra input:focus{border-color:rgba(125,211,252,.4)}
+@media(max-width:700px){
+  .ylog-extra{grid-template-columns:1fr}
+  .ylog-bar{padding:4px 12px 10px}
+  .ylog-panel{margin:0 12px 12px}
+}
+
 .req-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.05)}
 .req-pill .mini-bar{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
-.req-pill .mini-bar>i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.req-pill .mini-bar>i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
+
+/* mobile table fix — nodes & users */
+@media(max-width:768px){
+  .table-wrap{overflow:visible}
+  .card .table-wrap{margin:0}
+  tbody tr{overflow:visible}
+  td{flex-wrap:wrap;word-break:break-word;max-width:100%}
+  td code{word-break:break-all}
+  td .badge{flex-shrink:0}
+  td.row-actions{flex-wrap:wrap;gap:6px}
+  /* logs: info button beside user */
+  #logsBody tr,#activityBody tr{position:relative}
+  #logsBody td[data-label="کاربر"],#activityBody td[data-label="کاربر"]{padding-left:36px}
+  #logsBody td.row-actions,#activityBody td.row-actions{
+    position:absolute;top:12px;left:12px;margin:0;padding:0;border:none;width:auto
+  }
+}
 
 </style>
 </head>
@@ -408,35 +456,39 @@ td.row-actions::before{display:none}
           <h3>لاگ‌های سیستم</h3>
           <button class="btn btn-sm" type="button" id="btnRefreshLogs">بروزرسانی</button>
         </div>
-        <div class="logs-filters">
-          <div class="lf-field">
-            <label>جستجو در پیام / IP / همه</label>
-            <input type="search" id="logSearch" placeholder="متن پیام، IP، UA ...">
+        <div class="ylog-bar">
+          <div class="ylog-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            <input type="search" id="logSearch" placeholder="جستجو در لاگ‌ها..." autocomplete="off">
           </div>
-          <div class="lf-field">
-            <label>کاربر (نام یا id)</label>
-            <input type="search" id="logUserFilter" placeholder="مثلاً u1">
-          </div>
-          <div class="lf-field">
-            <label>از زمان</label>
-            <input type="datetime-local" id="logFrom">
-          </div>
-          <div class="lf-field">
-            <label>تا زمان</label>
-            <input type="datetime-local" id="logTo">
-          </div>
-          <div class="lf-field">
-            <label>نوع رویداد</label>
-            <div class="cselect" id="cselectLogType" data-input="logTypeFilter">
-              <input type="hidden" id="logTypeFilter" value="" />
-              <button type="button" class="cselect-trigger" aria-haspopup="listbox">
-                <span class="cselect-label">همه انواع</span>
-                <span class="cselect-chevron"><svg viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1.5L6 6.5L11 1.5"/></svg></span>
-              </button>
-              <div class="cselect-backdrop"></div>
-              <div class="cselect-panel" role="listbox"></div>
+          <button type="button" class="ylog-filter-btn" id="ylogFilterBtn">
+            فیلترها
+            <span class="badge-count" id="ylogFilterCount" style="display:none">0</span>
+          </button>
+        </div>
+        <div class="ylog-panel" id="ylogPanel">
+          <div class="ylog-group">
+            <div class="ylog-group-title">نوع رویداد</div>
+            <div class="ylog-chips" id="ylogTypeChips">
+              <button type="button" class="ylog-chip on" data-type="">همه</button>
             </div>
           </div>
+          <div class="ylog-group">
+            <div class="ylog-group-title">بازه زمانی</div>
+            <div class="ylog-chips" id="ylogTimeChips">
+              <button type="button" class="ylog-chip on" data-range="">همه</button>
+              <button type="button" class="ylog-chip" data-range="1h">۱ ساعت</button>
+              <button type="button" class="ylog-chip" data-range="24h">۲۴ ساعت</button>
+              <button type="button" class="ylog-chip" data-range="7d">۷ روز</button>
+              <button type="button" class="ylog-chip" data-range="custom">سفارشی</button>
+            </div>
+          </div>
+          <div class="ylog-extra" id="ylogExtra" style="display:none">
+            <input type="search" id="logUserFilter" placeholder="فیلتر کاربر (نام یا id)">
+            <input type="datetime-local" id="logFrom">
+            <input type="datetime-local" id="logTo">
+          </div>
+          <input type="hidden" id="logTypeFilter" value="">
         </div>
         <div class="table-wrap"><table>
           <thead><tr><th>کاربر</th><th>رویداد</th><th>پیام</th><th>نود</th><th>زمان</th><th></th></tr></thead>
@@ -579,7 +631,11 @@ td.row-actions::before{display:none}
     else if(+pct>=60)el.classList.add("health-warn");
     else el.classList.add("health-ok");
   }
-  function setPctBar(id,pct){const el=document.getElementById(id);if(!el)return;el.style.width=Math.max(0,Math.min(100,Number(pct)||0))+"%";}
+  function setPctBar(id,pct){
+    const el=document.getElementById(id);if(!el)return;
+    const v=Math.max(0,Math.min(100,Number(pct)||0));
+    requestAnimationFrame(()=>{ el.style.width=v+"%"; });
+  }
   function toast(msg,type){const el=document.getElementById("toast");el.textContent=msg;el.className="toast show"+(type==="err"?" err":type==="ok"?" ok":"");clearTimeout(el._t);el._t=setTimeout(()=>{el.className="toast";},2800);}
   function daysRemaining(expiry){if(!expiry)return"∞";const ms=Date.parse(expiry)-Date.now();if(!Number.isFinite(ms)||ms<=0)return faNum(0);return faNum(Math.ceil(ms/86400000));}
   function statusBadge(status){const map={active:["فعال","badge-ok"],disabled:["غیرفعال","badge-off"],expired:["منقضی","badge-off"],"quota-exceeded":["حجم تمام","badge-warn"],"daily-quota-exceeded":["روزانه تمام","badge-warn"]};const[t,c]=map[status]||[status||"—","badge-info"];return`<span class="badge ${c}">${t}</span>`;}
@@ -766,19 +822,52 @@ td.row-actions::before{display:none}
   document.getElementById("logDetailOverlay")?.addEventListener("click",e=>{if(e.target===e.currentTarget)closeLogDetail();});
 
   let logsAllCache=[];
+  let ylogRange="";
   function logSearchBlob(a){
     const meta=a.meta||{};
     return [a.type,a.message,a.user_id,a.user_name,a.node_id,meta.ip,meta.city,meta.country,meta.ua,meta.format,JSON.stringify(meta)].join(" ").toLowerCase();
+  }
+  function ylogActiveCount(){
+    let n=0;
+    if((document.getElementById("logTypeFilter")?.value||"").trim()) n++;
+    if(ylogRange) n++;
+    if((document.getElementById("logUserFilter")?.value||"").trim()) n++;
+    if(ylogRange==="custom" && document.getElementById("logFrom")?.value) n++;
+    if(ylogRange==="custom" && document.getElementById("logTo")?.value) n++;
+    return n;
+  }
+  function updateYlogBadge(){
+    const c=ylogActiveCount();
+    const el=document.getElementById("ylogFilterCount");
+    const btn=document.getElementById("ylogFilterBtn");
+    if(el){el.style.display=c?"":"none";el.textContent=String(c);}
+    if(btn)btn.classList.toggle("active", !!c || document.getElementById("ylogPanel")?.classList.contains("open"));
   }
   function applyLogsFilter(){
     const tbody=document.getElementById("logsBody");
     if(!tbody)return;
     const q=(document.getElementById("logSearch")?.value||"").trim().toLowerCase();
+    const userQ=(document.getElementById("logUserFilter")?.value||"").trim().toLowerCase();
     const type=(document.getElementById("logTypeFilter")?.value||"").trim();
+    let fromTs=null,toTs=null;
+    const now=Date.now();
+    if(ylogRange==="1h") fromTs=now-3600000;
+    else if(ylogRange==="24h") fromTs=now-86400000;
+    else if(ylogRange==="7d") fromTs=now-7*86400000;
+    else if(ylogRange==="custom"){
+      const fromV=document.getElementById("logFrom")?.value;
+      const toV=document.getElementById("logTo")?.value;
+      if(fromV) fromTs=new Date(fromV).getTime();
+      if(toV) toTs=new Date(toV).getTime();
+    }
     let list=logsAllCache.slice();
     if(type) list=list.filter(a=>String(a.type)===type);
+    if(userQ) list=list.filter(a=>((a.user_name||"")+" "+(a.user_id||"")).toLowerCase().includes(userQ));
     if(q) list=list.filter(a=>logSearchBlob(a).includes(q));
+    if(fromTs&&Number.isFinite(fromTs)) list=list.filter(a=>Number(a.ts)>=fromTs);
+    if(toTs&&Number.isFinite(toTs)) list=list.filter(a=>Number(a.ts)<=toTs);
     activityCache=list;
+    updateYlogBadge();
     if(!list.length){
       tbody.innerHTML='<tr><td colspan="6" class="empty-msg">موردی با این فیلتر پیدا نشد</td></tr>';
       return;
@@ -800,34 +889,66 @@ td.row-actions::before{display:none}
       btn.addEventListener("click",()=>openLogDetail(Number(btn.dataset.logid)));
     });
   }
+  function buildTypeChips(types){
+    const box=document.getElementById("ylogTypeChips");
+    if(!box)return;
+    const cur=(document.getElementById("logTypeFilter")?.value||"");
+    let html=`<button type="button" class="ylog-chip${!cur?" on":""}" data-type="">همه</button>`;
+    for(const t of types){
+      const[lab]=activityLabel(t);
+      html+=`<button type="button" class="ylog-chip${cur===t?" on":""}" data-type="${esc(t)}">${esc(lab)}</button>`;
+    }
+    box.innerHTML=html;
+    box.querySelectorAll(".ylog-chip").forEach(ch=>{
+      ch.addEventListener("click",()=>{
+        box.querySelectorAll(".ylog-chip").forEach(c=>c.classList.remove("on"));
+        ch.classList.add("on");
+        const inp=document.getElementById("logTypeFilter");
+        if(inp) inp.value=ch.dataset.type||"";
+        applyLogsFilter();
+      });
+    });
+  }
   async function loadLogs(){
     const tbody=document.getElementById("logsBody");
     if(tbody)tbody.innerHTML='<tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr>';
     try{
       const data=await api("/api/activity?limit=300");
       logsAllCache=data.activity||[];
-      // پر کردن فیلتر نوع
       const types=Array.from(new Set(logsAllCache.map(a=>a.type).filter(Boolean))).sort();
-      const typeOpts=[["","همه انواع"],...types.map(t=>{
-        const[lab]=activityLabel(t);
-        return [t, lab+" ("+t+")"];
-      })];
-      const root=document.getElementById("cselectLogType");
-      if(root){
-        bindCSelect(root);
-        const cur=document.getElementById("logTypeFilter")?.value||"";
-        populateCSelect(root, typeOpts, cur);
-        // وقتی نوع عوض شد فیلتر کن
-        root.querySelectorAll(".cselect-option").forEach(opt=>{
-          opt.addEventListener("click",()=>setTimeout(applyLogsFilter,0));
-        });
-      }
+      buildTypeChips(types);
       applyLogsFilter();
     }catch(e){if(tbody)tbody.innerHTML=`<tr><td colspan="6" class="empty-msg">${esc(e.message)}</td></tr>`;}
   }
   document.getElementById("btnRefreshLogs")?.addEventListener("click",()=>loadLogs());
   document.getElementById("logSearch")?.addEventListener("input",()=>applyLogsFilter());
-
+  document.getElementById("logUserFilter")?.addEventListener("input",()=>applyLogsFilter());
+  document.getElementById("logFrom")?.addEventListener("change",()=>applyLogsFilter());
+  document.getElementById("logTo")?.addEventListener("change",()=>applyLogsFilter());
+  document.getElementById("ylogFilterBtn")?.addEventListener("click",()=>{
+    const panel=document.getElementById("ylogPanel");
+    if(!panel)return;
+    panel.classList.toggle("open");
+    updateYlogBadge();
+  });
+  document.getElementById("ylogTimeChips")?.querySelectorAll(".ylog-chip").forEach(ch=>{
+    ch.addEventListener("click",()=>{
+      document.getElementById("ylogTimeChips").querySelectorAll(".ylog-chip").forEach(c=>c.classList.remove("on"));
+      ch.classList.add("on");
+      ylogRange=ch.dataset.range||"";
+      const extra=document.getElementById("ylogExtra");
+      if(extra) extra.style.display = (ylogRange==="custom") ? "" : (extra.querySelector("#logUserFilter") ? "" : "none");
+      // user field always useful — show extra when custom OR keep user visible
+      if(extra){
+        extra.style.display="";
+        const from=document.getElementById("logFrom");
+        const to=document.getElementById("logTo");
+        if(from) from.style.display = ylogRange==="custom" ? "" : "none";
+        if(to) to.style.display = ylogRange==="custom" ? "" : "none";
+      }
+      applyLogsFilter();
+    });
+  });
 
   function renderUsers(list){
     const q=(document.getElementById("userSearch").value||"").trim().toLowerCase();
