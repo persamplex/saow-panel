@@ -540,19 +540,28 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     }
 
     async function testIp(ip, timeoutMs) {
-      const url = "https://" + ip + ":2096/__down";
       const start = performance.now();
-      const controller = new AbortController();
-      const tid = setTimeout(function () { controller.abort(); }, timeoutMs);
-      let ok = false;
-      try {
-        await fetch(url, { signal: controller.signal, mode: "no-cors", cache: "no-store" });
-        ok = true;
-      } catch (e) {
-        if (e && e.name !== "AbortError") ok = true;
+      async function probe(url, ms) {
+        const controller = new AbortController();
+        const tid = setTimeout(function () { controller.abort(); }, ms);
+        try {
+          await fetch(url, { signal: controller.signal, mode: "no-cors", cache: "no-store", redirect: "manual" });
+          clearTimeout(tid);
+          return true;
+        } catch (e) {
+          clearTimeout(tid);
+          // AbortError = timeout = fail; other errors can mean TLS reached host
+          return !!(e && e.name && e.name !== "AbortError");
+        }
       }
-      clearTimeout(tid);
-      return { ip: ip, ok: ok, latency: Math.round(performance.now() - start) };
+      // دو پروب: پورت 443 استاندارد CF و 2096
+      const t1 = Math.min(timeoutMs, 1200);
+      const a = await probe("https://" + ip + "/cdn-cgi/trace", t1);
+      if (!a) return { ip: ip, ok: false, latency: Math.round(performance.now() - start) };
+      const b = await probe("https://" + ip + ":2096/__down", Math.min(timeoutMs, 900));
+      const latency = Math.round(performance.now() - start);
+      // فقط اگر هر دو در زمان معقول جواب دادند
+      return { ip: ip, ok: !!(a && b), latency: latency };
     }
 
     function setScanUi(text, pct) {
