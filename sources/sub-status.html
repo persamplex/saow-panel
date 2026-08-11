@@ -225,6 +225,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
   </div>
   <div class="toast" id="toast"></div>
   <script>
+try {
   (function () {
     const DATA = window.__SAOW_SUB__ || {};
     // دیباگ هدرهای درخواست Worker — در DevTools → Console ببینید
@@ -444,15 +445,15 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       btn.disabled = true;
       btn.textContent = "…";
       try {
-        const res = await fetch(fullUrl, { cache: "no-store" });
+        const res = await fetch(fullUrl, { cache: "no-store", headers: { "Accept": "application/json" } });
         if (!res.ok) throw new Error("HTTP " + res.status);
         const text = await res.text();
-        // اطمینان از JSON
+        if (/^\s*</.test(text)) throw new Error("HTML instead of JSON");
         JSON.parse(text);
         await navigator.clipboard.writeText(text);
         toast("JSON کانفیگ کپی شد");
       } catch (e) {
-        toast("کپی JSON ناموفق");
+        toast("کپی JSON ناموفق — مادر را آپدیت کنید");
         console.warn(e);
       }
       btn.disabled = false;
@@ -720,6 +721,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 
     document.getElementById("btnScan").addEventListener("click", startScan);
   })();
-  </script>
+  } catch(e){ console.error('[SAOW] boot', e); document.body&&(document.body.innerHTML='<pre style="color:#f87171;padding:2rem;font-family:sans-serif">خطای بارگذاری صفحه ساب\n'+e+'</pre>'); }
+</script>
 </body>
 </html>
