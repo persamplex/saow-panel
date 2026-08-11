@@ -47,6 +47,27 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 .foot{text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--bg-elevated);border:1px solid var(--border);padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.special-note{font-size:12px;color:var(--text-muted);line-height:1.65;margin:-4px 0 12px}
+.special-note strong{color:var(--accent);font-weight:500}
+.info-btn{
+  width:26px;height:26px;border-radius:50%;border:1px solid rgba(251,191,36,.4);
+  background:rgba(251,191,36,.12);color:var(--warning);font-weight:700;font-size:13px;
+  cursor:pointer;font-family:inherit;line-height:1;
+}
+.info-btn:hover{background:rgba(251,191,36,.22)}
+.info-modal{
+  display:none;position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);
+  align-items:center;justify-content:center;padding:20px;
+}
+.info-modal.open{display:flex}
+.info-modal-box{
+  background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;
+  padding:18px 18px 14px;max-width:360px;width:100%;max-height:80vh;overflow-y:auto;
+}
+.info-modal-box h3{font-size:15px;margin-bottom:12px;font-weight:600}
+.info-modal-box ul{padding-right:18px;margin:0 0 14px;font-size:13px;color:var(--text-secondary);line-height:1.75}
+.info-modal-box li{margin-bottom:6px}
+
 .btn-scan{
   width:100%;padding:14px 16px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;
   font-size:14.5px;font-weight:600;color:#041018;
@@ -58,6 +79,11 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 }
 .btn-scan:hover{filter:brightness(1.08);transform:translateY(-1px)}
 .btn-scan:active{transform:scale(.98)}
+.btn-scan.stopping{
+  background:linear-gradient(135deg,#f87171,#fb923c)!important;
+  color:#1a0505!important;
+  animation:scanPulse 1.2s ease-in-out infinite;
+}
 @keyframes scanPulse{
   0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,.4),0 8px 28px rgba(99,102,241,.3)}
   50%{box-shadow:0 0 0 10px rgba(56,189,248,0),0 10px 32px rgba(99,102,241,.45)}
@@ -152,6 +178,22 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       </div>
     </div>
 
+    <div class="card" id="specialCard">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span>کانفیگ ویژه v2rayNG / v2rayN</span>
+        <button type="button" class="info-btn" id="btnSpecialInfo" title="توضیحات">!</button>
+      </div>
+      <p class="special-note">این کانفیگ فقط روی <strong>v2rayNG</strong> و <strong>v2rayN</strong> درست کار می‌کند (JSON کامل با مسیریابی).</p>
+      <div class="actions">
+        <button type="button" class="btn btn-primary" id="btnCopyFull">کپی آدرس کانفیگ</button>
+        <a class="btn" id="btnOpenFull" href="#" target="_blank" rel="noopener">دانلود JSON</a>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <a class="btn" id="btnV2rayFull" href="#">ورود به v2rayNG</a>
+        <button type="button" class="btn" id="btnCopyFullJson">کپی محتوای JSON</button>
+      </div>
+    </div>
+
     <div class="card" id="linksCard" style="display:none">
       <div class="card-title">لینک‌های اتصال</div>
       <div class="links" id="linksList"></div>
@@ -168,6 +210,20 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     </div>
   </div>
 
+  <div class="info-modal" id="infoModal">
+    <div class="info-modal-box">
+      <h3>قابلیت‌های کانفیگ ویژه</h3>
+      <ul>
+        <li><strong>دسترسی به بانک و سایت‌های ایرانی</strong> همزمان با روشن بودن فیلترشکن (مسیر مستقیم برای IP و دامنه ایران)</li>
+        <li><strong>لودبالانس</strong> بین چند سرور — همیشه بهترین مسیر انتخاب می‌شود</li>
+        <li><strong>چندین کانفیگ در یک پروفایل</strong> با observatory و leastPing</li>
+        <li><strong>بهینه‌سازی سرعت</strong> با چند IP تمیز و fingerprint متنوع</li>
+        <li>مسدودسازی ترافیک تورنت و جداسازی DNS</li>
+      </ul>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">این فایل JSON کامل Xray است و اپ‌های ساده‌تر (مثل بعضی کلاینت‌های فقط-لینک) آن را به‌درستی نمی‌خوانند.</p>
+      <button type="button" class="btn" id="infoModalClose" style="width:100%">متوجه شدم</button>
+    </div>
+  </div>
   <div class="toast" id="toast"></div>
   <script>
   (function () {
@@ -201,7 +257,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     const stEl = document.getElementById("status");
     stEl.textContent = st.lab;
     stEl.className = "badge " + st.cls;
-    document.getElementById("expiry").textContent = DATA.expiryText || "∞";
+    document.getElementById("expiry").textContent = fa(DATA.expiryText || "∞");
     document.getElementById("ips").textContent = fa(DATA.activeIPs ?? 0) + " / " + fa(DATA.ipLimit ?? 1);
     document.getElementById("clientIp").textContent = DATA.clientIP || "—";
     const locParts = [DATA.city, DATA.region, DATA.country].filter(Boolean);
@@ -224,6 +280,29 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     document.getElementById("btnStreisand").href = "streisand://import/" + encodeURIComponent(subUrl);
     document.getElementById("btnCopy").addEventListener("click", () => {
       navigator.clipboard.writeText(subUrl).then(() => toast("لینک کپی شد")).catch(() => toast("کپی نشد"));
+    });
+    const fullUrl = DATA.fullJsonUrl || (subUrl + (subUrl.indexOf("?") >= 0 ? "&" : "?") + "format=full");
+    document.getElementById("btnOpenFull").href = fullUrl;
+    document.getElementById("btnV2rayFull").href = "v2rayng://install-config?url=" + encodeURIComponent(fullUrl);
+    document.getElementById("btnCopyFull").addEventListener("click", () => {
+      navigator.clipboard.writeText(fullUrl).then(() => toast("آدرس کانفیگ ویژه کپی شد")).catch(() => toast("کپی نشد"));
+    });
+    document.getElementById("btnCopyFullJson").addEventListener("click", async () => {
+      try {
+        const r = await fetch(fullUrl);
+        const t = await r.text();
+        await navigator.clipboard.writeText(t);
+        toast("JSON کپی شد");
+      } catch (e) { toast("دریافت JSON ناموفق"); }
+    });
+    document.getElementById("btnSpecialInfo").addEventListener("click", () => {
+      document.getElementById("infoModal").classList.add("open");
+    });
+    document.getElementById("infoModalClose").addEventListener("click", () => {
+      document.getElementById("infoModal").classList.remove("open");
+    });
+    document.getElementById("infoModal").addEventListener("click", (e) => {
+      if (e.target.id === "infoModal") document.getElementById("infoModal").classList.remove("open");
     });
     if (DATA.version) document.getElementById("footVer").textContent = "v" + DATA.version;
     const links = Array.isArray(DATA.links) ? DATA.links : [];
@@ -248,9 +327,10 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       "141.101.64.0/18","103.21.244.0/22","103.22.200.0/22","103.31.4.0/22",
       "108.162.192.0/18","131.0.72.0/22","173.245.48.0/20"
     ];
-    const THRESHOLDS = [450, 400, 300, 200, 150];
-    const MAX_TRY = 200;
+    const THRESHOLDS = [450, 400, 350, 300, 250, 200, 150];
+    const MAX_TRY = 400;
     let scanning = false;
+    let abortScan = false;
 
     function parseVless(link) {
       try {
@@ -384,7 +464,11 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     }
 
     async function startScan() {
-      if (scanning) return;
+      if (scanning) {
+        abortScan = true;
+        setScanUi("در حال توقف…", null);
+        return;
+      }
       const raw = links.length
         ? (typeof links[0] === "string" ? links[0] : (links[0].link || links[0].url || ""))
         : "";
@@ -395,9 +479,11 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
         return;
       }
       scanning = true;
+      abortScan = false;
       const btn = document.getElementById("btnScan");
-      btn.disabled = true;
-      btn.textContent = "در حال بررسی…";
+      btn.disabled = false;
+      btn.textContent = "قطع بررسی";
+      btn.classList.add("stopping");
       document.getElementById("scanResults").innerHTML = "";
       setScanUi("در حال تست…", 3);
 
@@ -408,12 +494,13 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       let tried = 0;
 
       for (let step = 0; step < THRESHOLDS.length; step++) {
+        if (abortScan) break;
         const limit = THRESHOLDS[step];
         const timeout = Math.min(1400, Math.max(350, limit * 1.5));
         setScanUi("پله " + fa(step + 1) + " · سقف " + fa(limit) + "ms", (step / THRESHOLDS.length) * 100);
         let got = null;
         const CONC = 6;
-        while (poolIdx < pool.length && !got) {
+        while (poolIdx < pool.length && !got && !abortScan) {
           const batch = pool.slice(poolIdx, poolIdx + CONC);
           poolIdx += CONC;
           const results = await Promise.all(batch.map(function (ip) { return testIp(ip, timeout); }));
@@ -438,7 +525,13 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
         }
       }
 
-      if (found.length) {
+      if (abortScan) {
+        if (found.length) {
+          renderFound(found, base);
+          setScanUi("متوقف شد · " + fa(found.length) + " کانفیگ", 100);
+        } else setScanUi("متوقف شد", 0);
+        toast("بررسی قطع شد");
+      } else if (found.length) {
         renderFound(found, base);
         setScanUi(fa(found.length) + " کانفیگ آماده", 100);
         toast(found.length + " کانفیگ آماده شد");
@@ -448,7 +541,9 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       }
       btn.disabled = false;
       btn.textContent = "بررسی اینترنت من";
+      btn.classList.remove("stopping");
       scanning = false;
+      abortScan = false;
     }
 
     document.getElementById("btnScan").addEventListener("click", startScan);
