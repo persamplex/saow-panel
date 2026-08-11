@@ -13,13 +13,14 @@
   <style>
 :root{--bg:#050505;--bg-elevated:#0c0c0e;--bg-card:#111113;--border:rgba(255,255,255,.06);--border-hover:rgba(255,255,255,.12);--text:#f4f4f5;--text-secondary:#a1a1aa;--text-muted:#71717a;--accent:#7dd3fc;--accent-dim:rgba(125,211,252,.12);--success:#4ade80;--warning:#fbbf24;--danger:#f87171;--sidebar-w:240px;--radius:12px;--radius-lg:16px}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased;scrollbar-width:none}
+html{width:100%;max-width:100%;overflow-x:hidden}
+body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased;scrollbar-width:none;width:100%;max-width:100vw;overflow-x:hidden}
 body::-webkit-scrollbar,*::-webkit-scrollbar{display:none}
 *{scrollbar-width:none;font-family:inherit}
 input,button,select,textarea{font-family:inherit}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 input[type=number]{-moz-appearance:textfield;appearance:textfield}
-.app{display:flex;min-height:100vh}
+.app{display:flex;min-height:100vh;width:100%;max-width:100vw;overflow-x:hidden}
 .sidebar{width:var(--sidebar-w);background:var(--bg-elevated);border-left:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;right:0;height:100vh;z-index:50;transition:transform .3s cubic-bezier(.16,1,.3,1)}
 .brand{padding:28px 20px 24px;display:flex;align-items:center;gap:12px}
 .brand-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:grid;place-items:center;font-weight:700;font-size:15px;color:#fff}
@@ -212,42 +213,71 @@ code{font-family:ui-monospace,monospace;font-size:12.5px;background:rgba(255,255
 @media(max-width:768px){
 .sidebar{transform:translateX(100%);box-shadow:-8px 0 30px rgba(0,0,0,.5)}
 .sidebar.open{transform:translateX(0)}
-.main{margin-right:0;padding:14px 12px 40px}
+.main{margin-right:0;padding:14px 12px 40px;width:100%;max-width:100%;overflow-x:hidden}
 .burger{display:grid}
 .actions .btn-ghost{display:none}
 .stats{grid-template-columns:1fr 1fr;gap:10px}
 #iranMapContainer{height:300px!important}
-.table-scroll{overflow-x:visible}
-table,thead,tbody,th,td,tr{display:block}
+.card{max-width:100%;overflow:hidden}
+.card-header{flex-wrap:wrap;gap:8px;padding:14px 14px}
+.table-scroll,.table-wrap{overflow-x:hidden!important;width:100%;max-width:100%}
+table{width:100%;max-width:100%}
+table,thead,tbody,th,td,tr{display:block;width:100%;max-width:100%}
 thead{display:none}
-tbody tr{background:var(--bg);border:1px solid var(--border);border-radius:12px;margin:0 12px 10px;padding:12px 14px}
-td{padding:6px 0;border:none;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
-td::before{content:attr(data-label);color:var(--text-muted);font-size:12px;flex-shrink:0}
+tbody tr{
+  background:var(--bg);border:1px solid var(--border);border-radius:12px;
+  margin:0 0 10px;padding:12px 14px;overflow:hidden;width:100%;max-width:100%;
+  box-sizing:border-box;
+}
+td{
+  padding:7px 0;border:none;display:flex;justify-content:space-between;align-items:center;
+  gap:12px;font-size:13px;width:100%;max-width:100%;min-width:0;overflow:hidden;
+}
+td::before{content:attr(data-label);color:var(--text-muted);font-size:12px;flex-shrink:0;max-width:38%}
+td:not(.row-actions):not(.user-cell) > *:not(br){
+  max-width:58%;min-width:0;overflow:hidden;text-overflow:ellipsis;text-align:left;
+}
 td.user-cell{display:block;padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid var(--border)}
 td.user-cell::before{display:none}
-td.row-actions{justify-content:flex-end;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)}
+td.row-actions{justify-content:flex-end;padding-top:10px;margin-top:6px;border-top:1px solid var(--border);flex-wrap:wrap}
 td.row-actions::before{display:none}
 .search{width:100%}
 .search input{width:100%;flex:1}
+.ylog-bar{padding:4px 12px 12px;max-width:100%}
+.ylog-panel{margin:0 12px 14px;max-width:calc(100% - 24px)}
+.page-title{font-size:18px}
+.topbar{margin-bottom:18px}
 }
   
 
-/* stats bars — smooth, no stutter */
-.stat{position:relative}
-.stat-pct-bar{height:4px;background:rgba(255,255,255,.07);border-radius:99px;margin-top:12px;overflow:hidden}
+/* stats bars — smooth fill */
+.stat{position:relative;overflow:hidden}
+.stat-value{transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s ease}
+.stat-value.bump{animation:statBump .45s cubic-bezier(.22,1,.36,1)}
+@keyframes statBump{
+  0%{transform:translateY(4px);opacity:.35}
+  100%{transform:translateY(0);opacity:1}
+}
+.stat-pct-bar{height:5px;background:rgba(255,255,255,.07);border-radius:99px;margin-top:12px;overflow:hidden}
 .stat-pct-bar>i{
   display:block;height:100%;width:0%;border-radius:99px;
-  background:var(--accent);
-  transition:width .55s cubic-bezier(.22,1,.36,1), background-color .35s ease;
+  background:linear-gradient(90deg,var(--accent),#a5f3fc);
+  transition:width .9s cubic-bezier(.16,1,.3,1), background-color .4s ease;
   will-change:width;
 }
-.stat.health-ok .stat-pct-bar>i{background:#4ade80}
-.stat.health-warn .stat-pct-bar>i{background:#fbbf24}
-.stat.health-bad .stat-pct-bar>i{background:#f87171}
+.stat.health-ok .stat-pct-bar>i{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.stat.health-warn .stat-pct-bar>i{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.stat.health-bad .stat-pct-bar>i{background:linear-gradient(90deg,#ef4444,#f87171)}
 .stat.health-ok{box-shadow:inset 0 0 0 1px rgba(74,222,128,.1)}
 .stat.health-warn{box-shadow:inset 0 0 0 1px rgba(251,191,36,.12)}
 .stat.health-bad{box-shadow:inset 0 0 0 1px rgba(248,113,113,.14)}
 
+
+.log-user-wrap{display:inline-flex;align-items:center;gap:6px}
+.log-user .icon-btn{display:none}
+@media(max-width:768px){
+  .log-user .icon-btn{display:grid}
+}
 /* YouTube-style log search */
 .ylog-bar{display:flex;gap:10px;align-items:center;padding:4px 16px 12px;flex-wrap:wrap}
 .ylog-search{
@@ -300,20 +330,27 @@ td.row-actions::before{display:none}
 .req-pill .mini-bar{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
 .req-pill .mini-bar>i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease}
 
-/* mobile table fix — nodes & users */
+/* mobile table fix — nodes & users & logs */
 @media(max-width:768px){
-  .table-wrap{overflow:visible}
+  .table-wrap{overflow:hidden;width:100%}
   .card .table-wrap{margin:0}
-  tbody tr{overflow:visible}
-  td{flex-wrap:wrap;word-break:break-word;max-width:100%}
-  td code{word-break:break-all}
+  tbody tr{overflow:hidden}
+  td{word-break:break-word}
+  td code{word-break:break-all;font-size:12px}
   td .badge{flex-shrink:0}
   td.row-actions{flex-wrap:wrap;gap:6px}
-  /* logs: info button beside user */
-  #logsBody tr,#activityBody tr{position:relative}
-  #logsBody td[data-label="کاربر"],#activityBody td[data-label="کاربر"]{padding-left:36px}
-  #logsBody td.row-actions,#activityBody td.row-actions{
-    position:absolute;top:12px;left:12px;margin:0;padding:0;border:none;width:auto
+  /* logs: ! beside user name — no absolute, no overflow */
+  #logsBody td.row-actions,#activityBody td.row-actions{display:none!important}
+  #logsBody td.log-user,#activityBody td.log-user{
+    display:flex!important;justify-content:space-between;align-items:center;gap:10px;
+    padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid var(--border);
+  }
+  #logsBody td.log-user::before,#activityBody td.log-user::before{content:"کاربر"}
+  #logsBody td.log-user .log-user-wrap,#activityBody td.log-user .log-user-wrap{
+    display:inline-flex;align-items:center;gap:8px;max-width:62%;min-width:0;
+  }
+  #logsBody td.log-user .log-user-name,#activityBody td.log-user .log-user-name{
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
 }
 
@@ -634,7 +671,22 @@ td.row-actions::before{display:none}
   function setPctBar(id,pct){
     const el=document.getElementById(id);if(!el)return;
     const v=Math.max(0,Math.min(100,Number(pct)||0));
+    const prev=parseFloat(el.style.width)||0;
+    if(Math.abs(prev-v)<0.2){el.style.width=v+"%";return;}
+    // restart transition from current painted width
+    el.style.transition="none";
+    el.style.width=(prev||0)+"%";
+    void el.offsetWidth;
+    el.style.transition="";
     requestAnimationFrame(()=>{ el.style.width=v+"%"; });
+  }
+  function bumpVal(id,text){
+    const el=document.getElementById(id);if(!el)return;
+    if(el.textContent===text)return;
+    el.textContent=text;
+    el.classList.remove("bump");
+    void el.offsetWidth;
+    el.classList.add("bump");
   }
   function toast(msg,type){const el=document.getElementById("toast");el.textContent=msg;el.className="toast show"+(type==="err"?" err":type==="ok"?" ok":"");clearTimeout(el._t);el._t=setTimeout(()=>{el.className="toast";},2800);}
   function daysRemaining(expiry){if(!expiry)return"∞";const ms=Date.parse(expiry)-Date.now();if(!Number.isFinite(ms)||ms<=0)return faNum(0);return faNum(Math.ceil(ms/86400000));}
@@ -712,15 +764,14 @@ td.row-actions::before{display:none}
       const data=await api("/api/dashboard");lastDashAt=Date.now();if(!data.ok)return;
       const st=data.stats||{};
       const online=st.onlineUsers??0, nodes=st.nodes??0, healthy=st.healthyNodes??0, activeU=st.activeUsers??0;
-      const elOnline=document.getElementById("stOnline");
-      if(elOnline) elOnline.textContent=faNum(online);
+      bumpVal("stOnline",faNum(online));
       const elOnlineMeta=document.getElementById("stOnlineMeta");
       if(elOnlineMeta) elOnlineMeta.textContent=faNum(activeU)+" کاربر فعال در سیستم";
       const onlinePct=activeU>0?Math.min(100,Math.round(online/Math.max(activeU,1)*100)):(online>0?40:0);
       setPctBar("stOnlineBar", online>0?Math.max(12,onlinePct):0);
       setHealth("stOnlineCard", online>0?15:0);
       const elNodesVal=document.getElementById("stNodesVal");
-      if(elNodesVal) elNodesVal.textContent=faNum(healthy)+"/"+faNum(nodes);
+      if(elNodesVal){const t=faNum(healthy)+"/"+faNum(nodes);if(elNodesVal.textContent!==t){elNodesVal.textContent=t;elNodesVal.classList.remove("bump");void elNodesVal.offsetWidth;elNodesVal.classList.add("bump");}}
       const elNodesMeta=document.getElementById("stNodesMeta");
       if(elNodesMeta) elNodesMeta.textContent=faNum(healthy)+" سالم از "+faNum(nodes)+" نود";
       const nodesPct=nodes>0?Math.round(healthy/nodes*100):0;
@@ -731,7 +782,7 @@ td.row-actions::before{display:none}
       const cf=st.cf||{}, req=cf.requests||{}, d1=cf.d1||{};
       function fmtN(n){if(n==null||!Number.isFinite(+n))return"—";n=+n;if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return Math.round(n/1e3)+"K";return String(Math.round(n));}
       if(req.pct!=null){
-        document.getElementById("stReq").textContent=faNum(req.pct)+"%";
+        bumpVal("stReq",faNum(req.pct)+"%");
         document.getElementById("stReqMeta").textContent=faNum(fmtN(req.used))+" / "+faNum(fmtN(req.limit));
         setPctBar("stReqBar",req.pct);
         setHealth("stReqCard",req.pct);
@@ -741,7 +792,7 @@ td.row-actions::before{display:none}
         setPctBar("stReqBar",0);
       }
       if(d1.writePct!=null){
-        document.getElementById("stD1Write").textContent=faNum(d1.writePct)+"%";
+        bumpVal("stD1Write",faNum(d1.writePct)+"%");
         document.getElementById("stD1WriteMeta").textContent=faNum(fmtN(d1.rowsWritten))+" / "+faNum(fmtN(d1.writeLimit));
         setPctBar("stD1WriteBar",d1.writePct);
         setHealth("stD1WriteCard",d1.writePct);
@@ -777,10 +828,11 @@ td.row-actions::before{display:none}
       const[lab,cls]=activityLabel(a.type);
       const msg=a.message||"";
       const shortMsg=msg.length>48?msg.slice(0,48)+"…":msg;
+      const uname=esc(a.user_name||a.user_id||"—");
       return `<tr>
-        <td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td>
+        <td class="log-user" data-label="کاربر"><span class="log-user-wrap"><span class="log-user-name">${uname}</span><button type="button" class="icon-btn" title="جزئیات" data-logid="${a.id}">!</button></span></td>
         <td data-label="رویداد"><span class="badge ${cls}">${lab}</span>${shortMsg?` <span style="color:var(--text-muted);font-size:12px">${esc(shortMsg)}</span>`:""}</td>
-        <td data-label="نود" style="color:var(--text-secondary)">${esc(a.node_id||"—")}</td>
+        <td data-label="نود" style="color:var(--text-secondary)"><span style="direction:ltr;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis">${esc(a.node_id||"—")}</span></td>
         <td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td>
         <td class="row-actions"><button type="button" class="icon-btn" title="جزئیات" data-logid="${a.id}">!</button></td>
       </tr>`;
@@ -876,11 +928,12 @@ td.row-actions::before{display:none}
       const[lab,cls]=activityLabel(a.type);
       const msg=a.message||"";
       const shortMsg=msg.length>60?msg.slice(0,60)+"…":msg;
+      const uname=esc(a.user_name||a.user_id||"—");
       return `<tr>
-        <td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td>
+        <td class="log-user" data-label="کاربر"><span class="log-user-wrap"><span class="log-user-name">${uname}</span><button type="button" class="icon-btn" title="جزئیات" data-logid="${a.id}">!</button></span></td>
         <td data-label="رویداد"><span class="badge ${cls}">${lab}</span></td>
         <td data-label="پیام" style="color:var(--text-secondary);font-size:12.5px">${esc(shortMsg||"—")}</td>
-        <td data-label="نود">${esc(a.node_id||"—")}</td>
+        <td data-label="نود"><span style="direction:ltr;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis">${esc(a.node_id||"—")}</span></td>
         <td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td>
         <td class="row-actions"><button type="button" class="icon-btn" title="جزئیات" data-logid="${a.id}">!</button></td>
       </tr>`;
