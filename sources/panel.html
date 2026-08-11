@@ -1428,12 +1428,31 @@ table tbody tr{height:auto}
   function relTime(ts){if(!ts)return"—";const sec=Math.floor((Date.now()-Number(ts))/1000);if(sec<60)return faNum(sec)+" ثانیه پیش";if(sec<3600)return faNum(Math.floor(sec/60))+" دقیقه پیش";if(sec<86400)return faNum(Math.floor(sec/3600))+" ساعت پیش";return faNum(Math.floor(sec/86400))+" روز پیش";}
   function activityLabel(type){const m={connect:["اتصال","badge-ok"],disconnect:["قطع","badge-off"],quota:["سهمیه","badge-warn"],sync:["همگام‌سازی","badge-info"],create:["ایجاد","badge-info"],delete:["حذف","badge-off"],node_off:["نود آفلاین","badge-warn"],info:["اطلاع","badge-info"],panel_open:["پنل ادمین","badge-info"],sub_update:["آپدیت ساب","badge-ok"],sub_view:["بازدید ساب","badge-info"],edit:["ویرایش","badge-info"],reset:["ریست","badge-warn"],clear_ips:["پاک IP","badge-warn"]};return m[type]||[type||"رویداد","badge-info"];}
   function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");}
+  function forceLogin(msg){
+    try{
+      localStorage.removeItem(LS_SECRET);
+      localStorage.removeItem("saow_panel_user");
+    }catch{}
+    API_SECRET="";
+    try{
+      document.getElementById("appRoot").style.display="none";
+      document.getElementById("authGate").style.display="";
+      const errEl=document.getElementById("authErr");
+      if(errEl&&msg){errEl.style.display="";errEl.textContent=msg;}
+    }catch{}
+  }
   async function api(path,opts={}){
     const url=(API_BASE||"").replace(/\/$/,"")+path;
     const headers={Authorization:"Bearer "+API_SECRET,"Content-Type":"application/json",...(opts.headers||{})};
     const res=await fetch(url,{...opts,headers});
     let data=null;try{data=await res.json();}catch{data={ok:false,err:"invalid json"};}
-    if(res.status===401){toast("کلید API نامعتبر","err");throw new Error("unauthorized");}
+    if(res.status===401){
+      // نشست منقضی / توکن نامعتبر → حتماً صفحه ورود
+      if(!(path||"").includes("/auth/login")){
+        forceLogin("نشست منقضی شده — دوباره وارد شوید");
+      }
+      throw new Error((data&&data.err)||"unauthorized");
+    }
     if(!res.ok&&data&&data.ok===false)throw new Error(data.err||data.message||("HTTP "+res.status));
     return data;
   }
@@ -1492,41 +1511,39 @@ table tbody tr{height:auto}
     }
   });
   (function tryRestore(){
-    const b=localStorage.getItem(LS_BASE),s=localStorage.getItem(LS_SECRET);
-    if(!s) return;
+    const b=localStorage.getItem(LS_BASE), tok=localStorage.getItem(LS_SECRET);
+    if(!tok) return;
     API_BASE=(b||location.origin).replace(/\/$/,"");
-    API_SECRET=s;
+    API_SECRET=tok;
     try{
       document.getElementById("cfgBase").value=b||"";
       const u=localStorage.getItem("saow_panel_user");
       if(u) document.getElementById("cfgUser").value=u;
     }catch{}
-    // فوری پنل را نشان بده — بدون چشمک لاگین
-    document.getElementById("authGate").style.display="none";
-    document.getElementById("appRoot").style.display="";
-    document.getElementById("sysBase").textContent=API_BASE||location.origin;
-    let booted=false;
-    const go=()=>{ if(booted)return; booted=true; boot(); };
-    // boot فوری؛ اعتبارسنجی در پس‌زمینه
-    go();
+    // ابتدا اعتبارسنجی — فقط بعد از ok پنل را باز کن
+    document.getElementById("authGate").style.display="";
+    document.getElementById("appRoot").style.display="none";
     api("/api/ping").then(r=>{
-      if(!(r&&r.ok)){
-        // نشست نامعتبر
-        try{localStorage.removeItem(LS_SECRET);}catch{}
-        document.getElementById("appRoot").style.display="none";
-        document.getElementById("authGate").style.display="";
+      if(r&&r.ok){
+        document.getElementById("authGate").style.display="none";
+        document.getElementById("appRoot").style.display="";
+        document.getElementById("sysBase").textContent=API_BASE||location.origin;
+        boot();
+        setTimeout(()=>{
+          reportClientIpConsensus().then(geo=>{
+            api("/api/activity",{method:"POST",body:JSON.stringify({
+              type:"panel_open",
+              message:"باز شدن پنل ادمین",
+              meta:{ip:geo&&geo.ip||"",city:geo&&geo.city||"",region:geo&&geo.region||"",country:geo&&geo.country||"",ip_source:"client-consensus",votes:geo&&geo.votes||0}
+            })}).catch(()=>{});
+          }).catch(()=>{});
+        }, 800);
+      } else {
+        forceLogin("نشست نامعتبر — دوباره وارد شوید");
       }
-    }).catch(()=>{});
-    // لاگ باز شدن پنل را به تأخیر بینداز تا UI گیر نکند
-    setTimeout(()=>{
-      reportClientIpConsensus().then(geo=>{
-        api("/api/activity",{method:"POST",body:JSON.stringify({
-          type:"panel_open",
-          message:"باز شدن پنل ادمین",
-          meta:{ip:geo&&geo.ip||"",city:geo&&geo.city||"",region:geo&&geo.region||"",country:geo&&geo.country||"",ip_source:"client-consensus",votes:geo&&geo.votes||0}
-        })}).catch(()=>{});
-      }).catch(()=>{});
-    }, 800);
+    }).catch(function(){
+      forceLogin("نشست منقضی شده — دوباره وارد شوید");
+    });
   })();
 
   function updateTopAction(sec){currentSec=sec;const btn=document.getElementById("topActionBtn");const cfg=topActions[sec]||topActions.dash;if(!cfg.label){btn.style.display="none";return;}btn.style.display="";btn.textContent=cfg.label;}
