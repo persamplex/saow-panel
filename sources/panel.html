@@ -245,7 +245,14 @@ code{font-family:ui-monospace,monospace;font-size:12.5px;background:rgba(255,255
 @media(max-width:768px){
 .sidebar{transform:translateX(100%);box-shadow:-8px 0 30px rgba(0,0,0,.5)}
 .sidebar.open{transform:translateX(0)}
-.main{margin-right:0;padding:14px 12px 40px;width:100%;max-width:100%;overflow-x:hidden}
+.main{margin-right:0;padding:16px 14px 48px;width:100%;max-width:100%;overflow-x:hidden}
+.card,.map-card,.setting-block,.feat-lock-wrap,.table-wrap,tbody tr{padding-left:16px;padding-right:16px}
+.map-card .map-head,.card-head,.card-header{padding-left:16px;padding-right:16px}
+.table-wrap{padding:4px 6px 12px}
+tbody tr{padding:14px 16px 12px!important}
+.setting-block{padding:18px 16px!important}
+.modal{margin:12px;width:calc(100% - 24px)}
+.modal-b,.modal-h,.modal-f{padding-left:16px;padding-right:16px}
 .burger{display:grid}
 .actions .btn-ghost{display:none}
 .stats{grid-template-columns:1fr 1fr;gap:10px}
@@ -545,13 +552,20 @@ table tbody tr{height:auto}
 /* قفل سراسری پنل — همه بخش‌ها به‌جز تنظیمات */
 #appRoot.panel-locked .section:not(#settings){
   position:relative;
+  pointer-events:none;
+  user-select:none;
 }
 #appRoot.panel-locked .section:not(#settings)::after{
-  content:"";position:absolute;inset:0;z-index:40;
-  background:rgba(5,5,8,.55);backdrop-filter:blur(3px);border-radius:var(--radius-lg);
+  content:"🔒";position:absolute;inset:0;z-index:40;
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;color:rgba(255,255,255,.55);
+  background:rgba(5,5,8,.72);backdrop-filter:blur(5px);border-radius:var(--radius-lg);
 }
-#appRoot.panel-locked .section:not(#settings) > *{filter:grayscale(.9) brightness(.4);pointer-events:none;user-select:none}
+#appRoot.panel-locked .section:not(#settings) > *{
+  filter:grayscale(1) brightness(.35);opacity:.45;
+}
 #appRoot.panel-locked #globalLockBanner{display:flex}
+#appRoot.panel-locked .topbar .actions{opacity:.35;pointer-events:none}
 #globalLockBanner{
   display:none;position:sticky;top:0;z-index:50;margin-bottom:14px;
   align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
@@ -737,6 +751,7 @@ table tbody tr{height:auto}
         <button class="btn btn-primary" id="topActionBtn" type="button">+ کاربر جدید</button>
       </div>
     </div>
+    <div id="globalLockBanner"><span class="lock-ico">🔒</span><span id="globalLockMsg">پنل توسط لایسنس قفل شده است</span></div>
     <section class="section active" id="dash">
       <div class="map-card">
         <div class="map-head"><h2><span class="live-indicator"></span> نقشه کاربران متصل — ایران</h2><div class="map-hint">نقاط = مراکز استان با کاربران آنلاین</div></div>
@@ -1116,8 +1131,22 @@ table tbody tr{height:auto}
     <div class="modal-b">
       <input type="hidden" id="planId" value="" />
       <div class="field"><label>نام پلن</label><input type="text" id="planName" placeholder="مثلاً یک‌ماهه ۲۰ گیگ" /></div>
-      <div class="field"><label>دسته‌بندی</label><input type="text" id="planCat" placeholder="مثلاً ارزان · پرحجم · ویژه" list="planCatList" /></div>
-      <datalist id="planCatList"></datalist>
+      <div class="field">
+        <label>دسته‌بندی</label>
+        <div class="cselect" id="cselectPlanCat" data-input="planCat">
+          <input type="hidden" id="planCat" value="" />
+          <button type="button" class="cselect-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <span class="cselect-label">بدون دسته</span>
+            <span class="cselect-chevron" aria-hidden="true"><svg viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1.5L6 6.5L11 1.5"/></svg></span>
+          </button>
+          <div class="cselect-backdrop"></div>
+          <div class="cselect-panel" role="listbox"></div>
+        </div>
+        <div class="field" id="planCatCustomWrap" style="display:none;margin-top:10px">
+          <label>نام دسته جدید</label>
+          <input type="text" id="planCatCustom" placeholder="مثلاً ارزان · پرحجم · ویژه" />
+        </div>
+      </div>
       <div class="field-grid">
         <div class="field"><label>روز</label><input type="number" id="planDays" value="30" min="0" /></div>
         <div class="field"><label>حجم کل (GB)</label><input type="number" id="planQuota" value="30" min="0" step="0.1" /></div>
@@ -1189,7 +1218,7 @@ table tbody tr{height:auto}
       ov.className="feat-lock-overlay";
       el.appendChild(ov);
     }
-    ov.innerHTML='<div class="lock-ico">🔒</div><p>'+esc(opts.message||"این بخش قفل است")+'</p>'+(opts.btnHtml||"");
+    ov.innerHTML='<div class="lock-ico">🔒</div><p style="white-space:pre-line">'+esc(opts.message||"این بخش قفل است")+'</p>'+(opts.btnHtml||"");
   }
   function clearLockOverlay(el){
     if(!el)return;
@@ -1213,10 +1242,14 @@ table tbody tr{height:auto}
       const msg=r.message||"پنل توسط لایسنس قفل شده است";
       const el=document.getElementById("globalLockMsg");
       if(el) el.textContent=msg;
+      // اگر در بخش قفل‌شده هستیم به تنظیمات برو
+      if(currentSec && currentSec!=="settings"){
+        try{ goSection("settings", true); }catch{}
+      }
     } else {
       root.classList.remove("panel-locked");
     }
-    // قفل فروشگاه از لایسنس
+    // قفل فروشگاه از لایسنس — اولویت روی feature gate
     if(r.lock_shop){
       setFeatureGate("shop", false);
       const shop=document.getElementById("shopLockedArea");
@@ -1225,16 +1258,33 @@ table tbody tr{height:auto}
         const ov=shop.querySelector(".feat-lock-overlay p");
         if(ov) ov.textContent=r.message||"فروشگاه توسط لایسنس قفل شده است";
       }
+    } else if(FEATURE_GATES.telegram_bot){
+      // اگر لایسنس فروشگاه را قفل نکرده و ربات هست، فروشگاه را باز کن
+      setFeatureGate("shop", true);
     }
   }
 
+  function countActiveNodes(){
+    const list=(nodesCache&&nodesCache.managed)||[];
+    return list.filter(n=>{
+      if(n.is_disabled===1 || n.is_disabled===true || n.disabled===true) return false;
+      return true;
+    }).length;
+  }
   function canCreateUserUi(){
     if(PANEL_RULES.lock_create_user) return {ok:false,msg:PANEL_RULES.message||"ساخت کاربر توسط لایسنس قفل شده"};
     if(PANEL_RULES.max_users>0){
       const n=Number(document.getElementById("navUsersCount")?.textContent?.replace(/[^0-9]/g,"")||usersCache?.length||0);
-      // better count from cache
       const cnt=(typeof usersCache!=="undefined"&&usersCache)?usersCache.length:n;
       if(cnt>=PANEL_RULES.max_users) return {ok:false,msg:"سقف تعداد کاربر ("+PANEL_RULES.max_users+") پر شده"};
+    }
+    // معماری نودبیس: بدون نود فعال نمی‌توان کاربر ساخت
+    const activeNodes=countActiveNodes();
+    if(activeNodes<=0){
+      return {
+        ok:false,
+        msg:"هنوز هیچ نود فعالی ندارید.\nابتدا از بخش «نودها» یک نود بسازید تا معماری نود‌بیس آماده شود، بعد کاربر اضافه کنید."
+      };
     }
     return {ok:true};
   }
@@ -2099,19 +2149,72 @@ function openMapProvince(provinceName){
     if(cur&&!opts.some(([v])=>v===cur)) opts.push([cur,cur]);
     populateCSelect(root, opts, cur);
   }
-  function openUserModal(user){
+  function fillPlanCatSelect(selected){
+    const root=document.getElementById("cselectPlanCat");
+    if(!root)return;
+    bindCSelect(root);
+    const cats=new Set();
+    (window.__plansCache||[]).forEach(p=>{
+      const c=(p.category||p.cat||"").trim();
+      if(c) cats.add(c);
+    });
+    const opts=[{value:"",label:"بدون دسته"}];
+    Array.from(cats).sort().forEach(c=>opts.push({value:c,label:c}));
+    opts.push({value:"__new__",label:"+ دسته جدید…"});
+    const cur=selected||"";
+    const has=opts.some(o=>o.value===cur);
+    if(cur && !has && cur!=="__new__") opts.splice(1,0,{value:cur,label:cur});
+    populateCSelect(root, opts, has||!cur ? cur : cur);
+    if(cur && !has) setCSelectValue(root, cur, cur);
+    const wrap=document.getElementById("planCatCustomWrap");
+    const custom=document.getElementById("planCatCustom");
+    if(wrap) wrap.style.display="none";
+    if(custom) custom.value="";
+    // react to selection
+    root.querySelectorAll(".cselect-option").forEach(opt=>{
+      opt.addEventListener("click",()=>{
+        const v=opt.getAttribute("data-value")||"";
+        if(v==="__new__"){
+          if(wrap) wrap.style.display="";
+          if(custom){ custom.value=""; custom.focus(); }
+          // keep hidden input empty until typed
+          const inp=document.getElementById("planCat");
+          if(inp) inp.value="";
+        } else {
+          if(wrap) wrap.style.display="none";
+        }
+      },{once:false});
+    });
+  }
+  async function openUserModal(user){
     const ov=document.getElementById("userOverlay");
     const modal=ov?.querySelector(".modal");
     if(!user){
+      // مطمئن شو لیست نودها بار شده
+      if(!(nodesCache.managed||[]).length){
+        try{
+          const d=await api("/api/nodes");
+          nodesCache={managed:d.managed||[],alive:d.alive||[]};
+        }catch{}
+      }
       const gate=canCreateUserUi();
-      // باز کردن مودال با قفل UI (نه toast)
       document.getElementById("editUserId").value="";
       document.getElementById("userModalTitle").textContent="افزودن کاربر جدید";
       ov?.classList.add("open");
       if(!gate.ok){
-        applyLockOverlay(modal,{message:gate.msg||"ساخت کاربر قفل است"});
+        const needsNode = /نود/.test(gate.msg||"");
+        applyLockOverlay(modal,{
+          message:gate.msg||"ساخت کاربر قفل است",
+          btnHtml: needsNode ? '<button type="button" class="btn btn-primary" id="goNodesFromUserLock">رفتن به نودها</button>' : ""
+        });
         const foot=modal?.querySelector(".modal-f");
         if(foot) foot.style.display="none";
+        setTimeout(()=>{
+          document.getElementById("goNodesFromUserLock")?.addEventListener("click",()=>{
+            closeUserModal();
+            goSection("nodes");
+          },{once:true});
+        },0);
         return;
       }
       clearLockOverlay(modal);
@@ -2403,10 +2506,16 @@ function openMapProvince(provinceName){
     catch(e){toast(e.message||"خطا","err");}finally{btn.disabled=false;btn.textContent="ایجاد نود";}
   });
 
+
+  document.getElementById("planCatCustom")?.addEventListener("input",function(){
+    const inp=document.getElementById("planCat");
+    if(inp) inp.value=this.value.trim();
+  });
   async function loadShop(){
     try{
       const[plansRes,ordersRes]=await Promise.all([api("/api/shop/plans"),api("/api/shop/orders")]);
       const plans=plansRes.plans||[],orders=ordersRes.orders||[];
+      window.__plansCache=plans;
       const pending=orders.filter(o=>o.status==="pending").length;
       const pc=document.getElementById("shopPendingCount");
       if(pc){pc.textContent=pending?("در انتظار "+faNum(pending)):"سفارش‌ها"; pc.className=pending?"badge badge-warn":"badge badge-info";}
@@ -2453,7 +2562,7 @@ function openMapProvince(provinceName){
     document.getElementById("planId").value=plan&&plan.id||"";
     document.getElementById("planModalTitle").textContent=plan&&plan.id?"ویرایش پلن":"پلن جدید";
     document.getElementById("planName").value=plan&&plan.name||"";
-    document.getElementById("planCat").value=plan&&plan.category||"";
+    fillPlanCatSelect(plan&&plan.category||"");
     document.getElementById("planDays").value=plan&&plan.days!=null?plan.days:30;
     document.getElementById("planQuota").value=plan&&plan.quota_gb!=null?plan.quota_gb:30;
     document.getElementById("planDaily").value=plan&&plan.daily_gb!=null?plan.daily_gb:0;
@@ -2488,7 +2597,15 @@ function openMapProvince(provinceName){
       const body = {
         id: document.getElementById("planId")?.value || undefined,
         name,
-        category: (document.getElementById("planCat")?.value || "").trim(),
+        category: (function(){
+          let c=(document.getElementById("planCat")?.value || "").trim();
+          if(c==="__new__" || !c){
+            const custom=(document.getElementById("planCatCustom")?.value||"").trim();
+            if(custom) c=custom;
+            else if(c==="__new__") c="";
+          }
+          return c;
+        })(),
         days: Number(document.getElementById("planDays")?.value) || 0,
         quota_gb: Number(document.getElementById("planQuota")?.value) || 0,
         daily_gb: Number(document.getElementById("planDaily")?.value) || 0,
@@ -2545,7 +2662,14 @@ function openMapProvince(provinceName){
   ["swLockPanel","swLockCreateUser","swLockCreateNode","swLockShop","swLockSub","swLockConnect"].forEach(id=>{document.getElementById(id).addEventListener("click",function(){this.classList.toggle("on");if(id==="swLockPanel")toggleSub(id,"sub-panel-lock");if(id==="swLockCreateUser")toggleSub(id,"sub-create-user");if(id==="swLockCreateNode")toggleSub(id,"sub-create-node");});});
   document.getElementById("btnSaveRules").addEventListener("click",async()=>{
     const body={lock_panel:document.getElementById("swLockPanel").classList.contains("on"),lock_create_user:document.getElementById("swLockCreateUser").classList.contains("on"),lock_create_node:document.getElementById("swLockCreateNode").classList.contains("on"),lock_shop:document.getElementById("swLockShop").classList.contains("on"),lock_sub:document.getElementById("swLockSub").classList.contains("on"),lock_connect:document.getElementById("swLockConnect").classList.contains("on"),max_users:Number(document.getElementById("rulesMaxUsers").value)||0,max_nodes:Number(document.getElementById("rulesMaxNodes").value)||0,message:document.getElementById("rulesMessage").value.trim()};
-    try{await api("/api/rules",{method:"POST",body:JSON.stringify(body)});toast("قوانین ذخیره شد","ok");}catch(e){toast(e.message,"err");}
+    try{
+      const r=await api("/api/rules",{method:"POST",body:JSON.stringify(body)});
+      PANEL_RULES=(r&&(r.rules||r))||body;
+      applyPanelLocksFromRules();
+      await refreshFeatureGates();
+      applyPanelLocksFromRules();
+      toast("قوانین ذخیره شد","ok");
+    }catch(e){toast(e.message,"err");}
   });
   document.getElementById("btnLogout").addEventListener("click",logout);
   document.getElementById("btnUpdateMother")?.addEventListener("click",async()=>{
