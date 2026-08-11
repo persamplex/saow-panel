@@ -521,6 +521,24 @@ table tbody tr{height:auto}
 .sub-qr-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .sub-qr-actions .btn{width:100%}
 
+
+/* ── Feature Lock (Telegram / VIP / License) ── */
+.feat-lock-wrap{position:relative;border-radius:var(--radius-lg);overflow:hidden}
+.feat-lock-wrap.is-locked .feat-lock-content{
+  filter:grayscale(.85) brightness(.55);pointer-events:none;user-select:none;
+  opacity:.55;
+}
+.feat-lock-overlay{
+  display:none;position:absolute;inset:0;z-index:5;
+  align-items:center;justify-content:center;flex-direction:column;gap:10px;
+  background:rgba(5,5,8,.45);backdrop-filter:blur(2px);
+  text-align:center;padding:20px;
+}
+.feat-lock-wrap.is-locked .feat-lock-overlay{display:flex}
+.feat-lock-overlay .lock-ico{font-size:28px;opacity:.9}
+.feat-lock-overlay p{font-size:13px;color:var(--text-secondary);max-width:260px;line-height:1.6;margin:0}
+.feat-lock-overlay .btn{margin-top:4px}
+
 </style>
 </head>
 <body>
@@ -548,7 +566,8 @@ table tbody tr{height:auto}
       <div class="nav-item" data-sec="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>فروشگاه</div>
       <div class="nav-item" data-sec="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>بکاپ</div>
       <div class="nav-item" data-sec="logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>لاگ‌ها</div>
-      <div class="nav-item" data-sec="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>تنظیمات</div>
+            <div class="nav-item" data-sec="telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>ربات تلگرام</div>
+<div class="nav-item" data-sec="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>تنظیمات</div>
     </nav>
     <div class="sidebar-foot" id="sidebarFoot">— · Push Mode</div>
   </aside>
@@ -635,6 +654,16 @@ table tbody tr{height:auto}
       </div>
     </section>
     <section class="section" id="shop">
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="setting-block" id="shopEnableWrap">
+          <h4>فعال‌سازی فروشگاه</h4>
+          <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">تا فعال نشود، مدیریت پلن‌ها قفل است. نیاز به ربات تلگرام دارد.</p>
+          <div class="row"><span>فروشگاه فعال</span><div class="switch" id="swShopEnable"></div></div>
+        </div>
+      </div>
+      <div class="feat-lock-wrap is-locked" data-feature="shop" id="shopLockedArea">
+        <div class="feat-lock-content">
+
       <div class="grid-2">
         <div class="setting-block"><h4>وضعیت فروشگاه</h4>
           <div class="row"><span>قفل فروشگاه</span><div class="switch" id="shopLockSwitch"></div></div>
@@ -654,7 +683,14 @@ table tbody tr{height:auto}
         <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>پلن</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
         <tbody id="ordersBody"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody></table></div>
       </div>
-    </section>
+    
+        </div>
+        <div class="feat-lock-overlay">
+          <div class="lock-ico">🔒</div>
+          <p>فروشگاه را از کارت بالا فعال کنید (نیاز به ربات تلگرام)</p>
+        </div>
+      </div>
+</section>
     <section class="section" id="backup">
       <div class="grid-2">
         <div class="setting-block"><h4>خروجی بکاپ</h4>
@@ -664,6 +700,19 @@ table tbody tr{height:auto}
         <div class="setting-block"><h4>ایمپورت</h4>
           <div class="field"><label>فایل JSON</label><input type="file" id="backupFile" accept="application/json,.json" /></div>
           <button class="btn" style="width:100%" id="btnImportBackup" type="button">ایمپورت</button>
+        </div>
+        <div class="setting-block feat-lock-wrap is-locked" data-feature="auto_backup">
+          <div class="feat-lock-content">
+            <h4>ارسال بکاپ خودکار</h4>
+            <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">ارسال دوره‌ای بکاپ به تلگرام</p>
+            <div class="field"><label>بازه (دقیقه)</label><input type="number" id="autoBackupMin" value="60" min="15" disabled /></div>
+            <div class="row"><span>فعال</span><div class="switch" id="swAutoBackup"></div></div>
+          </div>
+          <div class="feat-lock-overlay">
+            <div class="lock-ico">🔒</div>
+            <p>اتصال ربات تلگرام لازم است</p>
+            <button type="button" class="btn btn-primary" data-go-sec="telegram">اتصال ربات تلگرام</button>
+          </div>
         </div>
       </div>
     </section>
@@ -714,9 +763,43 @@ table tbody tr{height:auto}
         </table></div>
       </div>
     </section>
-<section class="section" id="settings">
+
+    <section class="section" id="telegram">
       <div class="grid-2">
-        <div class="setting-block"><h4>قفل‌های پنل</h4>
+        <div class="setting-block">
+          <h4>ربات تلگرام</h4>
+          <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">توکن ربات و Chat ID ادمین. وب‌هوک روی ورکر جدا (توکن CF جدا) تنظیم می‌شود.</p>
+          <div class="field"><label>توکن ربات</label><input type="password" id="tgToken" placeholder="123456:ABC..." autocomplete="off" /></div>
+          <div class="field"><label>Chat ID ادمین</label><input type="text" id="tgChatId" placeholder="خالی = اولین /start" autocomplete="off" /></div>
+          <div class="field"><label>توکن Cloudflare (برای ورکر ربات)</label><input type="password" id="tgCfToken" placeholder="CF API Token جدا از مادر" autocomplete="off" /></div>
+          <div class="field"><label>Account ID کلودفلر ربات</label><input type="text" id="tgCfAccount" placeholder="Account ID" autocomplete="off" /></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+            <button type="button" class="btn btn-primary" id="btnTgSave">ثبت</button>
+            <button type="button" class="btn" id="btnTgTest">تست</button>
+          </div>
+          <button type="button" class="btn btn-danger-soft" style="width:100%;margin-top:8px" id="btnTgDelete">حذف ربات</button>
+          <p id="tgStatus" style="font-size:12px;color:var(--text-muted);margin-top:10px"></p>
+        </div>
+        <div class="setting-block feat-lock-wrap is-locked" data-feature="telegram_bot">
+          <div class="feat-lock-content">
+            <h4>گزارش‌های اعلان</h4>
+            <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
+            <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
+            <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
+            <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
+            <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
+          </div>
+          <div class="feat-lock-overlay">
+            <div class="lock-ico">🔒</div>
+            <p>پس از ثبت و تست ربات فعال می‌شود</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="settings">
+      <div class="grid-2">
+        <div class="setting-block"><h4>قفل‌های پنل</h4><p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">این قفل‌ها توسط سرویس لایسنس اعمال می‌شوند و برای محدودسازی پنل ادمین هستند.</p>
           <div class="row"><span>قفل پنل کامل</span><div class="switch" id="swLockPanel"></div></div>
           <div class="sub-panel" id="sub-panel-lock"><div class="field"><label>پیام قفل</label><textarea id="rulesMessage" rows="2"></textarea></div></div>
           <div class="row"><span>قفل ساخت کاربر</span><div class="switch" id="swLockCreateUser"></div></div>
@@ -841,12 +924,39 @@ table tbody tr{height:auto}
   const LS_BASE="saow_api_base", LS_SECRET="saow_api_secret";
   const DASH_POLL_MS=90*1000, GB=1073741824;
   let API_BASE="", API_SECRET="", currentSec="dash";
+
+  /* Feature gates — قابل توسعه برای VIP / لایسنس / تلگرام */
+  const FEATURE_GATES={
+    telegram_bot:false,
+    shop:false,
+    auto_backup:false,
+  };
+  function setFeatureGate(key, unlocked){
+    FEATURE_GATES[key]=!!unlocked;
+    document.querySelectorAll('[data-feature="'+key+'"]').forEach(el=>{
+      el.classList.toggle('is-locked', !unlocked);
+    });
+  }
+  function requireFeature(key, msg){
+    if(FEATURE_GATES[key]) return true;
+    toast(msg||"این بخش قفل است — ابتدا ربات تلگرام را فعال کنید","err");
+    return false;
+  }
+  async function refreshFeatureGates(){
+    try{
+      const r=await api("/api/features");
+      if(r&&r.ok&&r.features){
+        Object.keys(r.features).forEach(k=>setFeatureGate(k, !!r.features[k]));
+      }
+    }catch{}
+  }
+
   let usersCache=[], nodesCache={managed:[],alive:[]}, mapChart=null, dashTimer=null, lastDashAt=0;
-  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',settings:'تنظیمات'};
+  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',telegram:'ربات تلگرام',settings:'تنظیمات'};
   const topActions={
     dash:{label:'+ کاربر جدید',action:'user'}, users:{label:'+ کاربر جدید',action:'user'},
     nodes:{label:'+ افزودن نود',action:'node'}, shop:{label:'بروزرسانی',action:'shop'},
-    backup:{label:'دانلود بکاپ',action:'backup'}, logs:{label:'بروزرسانی',action:'logs'}, settings:{label:'',action:'none'}
+    backup:{label:'دانلود بکاپ',action:'backup'}, logs:{label:'بروزرسانی',action:'logs'}, telegram:{label:'بروزرسانی',action:'telegram'},settings:{label:'',action:'none'}
   };
   function faNum(n){if(n==null||n==="")return"—";return String(n).replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);}
   function setHealth(cardId,pct){
@@ -996,12 +1106,27 @@ table tbody tr{height:auto}
     ov.classList.add("open");
   }
   function closeSubQr(){document.getElementById("subQrOverlay")?.classList.remove("open");}
-  document.getElementById("subQrClose")?.addEventListener("click", closeSubQr);
-  document.getElementById("subQrOverlay")?.addEventListener("click", function(e){if(e.target.id==="subQrOverlay")closeSubQr();});
-  document.getElementById("subQrCopy")?.addEventListener("click", async()=>{
-    const t=document.getElementById("subQrLink")?.textContent||"";
+  // delegation — overlay HTML بعد از script است
+  document.addEventListener("click", async function(e){
+    const t=e.target;
     if(!t)return;
-    try{await navigator.clipboard.writeText(t);toast("لینک کپی شد","ok");}catch{toast("کپی نشد","err");}
+    if(t.id==="subQrClose" || t.closest?.("#subQrClose")){ e.preventDefault(); closeSubQr(); return; }
+    if(t.id==="subQrOverlay"){ closeSubQr(); return; }
+    if(t.id==="subQrCopy" || t.closest?.("#subQrCopy")){
+      e.preventDefault();
+      const text=(document.getElementById("subQrLink")?.textContent||"").trim();
+      if(!text){toast("لینکی نیست","err");return;}
+      try{
+        await navigator.clipboard.writeText(text);
+        toast("لینک کپی شد","ok");
+      }catch(err){
+        try{
+          const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.left="-9999px";
+          document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();
+          toast("لینک کپی شد","ok");
+        }catch{toast("کپی نشد","err");}
+      }
+    }
   });
 
 function openMapProvince(provinceName){
@@ -1849,7 +1974,27 @@ function openMapProvince(provinceName){
 
   async function downloadBackup(){try{const data=await api("/api/backup");const blob=new Blob([JSON.stringify(data.backup||data,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="saow-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(a.href);toast("دانلود شد","ok");}catch(e){toast(e.message,"err");}}
   document.getElementById("btnDownloadBackup").addEventListener("click",downloadBackup);
-  document.getElementById("btnImportBackup").addEventListener("click",async()=>{const file=document.getElementById("backupFile").files[0];if(!file){toast("فایل انتخاب کنید","err");return;}try{const text=await file.text();const parsed=JSON.parse(text);const backup=parsed.backup||parsed;await api("/api/backup/import",{method:"POST",body:JSON.stringify({backup})});toast("ایمپورت شد","ok");loadUsers();loadNodes();}catch(e){toast(e.message||"خطا","err");}});
+  document.getElementById("btnImportBackup").addEventListener("click",async()=>{
+    const file=document.getElementById("backupFile").files[0];
+    if(!file){toast("فایل انتخاب کنید","err");return;}
+    try{
+      const text=await file.text();
+      const parsed=JSON.parse(text);
+      const backup=parsed.backup||parsed;
+      const r=await api("/api/backup/import",{method:"POST",body:JSON.stringify({backup})});
+      if(!r||!r.ok)throw new Error((r&&r.err)||"ایمپورت ناموفق");
+      const im=r.imported||{};
+      toast(
+        "ایمپورت شد: "+
+        (im.users!=null?faNum(im.users)+" کاربر":"") +
+        (im.nodes!=null?" · "+faNum(im.nodes)+" نود":"") +
+        (im.children!=null?" · "+faNum(im.children)+" فرزند":"") +
+        (im.plans!=null?" · "+faNum(im.plans)+" پلن":""),
+        "ok"
+      );
+      loadUsers();loadNodes();
+    }catch(e){toast(e.message||"خطا","err");}
+  });
 
   async function loadRules(){
     try{const data=await api("/api/rules");const r=data.rules||{};
@@ -1893,7 +2038,76 @@ function openMapProvince(provinceName){
     }
   });
 
-function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="settings")loadRules();}
+
+  async function loadTelegram(){
+    try{
+      const r=await api("/api/telegram/config");
+      if(!r||!r.ok)return;
+      document.getElementById("tgChatId").value=r.chat_id||"";
+      document.getElementById("tgStatus").textContent=r.has_token?(r.bot_username?"@"+r.bot_username+" · آماده":"توکن ثبت شده"):"ربات ثبت نشده";
+      if(r.reports){
+        setSw("tgRepPanel",!!r.reports.panel_open);
+        setSw("tgRepSub",!!r.reports.sub_view);
+        setSw("tgRepAuth",!!r.reports.auth_fail);
+        setSw("tgRepNode",!!r.reports.node_off);
+      }
+    }catch(e){}
+  }
+  document.getElementById("btnTgSave")?.addEventListener("click",async()=>{
+    try{
+      const body={
+        token:document.getElementById("tgToken").value.trim(),
+        chat_id:document.getElementById("tgChatId").value.trim(),
+        cf_token:document.getElementById("tgCfToken").value.trim(),
+        cf_account_id:document.getElementById("tgCfAccount").value.trim(),
+      };
+      const r=await api("/api/telegram/config",{method:"POST",body:JSON.stringify(body)});
+      if(!r||!r.ok)throw new Error((r&&r.err)||"خطا");
+      toast("ذخیره شد","ok");
+      document.getElementById("tgToken").value="";
+      await refreshFeatureGates();loadTelegram();
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnTgTest")?.addEventListener("click",async()=>{
+    try{
+      const r=await api("/api/telegram/test",{method:"POST",body:"{}"});
+      if(!r||!r.ok)throw new Error((r&&r.err)||"تست ناموفق");
+      toast("تست موفق"+(r.bot&&r.bot.username?" · @"+r.bot.username:""),"ok");
+      await refreshFeatureGates();
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnTgDelete")?.addEventListener("click",async()=>{
+    if(!confirm("حذف تنظیمات ربات؟"))return;
+    try{await api("/api/telegram/delete",{method:"POST",body:"{}"});toast("حذف شد","ok");await refreshFeatureGates();loadTelegram();}catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnTgRepSave")?.addEventListener("click",async()=>{
+    if(!requireFeature("telegram_bot"))return;
+    try{
+      await api("/api/telegram/config",{method:"POST",body:JSON.stringify({reports:{
+        panel_open:document.getElementById("tgRepPanel").classList.contains("on"),
+        sub_view:document.getElementById("tgRepSub").classList.contains("on"),
+        auth_fail:document.getElementById("tgRepAuth").classList.contains("on"),
+        node_off:document.getElementById("tgRepNode").classList.contains("on"),
+      }})});
+      toast("گزارش‌ها ذخیره شد","ok");
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("swShopEnable")?.addEventListener("click",async()=>{
+    const on=!document.getElementById("swShopEnable").classList.contains("on");
+    try{
+      const r=await api("/api/shop/enable",{method:"POST",body:JSON.stringify({enabled:on})});
+      if(!r||!r.ok)throw new Error((r&&r.err)||"فعال‌سازی ممکن نیست");
+      setSw("swShopEnable",!!r.enabled);
+      setFeatureGate("shop", !!r.enabled);
+      toast(r.enabled?"فروشگاه فعال شد":"فروشگاه غیرفعال شد","ok");
+    }catch(e){toast(e.message,"err");}
+  });
+  document.addEventListener("click",e=>{
+    const b=e.target.closest?.("[data-go-sec]");
+    if(b){const sec=b.getAttribute("data-go-sec");if(sec){try{showSection(sec);}catch{try{document.querySelector('[data-sec="'+sec+'"]')?.click();}catch{}}}}
+  });
+
+  function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="telegram")loadTelegram();else if(sec==="settings")loadRules();}
   function boot(){
     let sec="dash";
     try{sec=localStorage.getItem("saow_panel_sec")||"dash";}catch{}
