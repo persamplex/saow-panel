@@ -990,56 +990,57 @@ table tbody tr{height:auto}
       </div>
     </section>
 
-        <section class="section" id="telegram">
-      <div class="setting-block tg-setup" id="tgWizardBox" style="margin-bottom:14px">
-        <h4>راه‌اندازی ربات تلگرام</h4>
-        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">ورکر روی اکانت جدا از مادر</p>
-        <div class="wiz-steps">
-          <div class="wiz-step-dot on" data-wiz="1"></div>
-          <div class="wiz-step-dot" data-wiz="2"></div>
-          <div class="wiz-step-dot" data-wiz="3"></div>
-        </div>
-        <div class="wiz-pane on" id="tgWiz1">
-          <div class="field">
-            <label>توکن ربات <span class="help-tip" data-tip="BotFather → /newbot → توکن را کپی کنید">!</span></label>
-            <input type="password" id="tgToken" placeholder="123456:AA..." autocomplete="off" />
-          </div>
-          <button type="button" class="btn btn-primary" style="width:100%" id="btnTgStep1">ادامه</button>
-        </div>
-        <div class="wiz-pane" id="tgWiz2">
-          <div class="field">
-            <label>Chat ID <span class="help-tip" data-tip="اختیاری — خالی بماند تا اولین /start ادمین شود">!</span></label>
-            <input type="text" id="tgChatId" placeholder="اختیاری" autocomplete="off" />
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <button type="button" class="btn" id="btnTgStep2Back">قبلی</button>
-            <button type="button" class="btn btn-primary" id="btnTgStep2">ادامه</button>
-          </div>
-        </div>
-        <div class="wiz-pane" id="tgWiz3">
-          <div class="field">
-            <label>توکن Cloudflare <span class="help-tip" data-tip="API Token جدا از مادر — Account خودکار تشخیص داده می‌شود">!</span></label>
-            <input type="password" id="tgCfToken" placeholder="CF API Token" autocomplete="off" />
-          </div>
-          <div class="field"><label>Account ID</label><input type="text" id="tgCfAccount" placeholder="خودکار" readonly /></div>
-          <p id="tgCfHint" style="font-size:11px;color:var(--text-muted);margin:0 0 8px"></p>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <button type="button" class="btn" id="btnTgStep3Back">قبلی</button>
-            <button type="button" class="btn btn-primary" id="btnTgActivate">فعال‌سازی</button>
-          </div>
-        </div>
-        <p id="tgStatus" style="font-size:12px;color:var(--text-muted);margin-top:10px"></p>
-      </div>
+            <section class="section" id="telegram">
+      <!-- ردیف ۱: ویزارد/اتصال ۱/۳ · پیام‌ها ۲/۳ -->
+      <div class="tg-conn-grid" style="margin-bottom:14px">
+        <div class="setting-block tg-setup" id="tgWizardBox" style="margin:0">
+          <h4 id="tgWizardTitle">راه‌اندازی ربات</h4>
+          <p id="tgWizardHint" style="font-size:12px;color:var(--text-muted);margin-bottom:8px">ورکر روی اکانت جدا از مادر</p>
 
-      <!-- وضعیت اتصال — همیشه بعد از فعال‌سازی دیده می‌شود -->
-      <div id="tgConnectedBox" class="tg-conn-wrap" style="display:none;margin-bottom:14px">
-        <div class="tg-conn-grid">
-          <div class="setting-block tg-done-card" style="margin:0">
-            <h4>ربات فعال است</h4>
+          <div id="tgWizStepsWrap">
+            <div class="wiz-steps">
+              <div class="wiz-step-dot on" data-wiz="1"></div>
+              <div class="wiz-step-dot" data-wiz="2"></div>
+              <div class="wiz-step-dot" data-wiz="3"></div>
+            </div>
+            <div class="wiz-pane on" id="tgWiz1">
+              <div class="field">
+                <label>توکن ربات <span class="help-tip" data-tip="BotFather → /newbot → توکن را کپی کنید">!</span></label>
+                <input type="password" id="tgToken" placeholder="123456:AA..." autocomplete="off" />
+              </div>
+              <button type="button" class="btn btn-primary" style="width:100%" id="btnTgStep1">ادامه</button>
+            </div>
+            <div class="wiz-pane" id="tgWiz2">
+              <div class="field">
+                <label>Chat ID <span class="help-tip" data-tip="اختیاری — خالی بماند تا اولین /start ادمین شود">!</span></label>
+                <input type="text" id="tgChatId" placeholder="اختیاری" autocomplete="off" />
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <button type="button" class="btn" id="btnTgStep2Back">قبلی</button>
+                <button type="button" class="btn btn-primary" id="btnTgStep2">ادامه</button>
+              </div>
+            </div>
+            <div class="wiz-pane" id="tgWiz3">
+              <div class="field">
+                <label>توکن Cloudflare <span class="help-tip" data-tip="API Token جدا از مادر">!</span></label>
+                <input type="password" id="tgCfToken" placeholder="CF API Token" autocomplete="off" />
+              </div>
+              <div class="field"><label>Account ID</label><input type="text" id="tgCfAccount" placeholder="خودکار" readonly /></div>
+              <p id="tgCfHint" style="font-size:11px;color:var(--text-muted);margin:0 0 8px"></p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <button type="button" class="btn" id="btnTgStep3Back">قبلی</button>
+                <button type="button" class="btn btn-primary" id="btnTgActivate">فعال‌سازی</button>
+              </div>
+            </div>
+            <p id="tgStatus" style="font-size:12px;color:var(--text-muted);margin-top:10px"></p>
+          </div>
+
+          <!-- وضعیت اتصال داخل همان کارت ۱/۳ -->
+          <div id="tgConnectedInner" style="display:none">
             <div class="row"><span>ربات</span><span id="tgDoneName">—</span></div>
             <div class="row"><span>وضعیت</span><span id="tgDoneHealth">—</span></div>
             <div class="row"><span>ریکوست</span><span id="tgReqStat">—</span></div>
-            <div class="row" style="align-items:flex-start"><span>ورکر</span><span id="tgDoneUrl" style="direction:ltr;font-size:11px;word-break:break-all;text-align:left;max-width:60%">—</span></div>
+            <div class="row" style="align-items:flex-start"><span>ورکر</span><span id="tgDoneUrl" style="direction:ltr;font-size:11px;word-break:break-all;text-align:left;max-width:62%">—</span></div>
             <div id="tgAccStat" style="display:none"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">
               <button type="button" class="btn" id="btnTgTest">تست</button>
@@ -1048,41 +1049,35 @@ table tbody tr{height:auto}
             <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgUpdateBot">آپدیت ربات از GitHub</button>
             <p id="tgStatus2" style="font-size:11px;color:var(--text-muted);margin-top:6px"></p>
           </div>
-          <div class="setting-block" style="margin:0">
-            <h4>پیام‌های ربات</h4>
-            <div class="field"><label>خوش‌آمدگویی</label><textarea id="tgMsgWelcome" rows="2" placeholder="متن /start"></textarea></div>
-            <div class="field"><label>پشتیبانی</label><textarea id="tgMsgSupport" rows="2"></textarea></div>
-            <div class="field"><label>عضویت کانال</label><textarea id="tgMsgJoin" rows="2"></textarea></div>
-            <div class="field"><label>فروش خاموش</label><textarea id="tgMsgSalesOff" rows="2"></textarea></div>
-            <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgMsgSave">ذخیره پیام‌ها</button>
-          </div>
         </div>
-        <div class="tg-conn-grid" style="margin-top:14px">
-          <div class="setting-block" style="margin:0">
-            <h4>گزارش‌های اعلان</h4>
-            <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
-            <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
-            <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
-            <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
-            <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
-          </div>
-          <div class="setting-block" style="margin:0">
-            <h4>کانال اسپانسر</h4>
-            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">اگر پر باشد، کاربر باید عضو باشد تا ربات جواب دهد.</p>
-            <div class="field"><label>کانال</label>
-              <input type="text" id="shopSponsor" placeholder="@channel یا t.me/..." style="direction:ltr;text-align:left" />
-            </div>
-            <button type="button" class="btn btn-primary" id="btnSaveTgSponsor" style="width:100%;margin-top:8px">ذخیره کانال</button>
-          </div>
+
+        <div class="setting-block" style="margin:0">
+          <h4>پیام‌های ربات</h4>
+          <div class="field"><label>خوش‌آمدگویی</label><textarea id="tgMsgWelcome" rows="2" placeholder="متن /start"></textarea></div>
+          <div class="field"><label>پشتیبانی</label><textarea id="tgMsgSupport" rows="2"></textarea></div>
+          <div class="field"><label>عضویت کانال</label><textarea id="tgMsgJoin" rows="2"></textarea></div>
+          <div class="field"><label>فروش خاموش</label><textarea id="tgMsgSalesOff" rows="2"></textarea></div>
+          <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgMsgSave">ذخیره پیام‌ها</button>
         </div>
       </div>
 
-      <!-- قفل فقط وقتی ربات هنوز وصل نیست روی تنظیمات بالا اثر ندارد؛ ویزارد جداست -->
-      <div class="feat-lock-wrap is-locked" data-feature="telegram_bot" id="tgAfterLock" style="display:none">
-        <div class="feat-lock-content" style="min-height:40px"></div>
-        <div class="feat-lock-overlay">
-          <div class="lock-ico">🔒</div>
-          <p>پس از فعال‌سازی ربات، تنظیمات اینجا باز می‌شود</p>
+      <!-- ردیف ۲: کانال ۱/۳ · گزارش ۲/۳ -->
+      <div class="tg-conn-grid">
+        <div class="setting-block" style="margin:0">
+          <h4>کانال اسپانسر</h4>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">اگر پر باشد، کاربر باید عضو باشد تا ربات جواب دهد.</p>
+          <div class="field"><label>کانال</label>
+            <input type="text" id="shopSponsor" placeholder="@channel یا t.me/..." style="direction:ltr;text-align:left" />
+          </div>
+          <button type="button" class="btn btn-primary" id="btnSaveTgSponsor" style="width:100%;margin-top:8px">ذخیره کانال</button>
+        </div>
+        <div class="setting-block" style="margin:0">
+          <h4>گزارش‌های اعلان</h4>
+          <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
+          <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
+          <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
+          <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
+          <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
         </div>
       </div>
     </section>
@@ -3035,11 +3030,16 @@ function openMapProvince(provinceName){
       const r=await api("/api/telegram/config");
       if(!r||!r.ok)return;
       const configured=!!(r.configured || (r.has_token && r.bot_worker_url));
-      const wiz=document.getElementById("tgWizardBox");
-      const conn=document.getElementById("tgConnectedBox");
+      const wizSteps=document.getElementById("tgWizStepsWrap");
+      const connInner=document.getElementById("tgConnectedInner");
+      const title=document.getElementById("tgWizardTitle");
+      const hint=document.getElementById("tgWizardHint");
+      // ویزارد همیشه در جای ۱/۳ می‌ماند — فقط محتوای داخل عوض می‌شود
       if(configured){
-        if(wiz){ wiz.classList.add("hide"); wiz.style.display="none"; }
-        if(conn){ conn.style.display="block"; }
+        if(wizSteps) wizSteps.style.display="none";
+        if(connInner) connInner.style.display="block";
+        if(title) title.textContent="ربات فعال است";
+        if(hint) hint.textContent="اتصال برقرار · آپدیت یا حذف از همین کارت";
         document.getElementById("tgDoneName").textContent=r.bot_username?("@"+r.bot_username):"—";
         const urlEl=document.getElementById("tgDoneUrl");
         if(urlEl) urlEl.textContent=r.bot_worker_url||"—";
@@ -3051,8 +3051,6 @@ function openMapProvince(provinceName){
         setFeatureGate("telegram_bot", true);
         setFeatureGate("shop", true);
         setFeatureGate("auto_backup", true);
-        const _c=document.getElementById("tgConnectedBox"); if(_c)_c.style.display="block";
-        const _w=document.getElementById("tgWizardBox"); if(_w){_w.classList.add("hide");_w.style.display="none";}
         try{
           const st=await api("/api/telegram/stats");
           if(st&&st.ok){
@@ -3063,10 +3061,13 @@ function openMapProvince(provinceName){
           }
         }catch{}
       } else {
-        if(wiz){ wiz.classList.remove("hide"); wiz.style.display=""; }
-        if(conn){ conn.style.display="none"; }
+        if(wizSteps) wizSteps.style.display="";
+        if(connInner) connInner.style.display="none";
+        if(title) title.textContent="راه‌اندازی ربات";
+        if(hint) hint.textContent="ورکر روی اکانت جدا از مادر";
         if(r.chat_id) document.getElementById("tgChatId").value=r.chat_id;
-        document.getElementById("tgStatus").textContent = r.has_token
+        const stEl=document.getElementById("tgStatus");
+        if(stEl) stEl.textContent = r.has_token
           ? ((r.bot_username?"@"+r.bot_username+" · ":"")+"مرحله ۳ را کامل کنید")
           : "از مرحله اول شروع کنید";
         if(r.has_token) setTgWiz(r.bot_worker_url?3:2);
