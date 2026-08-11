@@ -67,21 +67,23 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
   50%{background-position:100% 50%}
   100%{background-position:0% 50%}
 }
-.scan-status{font-size:12px;color:var(--text-secondary);min-height:18px;margin-top:10px}
-.scan-prog{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:8px;overflow:hidden}
-.scan-prog>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#a78bfa);border-radius:2px;transition:width .25s ease}
-.scan-item{display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-top:8px;font-size:12px}
-.scan-item .rank{flex-shrink:0;width:22px;height:22px;border-radius:7px;background:var(--accent-dim);color:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:600}
-.scan-item .meta{flex:1;min-width:0}
-.scan-item .meta strong{display:block;font-weight:500;font-size:12.5px}
-.scan-item .meta small{color:var(--text-muted);font-size:11px;direction:ltr}
+.scan-status{font-size:12px;color:var(--text-secondary);min-height:0;margin-top:10px;text-align:center}
+.scan-status:empty{display:none;margin:0}
+.scan-prog{height:4px;background:rgba(255,255,255,.06);border-radius:99px;margin-top:12px;overflow:hidden;opacity:0;transition:opacity .2s}
+.scan-prog.on{opacity:1}
+.scan-prog>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#a78bfa);border-radius:99px;transition:width .3s ease}
+.scan-item{display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg);border:1px solid var(--border);border-radius:12px;margin-top:8px;font-size:12.5px}
+.scan-item .rank{flex-shrink:0;width:24px;height:24px;border-radius:8px;background:var(--accent-dim);color:var(--accent);display:grid;place-items:center;font-size:12px;font-weight:600}
+.scan-item .meta{flex:1;min-width:0;text-align:right}
+.scan-item .meta .ping{font-weight:600;font-size:14px;color:var(--text);font-variant-numeric:tabular-nums;direction:ltr;display:inline-block}
+.scan-item .meta small{display:block;color:var(--text-muted);font-size:11.5px;direction:ltr;margin-top:2px}
 .scan-item .acts{display:flex;gap:6px;flex-shrink:0}
 .scan-item .acts button{
-  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
-  background:transparent;color:var(--text-muted);cursor:pointer;font-size:13px;
+  width:34px;height:34px;border-radius:9px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--text-secondary);cursor:pointer;font-size:14px;
+  display:grid;place-items:center;
 }
-.scan-item .acts button:hover{color:var(--accent);border-color:rgba(125,211,252,.3)}
-.scan-better{color:var(--success);font-size:11px}
+.scan-item .acts button:hover{color:var(--accent);border-color:rgba(125,211,252,.35);background:var(--accent-dim)}
 .qr-modal{
   display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);
   align-items:center;justify-content:center;padding:20px;
@@ -170,6 +172,13 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
   <script>
   (function () {
     const DATA = window.__SAOW_SUB__ || {};
+    // دیباگ هدرهای درخواست Worker — در DevTools → Console ببینید
+    try {
+      console.log("%c[SAOW] Request headers / CF fields", "color:#7dd3fc;font-weight:bold");
+      console.log(DATA._reqDebug || "(no _reqDebug — mother.js را دیپلوی کنید)");
+      console.log("clientIP chosen:", DATA.clientIP);
+      console.table(DATA._reqDebug || {});
+    } catch (e) {}
     const fa = (n) => String(n ?? "—").replace(/[0-9]/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]);
     function toast(msg) {
       const t = document.getElementById("toast");
@@ -240,7 +249,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       "108.162.192.0/18","131.0.72.0/22","173.245.48.0/20"
     ];
     const THRESHOLDS = [450, 400, 300, 200, 150];
-    const MAX_TRY = 100;
+    const MAX_TRY = 200;
     let scanning = false;
 
     function parseVless(link) {
@@ -316,7 +325,16 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 
     function setScanUi(text, pct) {
       document.getElementById("scanStatus").textContent = text || "";
-      if (pct != null) document.getElementById("scanBar").style.width = Math.min(100, pct) + "%";
+      var prog = document.querySelector(".scan-prog");
+      var bar = document.getElementById("scanBar");
+      if (pct != null) {
+        if (prog) prog.classList.add("on");
+        if (bar) bar.style.width = Math.min(100, pct) + "%";
+      }
+      if (pct === 0 && !text) {
+        if (prog) prog.classList.remove("on");
+        if (bar) bar.style.width = "0%";
+      }
     }
 
     function openQr(link, label) {
@@ -335,27 +353,32 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 
     function renderFound(found, base) {
       const box = document.getElementById("scanResults");
-      box.innerHTML = found.map(function (f, i) {
+      // همیشه سریع‌ترین بالا
+      const sorted = found.slice().sort(function (a, b) { return a.latency - b.latency; });
+      box.innerHTML = sorted.map(function (f, i) {
         const link = buildVlessWithIp(base, f.ip, i + 1, f.latency, f.limit);
-        const tag = i === 0
-          ? '<span class="scan-better">شروع · ≤' + fa(f.limit) + "ms</span>"
-          : '<span class="scan-better">سریع‌تر · ≤' + fa(f.limit) + "ms</span>";
         return '<div class="scan-item">' +
-          '<span class="rank">' + fa(i + 1) + "</span>" +
-          '<div class="meta"><strong>' + tag + " · " + fa(f.latency) + 'ms</strong><small>' + f.ip + "</small></div>" +
+          '<span class="rank">' + fa(i + 1) + '</span>' +
+          '<div class="meta"><span class="ping">' + fa(f.latency) + ' ms</span><small>' + f.ip + '</small></div>' +
           '<div class="acts">' +
-          '<button type="button" data-v="' + encodeURIComponent(link) + '" title="کپی">⧉</button>' +
-          '<button type="button" data-qr="' + encodeURIComponent(link) + '" data-ql="' + encodeURIComponent("≤" + f.limit + "ms · " + f.latency + "ms") + '" title="QR">▣</button>' +
-          "</div></div>";
+          '<button type="button" class="btn-copy" data-v="' + encodeURIComponent(link) + '" title="کپی">⧉</button>' +
+          '<button type="button" class="btn-qr" data-qr="' + encodeURIComponent(link) + '" title="QR کد">QR</button>' +
+          '</div></div>';
       }).join("");
-      box.querySelectorAll("button[data-v]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          navigator.clipboard.writeText(decodeURIComponent(btn.dataset.v)).then(function () { toast("کانفیگ کپی شد"); });
+      box.querySelectorAll(".btn-copy").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var t = decodeURIComponent(btn.getAttribute("data-v") || "");
+          navigator.clipboard.writeText(t).then(function () { toast("کانفیگ کپی شد"); });
         });
       });
-      box.querySelectorAll("button[data-qr]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          openQr(decodeURIComponent(btn.dataset.qr), decodeURIComponent(btn.dataset.ql || ""));
+      box.querySelectorAll(".btn-qr").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var t = decodeURIComponent(btn.getAttribute("data-qr") || "");
+          openQr(t, "");
         });
       });
     }
@@ -376,7 +399,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       btn.disabled = true;
       btn.textContent = "در حال بررسی…";
       document.getElementById("scanResults").innerHTML = "";
-      setScanUi("هدف ۱: زیر " + fa(THRESHOLDS[0]) + "ms", 3);
+      setScanUi("در حال تست…", 3);
 
       const pool = randomPool(MAX_TRY);
       const found = [];
@@ -387,7 +410,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       for (let step = 0; step < THRESHOLDS.length; step++) {
         const limit = THRESHOLDS[step];
         const timeout = Math.min(1400, Math.max(350, limit * 1.5));
-        setScanUi("هدف " + fa(step + 1) + "/" + fa(THRESHOLDS.length) + ": زیر " + fa(limit) + "ms", (step / THRESHOLDS.length) * 100);
+        setScanUi("پله " + fa(step + 1) + " · سقف " + fa(limit) + "ms", (step / THRESHOLDS.length) * 100);
         let got = null;
         const CONC = 6;
         while (poolIdx < pool.length && !got) {
@@ -403,21 +426,21 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
             usedIps[got.ip] = 1;
           }
           setScanUi(
-            "هدف ≤" + fa(limit) + "ms · تست‌شده " + fa(tried) + (got ? " · پیدا شد " + got.ip : ""),
-            ((step + (got ? 1 : 0.3)) / THRESHOLDS.length) * 100
+            "تست‌شده " + fa(tried) + " · پیدا شده " + fa(found.length + (got ? 1 : 0)),
+            ((step + (got ? 1 : 0.35)) / THRESHOLDS.length) * 100
           );
         }
         if (got) {
           found.push(got);
           renderFound(found, base);
         } else {
-          setScanUi("هدف ≤" + fa(limit) + "ms پیدا نشد — ادامه…", ((step + 1) / THRESHOLDS.length) * 100);
+          setScanUi("سقف " + fa(limit) + "ms بدون نتیجه — ادامه", ((step + 1) / THRESHOLDS.length) * 100);
         }
       }
 
       if (found.length) {
         renderFound(found, base);
-        setScanUi(fa(found.length) + " کانفیگ · از ≤" + fa(THRESHOLDS[0]) + " تا ≤" + fa(THRESHOLDS[found.length - 1]) + "ms", 100);
+        setScanUi(fa(found.length) + " کانفیگ آماده", 100);
         toast(found.length + " کانفیگ آماده شد");
       } else {
         setScanUi("IP مناسبی پیدا نشد — دوباره تلاش کنید", 0);
