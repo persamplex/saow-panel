@@ -863,6 +863,7 @@ table tbody tr{height:auto}
             <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">ارسال دوره‌ای بکاپ به تلگرام</p>
             <div class="field"><label>بازه (دقیقه)</label><input type="number" id="autoBackupMin" value="60" min="15" /></div>
             <div class="row"><span>فعال</span><div class="switch" id="swAutoBackup"></div></div>
+            <button type="button" class="btn" style="width:100%;margin-top:10px" id="btnSendBackupNow">ارسال بکاپ الان به تلگرام</button>
           </div>
           <div class="feat-lock-overlay">
             <div class="lock-ico">🔒</div>
@@ -975,6 +976,7 @@ table tbody tr{height:auto}
           <button type="button" class="btn" id="btnTgTest">تست</button>
           <button type="button" class="btn btn-danger-soft" id="btnTgDelete">حذف</button>
         </div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgUpdateBot">آپدیت ربات از GitHub</button>
         <p id="tgStatus2" style="font-size:12px;color:var(--text-muted);margin-top:8px"></p>
       </div>
 
@@ -2879,6 +2881,17 @@ function openMapProvince(provinceName){
       await refreshFeatureGates();
       await loadTelegram();
     }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnTgUpdateBot")?.addEventListener("click",async()=>{
+    if(!confirm("کد ربات از GitHub گرفته و دوباره دیپلوی می‌شود؟"))return;
+    toast("در حال آپدیت ربات…");
+    const r=await api("/api/telegram/update-bot",{method:"POST",body:"{}"});
+    if(r&&r.ok)toast("ربات آپدیت شد");else toast((r&&r.err)||"ناموفق","err");
+  });
+  document.getElementById("btnSendBackupNow")?.addEventListener("click",async()=>{
+    toast("در حال ارسال بکاپ…");
+    const r=await api("/api/backup/send-telegram",{method:"POST",body:"{}"});
+    if(r&&r.ok)toast("بکاپ ارسال شد");else toast((r&&r.err)||"ناموفق","err");
   });
   document.getElementById("btnTgTest")?.addEventListener("click",async()=>{
     try{
