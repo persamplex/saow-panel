@@ -88,10 +88,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .table-scroll::-webkit-scrollbar,
 .table-wrap::-webkit-scrollbar{display:none!important;height:0!important;width:0!important;background:transparent}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-table td,table th{vertical-align:middle}
-table tbody td{height:52px}
-table tbody td.user-cell{height:auto;min-height:52px}
-table tbody td.row-actions{height:52px}
+table td,table th{vertical-align:middle!important}
+table tbody td{height:auto;min-height:48px;padding-top:14px;padding-bottom:14px}
+table tbody td.user-cell{height:auto;min-height:48px}
+table tbody td.row-actions{height:auto;min-height:48px;vertical-align:middle!important}
 /* ستون عملیات بدون نوار اضافه */
 td.row-actions{
   white-space:nowrap;vertical-align:middle;
@@ -114,8 +114,20 @@ tr:hover td{background:rgba(255,255,255,.015)}
 .badge-info{background:rgba(125,211,252,.12);color:var(--accent)}
 .bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;width:72px;overflow:hidden}
 .bar>i{display:block;height:100%;border-radius:2px;background:var(--accent)}
-.row-actions{display:flex;gap:4px;align-items:center;background:transparent}
-tbody tr:hover td.row-actions{background:transparent}
+td.row-actions{
+  vertical-align:middle!important;
+  background:transparent!important;
+  /* نه display:flex روی خود td — تراز عمودی جدول را خراب می‌کند */
+}
+td.row-actions .row-actions-inner,
+td.row-actions{
+  /* دکمه‌ها به صورت inline-flex داخل سلول وسط‌چین */
+}
+.row-actions-inner{
+  display:inline-flex;gap:4px;align-items:center;justify-content:flex-end;
+  vertical-align:middle;
+}
+tbody tr:hover td.row-actions{background:transparent!important}
 .icon-btn{width:30px;height:30px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--text-muted);cursor:pointer;display:grid;place-items:center;transition:all .15s;font-size:14px}
 .icon-btn:hover{background:rgba(255,255,255,.05);color:var(--text);border-color:var(--border)}
 .icon-btn.danger:hover{color:var(--danger);background:rgba(248,113,113,.08)}
@@ -267,8 +279,8 @@ td:not(.row-actions):not(.user-cell) > *:not(br){
 td.user-cell{display:block;padding-bottom:10px;margin-bottom:6px;border-bottom:1px solid var(--border)}
 td.user-cell::before{display:none}
 td.row-actions{
-  justify-content:flex-end;align-items:center;gap:6px;
-  padding:10px 0 2px;margin-top:4px;
+  display:flex!important;justify-content:flex-end;align-items:center;gap:6px;
+  padding:12px 0 4px;margin-top:4px;
   border-top:1px solid var(--border);
   flex-wrap:wrap;overflow:visible!important;
   background:transparent!important;
@@ -277,6 +289,7 @@ td.row-actions{
 }
 td.row-actions::before{display:none!important;content:none!important}
 td.row-actions .icon-btn{flex-shrink:0}
+td.row-actions .row-actions-inner{display:contents}
 .search{width:100%}
 .search input{width:100%;flex:1}
 .ylog-bar{padding:4px 12px 12px;max-width:100%}
@@ -472,21 +485,13 @@ td.row-actions .icon-btn{flex-shrink:0}
 #iranMapContainer .anychart-credits{display:none!important}
 
 /* تراز عمودی ردیف جدول کاربران/نودها */
-table tbody td{
+table tbody td, table tbody th{
   vertical-align:middle!important;
 }
 table tbody tr td.row-actions{
   vertical-align:middle!important;
-  height:100%;
 }
-table tbody tr{
-  height:auto;
-}
-table tbody td .badge,
-table tbody td .bar,
-table tbody td .icon-btn{
-  vertical-align:middle;
-}
+table tbody tr{height:auto}
 .user-cell{vertical-align:middle!important}
 .user-cell .uid{margin-top:2px}
 
@@ -1395,11 +1400,13 @@ function openMapProvince(provinceName){
         <td data-label="IP">${faNum(u.activeIPs||0)} / ${faNum(u.ipLimit||1)}</td>
         <td data-label="انقضا">${daysRemaining(u.expiry)}</td>
         <td class="row-actions" data-label="">
+          <span class="row-actions-inner">
           <button class="icon-btn" title="اطلاعات بیشتر" data-act="info" data-id="${esc(u.id)}">ⓘ</button>
           <button class="icon-btn" title="ویرایش" data-act="edit" data-id="${esc(u.id)}">✎</button>
           <button class="icon-btn" title="ریست حجم" data-act="reset" data-id="${esc(u.id)}">↻</button>
           <button class="icon-btn" title="لینک ساب" data-act="sub" data-id="${esc(u.id)}">🔗</button>
           <button class="icon-btn danger" title="حذف" data-act="del" data-id="${esc(u.id)}">✕</button>
+          </span>
         </td></tr>`;
     }).join("");
     tbody.querySelectorAll("[data-act]").forEach(btn=>btn.addEventListener("click",()=>onUserAction(btn.dataset.act,btn.dataset.id)));
@@ -1666,11 +1673,13 @@ function openMapProvince(provinceName){
           <td data-label="ریکوست امروز">${reqHtml}</td>
           <td data-label="آخرین دیده‌شدن" style="color:var(--text-muted)">${lastSeen}</td>
           <td class="row-actions" data-label="">
+            <span class="row-actions-inner">
             <button class="icon-btn" title="مدیریت نود" data-nact="detail" data-nid="${esc(id)}">⚙</button>
             <button class="icon-btn" title="تست ارتباط" data-nact="test" data-nid="${esc(id)}">⚡</button>
             <button class="icon-btn" title="همگام‌سازی" data-nact="sync1" data-nid="${esc(id)}">↻</button>
             <button class="icon-btn" title="${disabled?"باز کردن":"قفل کردن"}" data-nact="toggle" data-nid="${esc(id)}">${disabled?"🔓":"🔒"}</button>
             <button class="icon-btn danger" title="حذف" data-nact="del" data-nid="${esc(id)}">✕</button>
+            </span>
           </td></tr>`;
       }).join("");
       tbody.querySelectorAll("[data-nact]").forEach(btn=>btn.addEventListener("click",()=>onNodeAction(btn.dataset.nact,btn.dataset.nid)));
