@@ -1428,23 +1428,23 @@ table tbody tr{height:auto}
     document.getElementById("appRoot").style.display="";
     document.getElementById("sysBase").textContent=API_BASE||location.origin;
     boot();
-    // اول IP واقعی از مرورگر، بعد لاگ پنل با همان IP
-    let geo={};
-    try{geo=await reportClientIpConsensus()||{};}catch(e){geo={};}
-    try{
-      await api("/api/activity",{method:"POST",body:JSON.stringify({
-        type:"panel_open",
-        message:"باز شدن پنل ادمین",
-        meta:{
-          ip:geo.ip||"",
-          city:geo.city||"",
-          region:geo.region||"",
-          country:geo.country||"",
-          ip_source:"client-consensus",
-          votes:geo.votes||0
-        }
-      })});
-    }catch{}
+    // لاگ ورود در پس‌زمینه — UI را معطل نکند
+    setTimeout(()=>{
+      reportClientIpConsensus().then(geo=>{
+        api("/api/activity",{method:"POST",body:JSON.stringify({
+          type:"panel_open",
+          message:"باز شدن پنل ادمین",
+          meta:{
+            ip:(geo&&geo.ip)||"",
+            city:(geo&&geo.city)||"",
+            region:(geo&&geo.region)||"",
+            country:(geo&&geo.country)||"",
+            ip_source:"client-consensus",
+            votes:(geo&&geo.votes)||0
+          }
+        })}).catch(()=>{});
+      }).catch(()=>{});
+    }, 600);
   }
   function logout(){
     try{api("/api/auth/logout",{method:"POST"}).catch(()=>{});}catch{}
@@ -1479,14 +1479,40 @@ table tbody tr{height:auto}
   });
   (function tryRestore(){
     const b=localStorage.getItem(LS_BASE),s=localStorage.getItem(LS_SECRET);
-    if(s){
-      API_BASE=(b||location.origin).replace(/\/$/,"");
-      API_SECRET=s;
+    if(!s) return;
+    API_BASE=(b||location.origin).replace(/\/$/,"");
+    API_SECRET=s;
+    try{
       document.getElementById("cfgBase").value=b||"";
       const u=localStorage.getItem("saow_panel_user");
       if(u) document.getElementById("cfgUser").value=u;
-      api("/api/ping").then(r=>{if(r&&r.ok)showApp();}).catch(()=>{});
-    }
+    }catch{}
+    // فوری پنل را نشان بده — بدون چشمک لاگین
+    document.getElementById("authGate").style.display="none";
+    document.getElementById("appRoot").style.display="";
+    document.getElementById("sysBase").textContent=API_BASE||location.origin;
+    let booted=false;
+    const go=()=>{ if(booted)return; booted=true; boot(); };
+    // boot فوری؛ اعتبارسنجی در پس‌زمینه
+    go();
+    api("/api/ping").then(r=>{
+      if(!(r&&r.ok)){
+        // نشست نامعتبر
+        try{localStorage.removeItem(LS_SECRET);}catch{}
+        document.getElementById("appRoot").style.display="none";
+        document.getElementById("authGate").style.display="";
+      }
+    }).catch(()=>{});
+    // لاگ باز شدن پنل را به تأخیر بینداز تا UI گیر نکند
+    setTimeout(()=>{
+      reportClientIpConsensus().then(geo=>{
+        api("/api/activity",{method:"POST",body:JSON.stringify({
+          type:"panel_open",
+          message:"باز شدن پنل ادمین",
+          meta:{ip:geo&&geo.ip||"",city:geo&&geo.city||"",region:geo&&geo.region||"",country:geo&&geo.country||"",ip_source:"client-consensus",votes:geo&&geo.votes||0}
+        })}).catch(()=>{});
+      }).catch(()=>{});
+    }, 800);
   })();
 
   function updateTopAction(sec){currentSec=sec;const btn=document.getElementById("topActionBtn");const cfg=topActions[sec]||topActions.dash;if(!cfg.label){btn.style.display="none";return;}btn.style.display="";btn.textContent=cfg.label;}
@@ -1494,6 +1520,10 @@ table tbody tr{height:auto}
   document.getElementById("topActionBtn").addEventListener("click",handleTopAction);
   function goSection(sec,skipSave){
     if(!sec||!document.getElementById(sec))sec="dash";
+    // اگر پنل قفل کامل است فقط settings مجاز است
+    if(PANEL_RULES&&PANEL_RULES.lock_panel && sec!=="settings"){
+      sec="settings";
+    }
     document.querySelectorAll(".nav-item").forEach(i=>i.classList.toggle("active",i.dataset.sec===sec));
     document.querySelectorAll(".section").forEach(s=>s.classList.toggle("active",s.id===sec));
     document.getElementById("title").innerHTML=titles[sec]||sec;
@@ -1502,6 +1532,7 @@ table tbody tr{height:auto}
     document.getElementById("sidebar").classList.remove("open");
     document.getElementById("sidebarBackdrop").classList.remove("show");
     if(!skipSave) try{localStorage.setItem("saow_panel_sec",sec);}catch{}
+    applyPanelLocksFromRules();
     onSectionEnter(sec);
   }
   document.querySelectorAll(".nav-item").forEach(el=>{el.addEventListener("click",()=>goSection(el.dataset.sec));});
@@ -2100,13 +2131,19 @@ function openMapProvince(provinceName){
     const panel=root.querySelector(".cselect-panel");
     if(!panel)return;
     const cur=selected??"";
-    panel.innerHTML=options.map(([val,lab])=>{
+    // پشتیبانی از [val,lab] و {value,label}
+    const norm=(options||[]).map(o=>{
+      if(Array.isArray(o)) return [o[0], o[1]!=null?o[1]:o[0]];
+      if(o&&typeof o==="object") return [o.value??"", o.label??o.value??""];
+      return [o, String(o)];
+    });
+    panel.innerHTML=norm.map(([val,lab])=>{
       const sel=String(val)===String(cur)?" selected":"";
       return `<button type="button" class="cselect-option${sel}" role="option" data-value="${esc(val)}" data-label="${esc(lab)}">${esc(lab)}</button>`;
     }).join("");
-    const match=options.find(([v])=>String(v)===String(cur));
-    const label=match?match[1]:(options[0]?options[0][1]:"");
-    setCSelectValue(root, match?match[0]:(options[0]?options[0][0]:""), label);
+    const match=norm.find(([v])=>String(v)===String(cur));
+    const label=match?match[1]:(norm[0]?norm[0][1]:"");
+    setCSelectValue(root, match?match[0]:(norm[0]?norm[0][0]:""), label);
     panel.querySelectorAll(".cselect-option").forEach(opt=>{
       opt.addEventListener("click",e=>{
         e.stopPropagation();
@@ -2158,32 +2195,28 @@ function openMapProvince(provinceName){
       const c=(p.category||p.cat||"").trim();
       if(c) cats.add(c);
     });
-    const opts=[{value:"",label:"بدون دسته"}];
-    Array.from(cats).sort().forEach(c=>opts.push({value:c,label:c}));
-    opts.push({value:"__new__",label:"+ دسته جدید…"});
+    const opts=[["","بدون دسته"]];
+    Array.from(cats).sort().forEach(c=>opts.push([c,c]));
+    opts.push(["__new__","+ دسته جدید…"]);
     const cur=selected||"";
-    const has=opts.some(o=>o.value===cur);
-    if(cur && !has && cur!=="__new__") opts.splice(1,0,{value:cur,label:cur});
-    populateCSelect(root, opts, has||!cur ? cur : cur);
-    if(cur && !has) setCSelectValue(root, cur, cur);
+    if(cur && cur!=="__new__" && !opts.some(([v])=>v===cur)) opts.splice(1,0,[cur,cur]);
+    populateCSelect(root, opts, cur);
     const wrap=document.getElementById("planCatCustomWrap");
     const custom=document.getElementById("planCatCustom");
     if(wrap) wrap.style.display="none";
     if(custom) custom.value="";
-    // react to selection
     root.querySelectorAll(".cselect-option").forEach(opt=>{
       opt.addEventListener("click",()=>{
         const v=opt.getAttribute("data-value")||"";
         if(v==="__new__"){
           if(wrap) wrap.style.display="";
-          if(custom){ custom.value=""; custom.focus(); }
-          // keep hidden input empty until typed
+          if(custom){ custom.value=""; setTimeout(()=>custom.focus(),50); }
           const inp=document.getElementById("planCat");
           if(inp) inp.value="";
         } else {
           if(wrap) wrap.style.display="none";
         }
-      },{once:false});
+      });
     });
   }
   async function openUserModal(user){
@@ -2662,14 +2695,20 @@ function openMapProvince(provinceName){
   ["swLockPanel","swLockCreateUser","swLockCreateNode","swLockShop","swLockSub","swLockConnect"].forEach(id=>{document.getElementById(id).addEventListener("click",function(){this.classList.toggle("on");if(id==="swLockPanel")toggleSub(id,"sub-panel-lock");if(id==="swLockCreateUser")toggleSub(id,"sub-create-user");if(id==="swLockCreateNode")toggleSub(id,"sub-create-node");});});
   document.getElementById("btnSaveRules").addEventListener("click",async()=>{
     const body={lock_panel:document.getElementById("swLockPanel").classList.contains("on"),lock_create_user:document.getElementById("swLockCreateUser").classList.contains("on"),lock_create_node:document.getElementById("swLockCreateNode").classList.contains("on"),lock_shop:document.getElementById("swLockShop").classList.contains("on"),lock_sub:document.getElementById("swLockSub").classList.contains("on"),lock_connect:document.getElementById("swLockConnect").classList.contains("on"),max_users:Number(document.getElementById("rulesMaxUsers").value)||0,max_nodes:Number(document.getElementById("rulesMaxNodes").value)||0,message:document.getElementById("rulesMessage").value.trim()};
+    // اعمال فوری سمت کلاینت قبل از پاسخ سرور
+    PANEL_RULES=Object.assign({}, PANEL_RULES, body);
+    applyPanelLocksFromRules();
     try{
       const r=await api("/api/rules",{method:"POST",body:JSON.stringify(body)});
-      PANEL_RULES=(r&&(r.rules||r))||body;
+      if(r&&r.rules) PANEL_RULES=r.rules;
+      else PANEL_RULES=Object.assign({}, PANEL_RULES, body);
       applyPanelLocksFromRules();
-      await refreshFeatureGates();
-      applyPanelLocksFromRules();
+      refreshFeatureGates().then(()=>applyPanelLocksFromRules()).catch(()=>{});
       toast("قوانین ذخیره شد","ok");
-    }catch(e){toast(e.message,"err");}
+    }catch(e){
+      toast(e.message,"err");
+      refreshRulesLocal();
+    }
   });
   document.getElementById("btnLogout").addEventListener("click",logout);
   document.getElementById("btnUpdateMother")?.addEventListener("click",async()=>{
@@ -2862,15 +2901,14 @@ function openMapProvince(provinceName){
   function boot(){
     let sec="dash";
     try{sec=localStorage.getItem("saow_panel_sec")||"dash";}catch{}
-    // ابتدا وضعیت ربات/قفل‌ها را از سرور بگیر (بدون نیاز به باز کردن صفحه تلگرام)
-    Promise.all([refreshFeatureGates(), refreshRulesLocal(), loadAutoBackupSettings()]).finally(()=>{
-      if(sec&&sec!=="dash"&&document.getElementById(sec)){
-        goSection(sec,true);
-      } else {
-        loadDashboard(true);
-      }
-    });
+    // فوری بخش را نشان بده — قفل‌ها و فیچرها در پس‌زمینه
+    if(sec&&sec!=="dash"&&document.getElementById(sec)) goSection(sec,true);
+    else loadDashboard(true);
     startDashPoll();
+    // موازی و غیرمسدودکننده
+    refreshRulesLocal().then(()=>applyPanelLocksFromRules()).catch(()=>{});
+    refreshFeatureGates().then(()=>applyPanelLocksFromRules()).catch(()=>{});
+    loadAutoBackupSettings().catch(()=>{});
     api("/api/users").then(d=>{usersCache=d.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);}).catch(()=>{});
     api("/api/nodes").then(d=>{nodesCache={managed:d.managed||[],alive:d.alive||[]};document.getElementById("navNodesCount").textContent=faNum((d.managed||[]).length);}).catch(()=>{});
     api("/version").then(d=>{if(d&&(d.v||d.version)){const v=d.v||d.version;document.getElementById("sidebarFoot").textContent="v"+v+" · Push Mode";document.getElementById("sysVersion").textContent=v;}}).catch(()=>{});
