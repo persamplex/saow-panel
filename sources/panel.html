@@ -46,7 +46,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .btn-primary{background:var(--accent-dim);border-color:rgba(125,211,252,.25);color:var(--accent)}
 .btn-primary:hover{background:rgba(125,211,252,.2)}
 .btn-ghost{background:transparent}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;overflow:visible;position:relative;z-index:2}
 .stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative}
 .stat-label{font-size:13px;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .stat-value{font-size:26px;font-weight:600;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
@@ -599,6 +599,20 @@ table tbody tr{height:auto}
 .tg-done-card.show{display:block}
 #tgWizardBox.hide{display:none}
 
+
+/* floating tip for CF limits — position:fixed تا بریده نشود */
+#floatTip{
+  position:fixed;z-index:9999;max-width:min(280px,86vw);
+  padding:12px 14px;border-radius:10px;font-size:12px;line-height:1.65;
+  color:var(--text);text-align:right;direction:rtl;
+  background:var(--bg-elevated);border:1px solid var(--border);
+  box-shadow:0 14px 40px rgba(0,0,0,.55);
+  pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s;
+}
+#floatTip.on{opacity:1;visibility:visible}
+.stat{overflow:visible!important}
+.stat-label{overflow:visible!important}
+
 /* dashboard limit tip */
 .stat-warn{
   display:inline-flex;align-items:center;justify-content:center;
@@ -663,23 +677,7 @@ table tbody tr{height:auto}
   font-size:10px!important;font-weight:700;cursor:help;position:relative;z-index:5;
   background:transparent;flex-shrink:0;line-height:1;
 }
-.stat-warn[data-tip]::after{
-  content:attr(data-tip);
-  position:absolute;z-index:100;
-  bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(4px);
-  width:min(250px,72vw);padding:10px 12px;border-radius:10px;
-  font-size:12px;font-weight:400;line-height:1.6;color:var(--text);text-align:right;
-  background:var(--bg-elevated);border:1px solid var(--border);
-  box-shadow:0 14px 40px rgba(0,0,0,.55);
-  opacity:0;visibility:hidden;pointer-events:none;
-  transition:opacity .15s ease, transform .15s ease, visibility .15s;
-  white-space:normal;
-}
-.stat-warn[data-tip]:hover::after,
-.stat-warn[data-tip]:focus::after,
-.stat-warn[data-tip].tip-on::after{
-  opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);
-}
+.stat-warn[data-tip]::after{display:none!important;content:none!important}
 @media(max-width:640px){
   .stat-warn[data-tip]::after{
     left:auto;right:0;transform:translateY(4px);
@@ -1271,12 +1269,21 @@ table tbody tr{height:auto}
       return true;
     }).length;
   }
+  function truthyLock(v){
+    return v===true || v===1 || v==="1" || v==="true";
+  }
   function canCreateUserUi(){
-    if(PANEL_RULES.lock_create_user) return {ok:false,msg:PANEL_RULES.message||"ساخت کاربر توسط لایسنس قفل شده"};
-    if(PANEL_RULES.max_users>0){
-      const n=Number(document.getElementById("navUsersCount")?.textContent?.replace(/[^0-9]/g,"")||usersCache?.length||0);
-      const cnt=(typeof usersCache!=="undefined"&&usersCache)?usersCache.length:n;
-      if(cnt>=PANEL_RULES.max_users) return {ok:false,msg:"سقف تعداد کاربر ("+PANEL_RULES.max_users+") پر شده"};
+    const r=PANEL_RULES||{};
+    // قفل خاموش = بدون هیچ سقف لایسنس
+    if(truthyLock(r.lock_create_user)){
+      const max=Number(r.max_users)||0;
+      if(max>0){
+        const cnt=(usersCache&&usersCache.length)||0;
+        if(cnt>=max) return {ok:false,msg:"سقف تعداد کاربر ("+max+") پر شده"};
+        // زیر سقف مجاز است
+      } else {
+        return {ok:false,msg:r.message||"ساخت کاربر توسط لایسنس قفل شده"};
+      }
     }
     // معماری نودبیس: بدون نود فعال نمی‌توان کاربر ساخت
     const activeNodes=countActiveNodes();
@@ -1289,10 +1296,15 @@ table tbody tr{height:auto}
     return {ok:true};
   }
   function canCreateNodeUi(){
-    if(PANEL_RULES.lock_create_node) return {ok:false,msg:PANEL_RULES.message||"ساخت نود توسط لایسنس قفل شده"};
-    if(PANEL_RULES.max_nodes>0){
-      const cnt=(nodesCache&&nodesCache.managed)?nodesCache.managed.length:0;
-      if(cnt>=PANEL_RULES.max_nodes) return {ok:false,msg:"سقف تعداد نود ("+PANEL_RULES.max_nodes+") پر شده"};
+    const r=PANEL_RULES||{};
+    if(truthyLock(r.lock_create_node)){
+      const max=Number(r.max_nodes)||0;
+      if(max>0){
+        const cnt=(nodesCache&&nodesCache.managed)?nodesCache.managed.length:0;
+        if(cnt>=max) return {ok:false,msg:"سقف تعداد نود ("+max+") پر شده"};
+      } else {
+        return {ok:false,msg:r.message||"ساخت نود توسط لایسنس قفل شده"};
+      }
     }
     return {ok:true};
   }
@@ -2915,6 +2927,41 @@ function openMapProvince(provinceName){
   }
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&currentSec==="dash")loadDashboard(false);});
 })();
+
+(function(){
+  const tip = document.getElementById("floatTip");
+  if (!tip) return;
+  function show(el){
+    const t = el.getAttribute("data-tip");
+    if (!t) return;
+    tip.textContent = t;
+    tip.classList.add("on");
+    const r = el.getBoundingClientRect();
+    const tw = tip.offsetWidth || 240;
+    const th = tip.offsetHeight || 60;
+    let left = r.left + r.width/2 - tw/2;
+    let top = r.top - th - 10;
+    if (left < 8) left = 8;
+    if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+    if (top < 8) top = r.bottom + 10;
+    tip.style.left = left + "px";
+    tip.style.top = top + "px";
+  }
+  function hide(){ tip.classList.remove("on"); }
+  document.addEventListener("mouseover", function(e){
+    const el = e.target.closest(".stat-warn[data-tip], .help-tip[data-tip]");
+    if (el) show(el); else if (!e.target.closest("#floatTip")) hide();
+  });
+  document.addEventListener("mouseout", function(e){
+    const el = e.target.closest(".stat-warn[data-tip], .help-tip[data-tip]");
+    if (el) hide();
+  });
+  document.addEventListener("click", function(e){
+    const el = e.target.closest(".stat-warn[data-tip], .help-tip[data-tip]");
+    if (el) { e.preventDefault(); if (tip.classList.contains("on")) hide(); else show(el); }
+  });
+})();
+
 </script><div class="sub-qr-overlay" id="subQrOverlay">
   <div class="sub-qr-box" role="dialog" aria-modal="true">
     <h3 id="subQrTitle">لینک اشتراک</h3>
@@ -2927,5 +2974,6 @@ function openMapProvince(provinceName){
   </div>
 </div>
 
+<div id="floatTip" role="tooltip"></div>
 </body>
 </html>
