@@ -1,18 +1,20 @@
 /**
  * SAOW Telegram Bot Worker
- * Version: 1.1.0-tg
- *
- * فروش کانفیگ برای کاربران + مدیریت برای ادمین
+ * Version: 1.2.0-tg
+ * فروش + اطلاع‌رسانی + پروکسی ساب تست
  * Bindings: BOT_TOKEN, MOTHER_URL, MOTHER_SECRET, ADMIN_CHAT_ID (optional)
  */
-const VERSION = "1.1.0-tg";
+const VERSION = "1.2.0-tg";
 
-async function tg(token, method, body) {
-  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body || {}),
-  });
+async function tg(token, method, body, isForm) {
+  const opts = { method: "POST" };
+  if (isForm) {
+    opts.body = body;
+  } else {
+    opts.headers = { "Content-Type": "application/json" };
+    opts.body = JSON.stringify(body || {});
+  }
+  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, opts);
   return res.json().catch(() => ({ ok: false }));
 }
 
@@ -25,6 +27,17 @@ async function send(token, chatId, text, keyboard) {
   };
   if (keyboard) body.reply_markup = { inline_keyboard: keyboard };
   return tg(token, "sendMessage", body);
+}
+
+async function sendPhoto(token, chatId, fileId, caption, keyboard) {
+  const body = {
+    chat_id: chatId,
+    photo: fileId,
+    caption: String(caption || "").slice(0, 1000),
+    parse_mode: "HTML",
+  };
+  if (keyboard) body.reply_markup = { inline_keyboard: keyboard };
+  return tg(token, "sendPhoto", body);
 }
 
 async function edit(token, chatId, msgId, text, keyboard) {
@@ -70,19 +83,24 @@ async function motherApi(env, path, opts = {}) {
   }
 }
 
-async function getAdminChatId(env) {
+async function getSettings(env) {
+  const st = await motherApi(env, "/api/shop/settings");
+  return st.settings || {};
+}
+
+async function getMsg(settings, key, fallback) {
+  const v = settings[key];
+  return (v && String(v).trim()) || fallback;
+}
+
+async function getAdminChatId(env, settings) {
   if (env.ADMIN_CHAT_ID) return String(env.ADMIN_CHAT_ID);
+  if (settings && settings.tg_admin_chat_id) return String(settings.tg_admin_chat_id);
   try {
     if (env.ADMIN_KV) {
       const v = await env.ADMIN_KV.get("admin_chat_id");
       if (v) return String(v);
     }
-  } catch {}
-  // fallback: ask mother
-  try {
-    const st = await motherApi(env, "/api/shop/settings");
-    const id = st?.settings?.tg_admin_chat_id;
-    if (id) return String(id);
   } catch {}
   return null;
 }
@@ -105,50 +123,92 @@ function fa(n) {
 function esc(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-
-function isAdmin(env, chatId, adminId) {
+function isAdmin(adminId, chatId) {
   return adminId && String(chatId) === String(adminId);
 }
 
-/* ───────── Admin menus ───────── */
-async function showAdminHome(token, chatId, env, msgId) {
-  const text =
-    `🛠 <b>پنل ادمین SAOW</b>\n` +
-    `نسخه ربات: <code>${VERSION}</code>\n\n` +
-    `از دکمه‌های زیر مدیریت کنید:`;
-  const kb = [
-    [{ text: "📦 فروشگاه / پلن‌ها", callback_data: "adm_shop" }],
-    [{ text: "🧾 سفارش‌های در انتظار", callback_data: "adm_orders" }],
-    [{ text: "📤 بکاپ الان", callback_data: "adm_backup_now" }],
-    [{ text: "📊 وضعیت مادر", callback_data: "adm_status" }],
-    [{ text: "🛒 منوی فروش (نمای کاربر)", callback_data: "user_shop" }],
-  ];
-  if (msgId) return edit(token, chatId, msgId, text, kb);
-  return send(token, chatId, text, kb);
+/** pending plan selection waiting for receipt photo: Map not available across isolates — use mother shop_settings ustate */
+async function setUserState(env, userId, state) {
+  await motherApi(env, "/api/shop/settings", {
+    method: "POST",
+    body: JSON.stringify({ [`ustate:${userId}`]: state ? JSON.stringify(state) : "" }),
+  });
+}
+async function getUserState(env, userId) {
+  const st = await getSettings(env);
+  const raw = st[`ustate:${userId}`];
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
 }
 
-async function showUserHome(token, chatId, env, msgId) {
-  const text =
-    `👋 <b>به فروشگاه SAOW خوش آمدید</b>\n\n` +
-    `پلن بخرید، سرویس‌های خود را ببینید و لینک ساب را دریافت کنید.`;
+async function checkChannel(env, token, userId, settings) {
+  const ch = String(settings.shop_sponsor_channel || "").trim();
+  if (!ch) return true;
+  const channel = ch.startsWith("@") ? ch : (ch.startsWith("-") ? ch : "@" + ch.replace(/^https?:\/\/t\.me\//, ""));
+  try {
+    const r = await tg(token, "getChatMember", { chat_id: channel, user_id: Number(userId) });
+    const status = r?.result?.status || "";
+    return ["creator", "administrator", "member", "restricted"].includes(status);
+  } catch {
+    return true;
+  }
+}
+
+function joinKeyboard(settings) {
+  const ch = String(settings.shop_sponsor_channel || "").trim();
+  const link = ch.startsWith("http") ? ch : `https://t.me/${ch.replace(/^@/, "")}`;
+  return [
+    [{ text: "✅ عضو شدم — ادامه", callback_data: "check_join" }],
+    [{ text: "📢 عضویت در کانال", url: link }],
+  ];
+}
+
+/* ───── Menus ───── */
+async function showUserHome(token, chatId, env, settings, msgId) {
+  const welcome = await getMsg(
+    settings,
+    "tg_msg_welcome",
+    "👋 <b>به فروشگاه SAOW خوش آمدید</b>\n\nاز منوی زیر پلن بخرید یا سرویس‌های خود را ببینید."
+  );
   const kb = [
     [{ text: "🛒 خرید کانفیگ", callback_data: "user_shop" }],
+    [{ text: "🎁 اکانت تست", callback_data: "user_test" }],
     [{ text: "📂 سرویس‌های من", callback_data: "user_services" }],
-    [{ text: "ℹ️ راهنما", callback_data: "user_help" }],
+    [{ text: "💬 پشتیبانی", callback_data: "user_support" }],
+  ];
+  if (msgId) return edit(token, chatId, msgId, welcome, kb);
+  return send(token, chatId, welcome, kb);
+}
+
+async function showAdminHome(token, chatId, env, msgId) {
+  const text =
+    `🛠 <b>پنل ادمین</b>\n` +
+    `نسخه ربات: <code>${VERSION}</code>\n\n` +
+    `سفارش‌ها، فروشگاه و وضعیت را مدیریت کنید.`;
+  const kb = [
+    [{ text: "🧾 سفارش‌های در انتظار", callback_data: "adm_orders" }],
+    [{ text: "📦 پلن‌ها", callback_data: "adm_shop" }],
+    [{ text: "📊 وضعیت مادر", callback_data: "adm_status" }],
+    [{ text: "📤 بکاپ الان", callback_data: "adm_backup_now" }],
+    [{ text: "🛒 نمای کاربر", callback_data: "user_home" }],
   ];
   if (msgId) return edit(token, chatId, msgId, text, kb);
   return send(token, chatId, text, kb);
 }
 
-async function showShop(token, chatId, env, msgId, asAdmin) {
+async function showShop(token, chatId, env, settings, msgId) {
+  if (String(settings.shop_sales_enabled || "1") === "0") {
+    const t = await getMsg(settings, "tg_msg_sales_off", "⏸ فروش فعلاً غیرفعال است. بعداً سر بزنید.");
+    const kb = [[{ text: "🔙 منو", callback_data: "user_home" }]];
+    return msgId ? edit(token, chatId, msgId, t, kb) : send(token, chatId, t, kb);
+  }
   const data = await motherApi(env, "/api/shop/plans?enabled=1");
   const plans = data.plans || [];
   if (!plans.length) {
-    const t = "فعلاً پلنی برای فروش فعال نیست.";
-    const kb = [[{ text: "🔙 بازگشت", callback_data: asAdmin ? "adm_home" : "user_home" }]];
+    const t = "فعلاً پلنی فعال نیست.";
+    const kb = [[{ text: "🔙 منو", callback_data: "user_home" }]];
     return msgId ? edit(token, chatId, msgId, t, kb) : send(token, chatId, t, kb);
   }
-  // group by category
   const cats = {};
   for (const p of plans) {
     const c = (p.category || "عمومی").trim() || "عمومی";
@@ -158,282 +218,385 @@ async function showShop(token, chatId, env, msgId, asAdmin) {
   let text = `🛒 <b>فروشگاه</b>\nیک پلن انتخاب کنید:\n`;
   const kb = [];
   for (const [cat, list] of Object.entries(cats)) {
-    text += `\n📁 <b>${esc(cat)}</b>\n`;
+    text += `\n<b>📁 ${esc(cat)}</b>\n`;
     for (const p of list) {
-      const days = p.days > 0 ? fa(p.days) + " روز" : "نامحدود";
-      const q = p.quota_gb > 0 ? fa(p.quota_gb) + " گیگ" : "نامحدود";
-      const price = Number(p.price || 0).toLocaleString("fa-IR");
-      kb.push([{
-        text: `✨ ${p.name} · ${days} · ${q} · ${price} ت`,
-        callback_data: `buy:${p.id}`,
-      }]);
+      const price = fa(Number(p.price) || 0);
+      kb.push([
+        {
+          text: `${p.name} · ${price} تومان · ${fa(p.days || 30)}روز`,
+          callback_data: `buy:${p.id}`,
+        },
+      ]);
     }
   }
-  kb.push([{ text: "🔙 بازگشت", callback_data: asAdmin ? "adm_home" : "user_home" }]);
+  kb.push([{ text: "🔙 منو", callback_data: "user_home" }]);
   return msgId ? edit(token, chatId, msgId, text, kb) : send(token, chatId, text, kb);
 }
 
-async function showBuyInfo(token, chatId, env, planId, msgId, tgUser, username) {
+async function showBuyInfo(token, chatId, env, planId, settings, msgId, userId) {
   const data = await motherApi(env, "/api/shop/plans");
   const plan = (data.plans || []).find((p) => String(p.id) === String(planId));
   if (!plan) {
-    return edit(token, chatId, msgId, "پلن پیدا نشد.", [[{ text: "🔙", callback_data: "user_shop" }]]);
+    return send(token, chatId, "پلن یافت نشد.", [[{ text: "🔙", callback_data: "user_shop" }]]);
   }
-  const st = await motherApi(env, "/api/shop/settings");
-  const card = st?.settings?.shop_card || st?.settings?.card_number || "";
-  const days = plan.days > 0 ? fa(plan.days) + " روز" : "نامحدود";
-  const q = plan.quota_gb > 0 ? fa(plan.quota_gb) + " گیگ" : "نامحدود";
-  const price = Number(plan.price || 0).toLocaleString("fa-IR");
+  const card = settings.shop_card_number || "—";
+  const holder = settings.shop_card_holder || "—";
+  const price = fa(Number(plan.price) || 0);
   let text =
-    `💳 <b>خرید پلن</b>\n` +
-    `━━━━━━━━━━━━━━\n` +
-    `پلن: <b>${esc(plan.name)}</b>\n` +
-    `مدت: <b>${days}</b>\n` +
-    `حجم: <b>${q}</b>\n` +
-    `IP: <b>${fa(plan.ip_limit || 1)}</b>\n` +
-    `قیمت: <b>${price} تومان</b>\n\n`;
-  if (card) {
-    text += `شماره کارت:\n<code>${esc(card)}</code>\n\n`;
-    text += `پس از پرداخت، روی «ثبت سفارش» بزنید و رسید را برای پشتیبانی بفرستید.`;
-  } else {
-    text += `پس از ثبت سفارش، ادمین آن را بررسی می‌کند.`;
-  }
+    `💳 <b>پرداخت پلن ${esc(plan.name)}</b>\n\n` +
+    `📅 ${fa(plan.days || 30)} روز · 📦 ${fa(plan.quota_gb || 0)} GB\n` +
+    `📱 محدودیت IP: ${fa(plan.ip_limit || 1)}\n` +
+    `💰 مبلغ: <b>${price} تومان</b>\n\n` +
+    `به کارت زیر واریز کنید:\n` +
+    `🏦 <code>${esc(card)}</code>\n` +
+    `👤 ${esc(holder)}\n\n` +
+    `پس از واریز، روی «پرداخت کردم» بزنید و <b>اسکرین‌شات رسید</b> را ارسال کنید.`;
   const kb = [
-    [{ text: "✅ ثبت سفارش", callback_data: `order:${plan.id}` }],
+    [{ text: "✅ پرداخت کردم — ارسال رسید", callback_data: `wait_receipt:${plan.id}` }],
     [{ text: "🔙 فروشگاه", callback_data: "user_shop" }],
   ];
-  return edit(token, chatId, msgId, text, kb);
+  if (msgId) return edit(token, chatId, msgId, text, kb);
+  return send(token, chatId, text, kb);
 }
 
-async function createOrder(token, chatId, env, planId, tgUser, username, msgId) {
-  const r = await motherApi(env, "/api/shop/orders", {
-    method: "POST",
-    body: JSON.stringify({
-      plan_id: planId,
-      user_id: String(tgUser),
-      username: username || "",
-    }),
-  });
-  if (!r.ok) {
-    return edit(token, chatId, msgId, "ثبت سفارش ناموفق: " + (r.err || ""), [
-      [{ text: "🔙", callback_data: "user_shop" }],
-    ]);
+async function showSupport(token, chatId, settings, msgId) {
+  const text = await getMsg(
+    settings,
+    "tg_msg_support",
+    "💬 پشتیبانی\nدر صورت مشکل با ادمین در ارتباط باشید."
+  );
+  const kb = [[{ text: "🔙 منو", callback_data: "user_home" }]];
+  return msgId ? edit(token, chatId, msgId, text, kb) : send(token, chatId, text, kb);
+}
+
+async function showServices(token, chatId, env, userId, botOrigin, msgId) {
+  const data = await motherApi(env, "/api/shop/orders?user_id=" + encodeURIComponent(userId));
+  const orders = (data.orders || []).filter((o) => o.status === "approved");
+  if (!orders.length) {
+    const t = "هنوز سرویس تأییدشده‌ای ندارید.";
+    const kb = [
+      [{ text: "🛒 خرید", callback_data: "user_shop" }],
+      [{ text: "🔙 منو", callback_data: "user_home" }],
+    ];
+    return msgId ? edit(token, chatId, msgId, t, kb) : send(token, chatId, t, kb);
   }
-  // notify admin
-  const admin = await getAdminChatId(env);
-  if (admin && String(admin) !== String(chatId)) {
-    await send(
-      token,
-      admin,
-      `🧾 <b>سفارش جدید</b>\n` +
-        `از: @${esc(username || "-")} (<code>${tgUser}</code>)\n` +
-        `پلن: ${esc(r.plan_name || planId)}\n` +
-        `شناسه: <code>${r.id}</code>`,
-      [[{ text: "📋 سفارش‌ها", callback_data: "adm_orders" }]]
-    );
+  let text = `📂 <b>سرویس‌های شما</b>\n\n`;
+  const kb = [];
+  for (const o of orders.slice(0, 15)) {
+    text += `• ${esc(o.plan_name || "پلن")} · <code>${o.panel_user_id || "—"}</code>\n`;
+    if (o.panel_user_id) {
+      const label = Number(o.is_test) ? "🔑 ساب تست (پروکسی)" : "🔑 لینک ساب";
+      kb.push([{ text: `${label} · ${o.plan_name || o.panel_user_id}`, callback_data: `svc:${o.panel_user_id}:${o.is_test || 0}` }]);
+    }
   }
-  return edit(
+  kb.push([{ text: "🔙 منو", callback_data: "user_home" }]);
+  return msgId ? edit(token, chatId, msgId, text, kb) : send(token, chatId, text, kb);
+}
+
+async function sendServiceLink(token, chatId, env, panelUserId, isTest, botOrigin) {
+  // get user uuid
+  const u = await motherApi(env, "/api/users/" + encodeURIComponent(panelUserId));
+  const uuid = u?.user?.uuid || u?.uuid;
+  if (!uuid) {
+    return send(token, chatId, "کاربر یافت نشد.", [[{ text: "🔙", callback_data: "user_services" }]]);
+  }
+  const mother = String(env.MOTHER_URL || "").replace(/\/$/, "");
+  let link;
+  if (Number(isTest) && botOrigin) {
+    link = `${botOrigin}/sub-proxy?token=${encodeURIComponent(uuid)}`;
+  } else {
+    link = `${mother}/pull?token=${encodeURIComponent(uuid)}`;
+  }
+  return send(
     token,
     chatId,
-    msgId,
-    `✅ سفارش ثبت شد.\nشناسه: <code>${r.id}</code>\nپس از تأیید ادمین، سرویس فعال می‌شود.`,
-    [[{ text: "🏠 منو", callback_data: "user_home" }]]
+    `🔗 <b>لینک اشتراک</b>\n\n<code>${esc(link)}</code>\n\n${Number(isTest) ? "⚠️ این لینک تست از طریق ربات پروکسی می‌شود." : ""}`,
+    [[{ text: "🔙 سرویس‌ها", callback_data: "user_services" }]]
   );
 }
 
-async function showOrders(token, chatId, env, msgId) {
+async function createTestAccount(token, chatId, env, userId, username, botOrigin) {
+  // create short trial user via mother
+  const r = await motherApi(env, "/api/users", {
+    method: "POST",
+    body: JSON.stringify({
+      name: `test-${userId}`,
+      quotaBytes: 512 * 1024 * 1024, // 512MB
+      dailyQuotaBytes: 0,
+      ipLimit: 1,
+      expiry: new Date(Date.now() + 3 * 3600 * 1000).toISOString(), // 3 hours
+      enabled: true,
+      notes: "telegram-test",
+    }),
+  });
+  if (!r.ok && !r.user && !r.id) {
+    return send(token, chatId, "ساخت اکانت تست ممکن نشد: " + (r.err || "خطا"), [
+      [{ text: "🔙", callback_data: "user_home" }],
+    ]);
+  }
+  const panelId = r.user?.id || r.id || r.user_id;
+  const uuid = r.user?.uuid || r.uuid;
+  // record as approved test order
+  await motherApi(env, "/api/shop/orders", {
+    method: "POST",
+    body: JSON.stringify({
+      plan_id: "test",
+      plan_name: "اکانت تست",
+      user_id: userId,
+      username: username || "",
+      is_test: true,
+      note: "auto-test",
+    }),
+  }).catch(() => {});
+  // try approve path won't work for fake plan — just send link
+  const link = botOrigin
+    ? `${botOrigin}/sub-proxy?token=${encodeURIComponent(uuid || "")}`
+    : `${String(env.MOTHER_URL || "").replace(/\/$/, "")}/pull?token=${encodeURIComponent(uuid || "")}`;
+  return send(
+    token,
+    chatId,
+    `🎁 <b>اکانت تست آماده است</b>\n\n⏱ اعتبار حدود ۳ ساعت · حجم ۵۱۲MB\n\n🔗 لینک ساب (پروکسی‌شده):\n<code>${esc(link)}</code>`,
+    [[{ text: "🔙 منو", callback_data: "user_home" }]]
+  );
+}
+
+async function showPendingOrders(token, chatId, env, msgId) {
   const data = await motherApi(env, "/api/shop/orders?status=pending");
   const orders = data.orders || [];
   if (!orders.length) {
-    return edit(token, chatId, msgId, "سفارش در انتظاری نیست.", [
-      [{ text: "🔙", callback_data: "adm_home" }],
-    ]);
+    const t = "سفارش در انتظاری نیست.";
+    const kb = [[{ text: "🔙", callback_data: "adm_home" }]];
+    return msgId ? edit(token, chatId, msgId, t, kb) : send(token, chatId, t, kb);
   }
   let text = `🧾 <b>سفارش‌های در انتظار</b> (${fa(orders.length)})\n\n`;
   const kb = [];
-  for (const o of orders.slice(0, 15)) {
+  for (const o of orders.slice(0, 12)) {
     text +=
-      `• <code>${o.id}</code> · ${esc(o.plan_name || o.plan_id)}\n` +
-      `  @${esc(o.username || "-")} · ${fa(o.price || 0)} ت\n`;
+      `• <code>${o.id}</code>\n` +
+      `  ${esc(o.plan_name)} · ${fa(o.price)} ت · @${esc(o.username || o.user_id)}\n`;
     kb.push([
       { text: `✅ ${String(o.id).slice(-6)}`, callback_data: `approve:${o.id}` },
       { text: `❌`, callback_data: `reject:${o.id}` },
     ]);
   }
   kb.push([{ text: "🔙", callback_data: "adm_home" }]);
-  return edit(token, chatId, msgId, text, kb);
-}
-
-async function showUserServices(token, chatId, env, tgUser, msgId) {
-  const data = await motherApi(env, "/api/shop/orders?user_id=" + encodeURIComponent(tgUser));
-  const orders = (data.orders || []).filter((o) => o.status === "approved");
-  if (!orders.length) {
-    return edit(token, chatId, msgId, "سرویسی ندارید. از فروشگاه خرید کنید.", [
-      [{ text: "🛒 فروشگاه", callback_data: "user_shop" }],
-      [{ text: "🔙", callback_data: "user_home" }],
-    ]);
-  }
-  let text = `📂 <b>سرویس‌های شما</b>\n\n`;
-  const kb = [];
-  for (const o of orders.slice(0, 20)) {
-    text += `• ${esc(o.plan_name || "پلن")} · <code>${o.panel_user_id || "—"}</code>\n`;
-    if (o.panel_user_id) {
-      kb.push([{ text: `🔑 ${o.plan_name || o.panel_user_id}`, callback_data: `svc:${o.panel_user_id}` }]);
-    }
-  }
-  kb.push([{ text: "🔙", callback_data: "user_home" }]);
-  return edit(token, chatId, msgId, text, kb);
-}
-
-async function showService(token, chatId, env, userId, msgId) {
-  const data = await motherApi(env, "/api/users/" + encodeURIComponent(userId));
-  const u = data.user || data;
-  if (!data.ok && !u?.uuid) {
-    return edit(token, chatId, msgId, "سرویس پیدا نشد.", [[{ text: "🔙", callback_data: "user_services" }]]);
-  }
-  const base = String(env.MOTHER_URL || "").replace(/\/$/, "");
-  const sub = `${base}/pull?token=${u.uuid}`;
-  const text =
-    `🔑 <b>${esc(u.name || userId)}</b>\n` +
-    `وضعیت: <b>${esc(u.status || "—")}</b>\n` +
-    `UUID:\n<code>${u.uuid}</code>\n\n` +
-    `🔗 ساب:\n<code>${sub}</code>`;
-  const kb = [
-    [{ text: "📋 کپی ساب (متن)", callback_data: `svc:${userId}` }],
-    [{ text: "🔙", callback_data: "user_services" }],
-  ];
-  return edit(token, chatId, msgId, text, kb);
+  return msgId ? edit(token, chatId, msgId, text, kb) : send(token, chatId, text, kb);
 }
 
 async function handleCallback(env, cq) {
   const token = env.BOT_TOKEN;
-  const chatId = String(cq.message?.chat?.id || "");
+  const data = cq.data || "";
+  const chatId = cq.message?.chat?.id;
   const msgId = cq.message?.message_id;
-  const data = String(cq.data || "");
-  const fromId = String(cq.from?.id || "");
+  const fromId = cq.from?.id;
   const username = cq.from?.username || "";
-  const admin = await getAdminChatId(env);
-  const adm = isAdmin(env, chatId, admin) || isAdmin(env, fromId, admin);
+  const settings = await getSettings(env);
+  const adminId = await getAdminChatId(env, settings);
 
-  await answer(token, cq.id, "");
+  await answer(token, cq.id);
 
-  if (data === "adm_home" || data === "admin") return showAdminHome(token, chatId, env, msgId);
-  if (data === "user_home") return showUserHome(token, chatId, env, msgId);
-  if (data === "user_shop" || data === "adm_shop") return showShop(token, chatId, env, msgId, data === "adm_shop");
-  if (data === "user_services") return showUserServices(token, chatId, env, fromId, msgId);
-  if (data === "user_help") {
+  // channel gate
+  if (data !== "check_join" && !isAdmin(adminId, fromId)) {
+    const ok = await checkChannel(env, token, fromId, settings);
+    if (!ok) {
+      const t = await getMsg(
+        settings,
+        "tg_msg_join",
+        "برای استفاده از ربات ابتدا در کانال اسپانسر عضو شوید."
+      );
+      return send(token, chatId, t, joinKeyboard(settings));
+    }
+  }
+
+  if (data === "check_join") {
+    const ok = await checkChannel(env, token, fromId, settings);
+    if (!ok) {
+      return answer(token, cq.id, "هنوز عضو نیستید", true);
+    }
+    return showUserHome(token, chatId, env, settings, msgId);
+  }
+
+  if (data === "user_home") return showUserHome(token, chatId, env, settings, msgId);
+  if (data === "adm_home") return showAdminHome(token, chatId, env, msgId);
+  if (data === "user_shop" || data === "adm_shop") return showShop(token, chatId, env, settings, msgId);
+  if (data === "user_support") return showSupport(token, chatId, settings, msgId);
+  if (data === "user_services") {
+    const origin = `https://${cq.message?.entities ? "" : ""}`; // filled below
+    return showServices(token, chatId, env, fromId, null, msgId);
+  }
+  if (data === "user_test") {
+    // need bot origin - from webhook URL not available; use worker name pattern via MOTHER or settings
+    const botUrl = settings.tg_bot_worker_url || "";
+    return createTestAccount(token, chatId, env, fromId, username, botUrl.replace(/\/$/, ""));
+  }
+  if (data === "adm_orders") return showPendingOrders(token, chatId, env, msgId);
+  if (data === "adm_status") {
+    const st = await motherApi(env, "/api/status");
+    const t =
+      `📊 <b>وضعیت</b>\n` +
+      `کاربران: ${fa(st.users || 0)}\n` +
+      `نودها: ${fa(st.nodes || 0)}\n` +
+      `آنلاین: ${fa(st.onlineUsers || 0)}`;
+    return edit(token, chatId, msgId, t, [[{ text: "🔙", callback_data: "adm_home" }]]);
+  }
+  if (data === "adm_backup_now") {
+    await motherApi(env, "/api/backup");
+    return edit(token, chatId, msgId, "درخواست بکاپ ثبت شد (از پنل وب هم می‌توانید ارسال کنید).", [
+      [{ text: "🔙", callback_data: "adm_home" }],
+    ]);
+  }
+
+  if (data.startsWith("buy:")) {
+    return showBuyInfo(token, chatId, env, data.slice(4), settings, msgId, fromId);
+  }
+
+  if (data.startsWith("wait_receipt:")) {
+    const planId = data.slice("wait_receipt:".length);
+    await setUserState(env, fromId, { action: "await_receipt", planId });
     return edit(
       token,
       chatId,
       msgId,
-      `ℹ️ خرید از فروشگاه → پرداخت (در صورت اعلام کارت) → ثبت سفارش → تأیید ادمین → دریافت لینک ساب.`,
-      [[{ text: "🔙", callback_data: "user_home" }]]
+      "📸 لطفاً <b>اسکرین‌شات رسید پرداخت</b> را همین‌جا ارسال کنید.\n\nبرای انصراف /start بزنید.",
+      [[{ text: "❌ انصراف", callback_data: "user_shop" }]]
     );
   }
-  if (data === "adm_orders") return showOrders(token, chatId, env, msgId);
-  if (data === "adm_status") {
-    const st = await motherApi(env, "/api/status");
-    const text =
-      `📊 <b>وضعیت</b>\n` +
-      `کاربران: ${fa(st.users || 0)}\n` +
-      `آنلاین: ${fa(st.onlineUsers || 0)}\n` +
-      `نودها: ${fa(st.nodes || 0)}\n` +
-      `نسخه: <code>${st.version || "—"}</code>`;
-    return edit(token, chatId, msgId, text, [[{ text: "🔙", callback_data: "adm_home" }]]);
-  }
-  if (data === "adm_backup_now") {
-    await answer(token, cq.id, "در حال ارسال…", false);
-    const r = await motherApi(env, "/api/backup/send-telegram", { method: "POST", body: "{}" });
-    const t = r.ok ? "✅ بکاپ به تلگرام ارسال شد." : "❌ " + (r.err || "ناموفق");
-    return edit(token, chatId, msgId, t, [[{ text: "🔙", callback_data: "adm_home" }]]);
-  }
-  if (data.startsWith("buy:")) {
-    const planId = data.slice(4);
-    return showBuyInfo(token, chatId, env, planId, msgId, fromId, username);
-  }
-  if (data.startsWith("order:")) {
-    const planId = data.slice(6);
-    return createOrder(token, chatId, env, planId, fromId, username, msgId);
-  }
-  if (data.startsWith("approve:")) {
-    const id = data.slice(8);
-    const r = await motherApi(env, "/api/shop/orders/" + encodeURIComponent(id) + "/approve", {
-      method: "POST",
-      body: "{}",
-    });
-    const t = r.ok
-      ? `✅ سفارش تأیید شد.` + (r.user_id ? `\nکاربر پنل: <code>${r.user_id}</code>` : "") +
-        (r.sub ? `\nساب:\n<code>${r.sub}</code>` : "")
-      : "❌ " + (r.err || "خطا");
-    // notify buyer
-    try {
-      if (r.ok && r.tg_user_id) {
+
+  if (data.startsWith("approve:") || data.startsWith("reject:")) {
+    if (!isAdmin(adminId, fromId)) {
+      return answer(token, cq.id, "فقط ادمین", true);
+    }
+    const ok = data.startsWith("approve:");
+    const oid = data.split(":")[1];
+    const path = `/api/shop/orders/${encodeURIComponent(oid)}/${ok ? "approve" : "reject"}`;
+    const r = await motherApi(env, path, { method: "POST", body: "{}" });
+    const buyer = r.tg_user_id || r.user_id;
+    if (ok && r.ok) {
+      const mother = String(env.MOTHER_URL || "").replace(/\/$/, "");
+      let sub = "";
+      if (r.user_id || r.panel_user_id) {
+        const uid = r.user_id || r.panel_user_id;
+        const u = await motherApi(env, "/api/users/" + encodeURIComponent(uid));
+        const uuid = u?.user?.uuid || u?.uuid;
+        if (uuid) sub = `${mother}/pull?token=${encodeURIComponent(uuid)}`;
+      }
+      if (buyer) {
         await send(
           token,
-          r.tg_user_id,
-          `✅ سفارش شما تأیید شد.\n` +
-            (r.sub ? `🔗 ساب:\n<code>${r.sub}</code>` : "از منوی سرویس‌های من ببینید.")
+          buyer,
+          `✅ سفارش شما تأیید شد.\n` + (sub ? `\n🔗 لینک ساب:\n<code>${esc(sub)}</code>` : "")
         );
       }
-    } catch {}
-    return edit(token, chatId, msgId, t, [[{ text: "📋 سفارش‌ها", callback_data: "adm_orders" }]]);
-  }
-  if (data.startsWith("reject:")) {
-    const id = data.slice(7);
-    const r = await motherApi(env, "/api/shop/orders/" + encodeURIComponent(id) + "/reject", {
-      method: "POST",
-      body: "{}",
-    });
-    return edit(token, chatId, msgId, r.ok ? "❌ سفارش رد شد." : "خطا", [
-      [{ text: "📋 سفارش‌ها", callback_data: "adm_orders" }],
+      return edit(token, chatId, msgId, `✅ سفارش <code>${esc(oid)}</code> تأیید شد.`, [
+        [{ text: "📋 سفارش‌ها", callback_data: "adm_orders" }],
+      ]);
+    }
+    if (!ok) {
+      if (buyer) await send(token, buyer, "❌ سفارش شما رد شد. در صورت نیاز با پشتیبانی صحبت کنید.");
+      return edit(token, chatId, msgId, `❌ سفارش <code>${esc(oid)}</code> رد شد.`, [
+        [{ text: "📋 سفارش‌ها", callback_data: "adm_orders" }],
+      ]);
+    }
+    return edit(token, chatId, msgId, "خطا: " + (r.err || "نامشخص"), [
+      [{ text: "🔙", callback_data: "adm_orders" }],
     ]);
   }
+
   if (data.startsWith("svc:")) {
-    return showService(token, chatId, env, data.slice(4), msgId);
+    const parts = data.split(":");
+    const panelUserId = parts[1];
+    const isTest = parts[2] || "0";
+    const botUrl = (settings.tg_bot_worker_url || "").replace(/\/$/, "");
+    return sendServiceLink(token, chatId, env, panelUserId, isTest, botUrl);
   }
 }
 
 async function handleMessage(env, msg) {
   const token = env.BOT_TOKEN;
-  if (!token || !msg?.chat) return;
-  const chatId = String(msg.chat.id);
-  const text = String(msg.text || "").trim();
-  const fromId = String(msg.from?.id || chatId);
-  let admin = await getAdminChatId(env);
+  const chatId = msg.chat?.id;
+  const fromId = msg.from?.id;
+  const username = msg.from?.username || "";
+  const text = (msg.text || "").trim();
+  const settings = await getSettings(env);
+  let adminId = await getAdminChatId(env, settings);
 
-  if (text.startsWith("/start")) {
-    if (!admin) {
-      await setAdminChatId(env, chatId);
-      admin = chatId;
+  // first /start becomes admin if none
+  if (text.startsWith("/start") && !adminId) {
+    await setAdminChatId(env, fromId);
+    adminId = String(fromId);
+    await send(token, chatId, "شما به‌عنوان ادمین ثبت شدید.");
+  }
+
+  if (!isAdmin(adminId, fromId)) {
+    const ok = await checkChannel(env, token, fromId, settings);
+    if (!ok) {
+      const t = await getMsg(
+        settings,
+        "tg_msg_join",
+        "برای استفاده از ربات ابتدا در کانال اسپانسر عضو شوید."
+      );
+      return send(token, chatId, t, joinKeyboard(settings));
+    }
+  }
+
+  // photo = receipt?
+  if (msg.photo && msg.photo.length) {
+    const state = await getUserState(env, fromId);
+    if (state && state.action === "await_receipt" && state.planId) {
+      const photo = msg.photo[msg.photo.length - 1];
+      const fileId = photo.file_id;
+      const order = await motherApi(env, "/api/shop/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          plan_id: state.planId,
+          user_id: fromId,
+          username,
+          receipt_file_id: fileId,
+        }),
+      });
+      await setUserState(env, fromId, null);
+      if (!order.ok) {
+        return send(token, chatId, "ثبت سفارش ناموفق: " + (order.err || ""), [
+          [{ text: "🛒 فروشگاه", callback_data: "user_shop" }],
+        ]);
+      }
       await send(
         token,
         chatId,
-        `✅ شما به‌عنوان <b>ادمین</b> ثبت شدید.\nاز منوی زیر استفاده کنید.`
+        `✅ رسید دریافت شد.\nشماره سفارش: <code>${esc(order.id)}</code>\nپس از تأیید ادمین لینک ساب برایتان ارسال می‌شود.`,
+        [[{ text: "📂 سرویس‌های من", callback_data: "user_services" }]]
       );
-      return showAdminHome(token, chatId, env, null);
+      // notify admin with photo
+      if (adminId) {
+        await sendPhoto(
+          token,
+          adminId,
+          fileId,
+          `🧾 <b>رسید جدید</b>\n` +
+            `سفارش: <code>${esc(order.id)}</code>\n` +
+            `پلن: ${esc(order.plan_name || state.planId)}\n` +
+            `مبلغ: ${fa(order.price || 0)} تومان\n` +
+            `کاربر: @${esc(username || fromId)}`,
+          [
+            [
+              { text: "✅ تأیید", callback_data: `approve:${order.id}` },
+              { text: "❌ رد", callback_data: `reject:${order.id}` },
+            ],
+          ]
+        );
+      }
+      return;
     }
-    if (isAdmin(env, chatId, admin) || isAdmin(env, fromId, admin)) {
-      return showAdminHome(token, chatId, env, null);
-    }
-    return showUserHome(token, chatId, env, null);
   }
 
-  if (text.startsWith("/admin") || text.startsWith("/menu")) {
-    if (isAdmin(env, chatId, admin) || isAdmin(env, fromId, admin)) {
-      return showAdminHome(token, chatId, env, null);
-    }
-    return showUserHome(token, chatId, env, null);
-  }
-
-  if (text.startsWith("/shop") || text.startsWith("/buy")) {
-    return showShop(token, chatId, env, null, false);
+  if (text.startsWith("/start") || text === "منو") {
+    if (isAdmin(adminId, fromId)) return showAdminHome(token, chatId, env);
+    return showUserHome(token, chatId, env, settings);
   }
 
   // default
-  if (isAdmin(env, chatId, admin) || isAdmin(env, fromId, admin)) {
-    return showAdminHome(token, chatId, env, null);
-  }
-  return showUserHome(token, chatId, env, null);
+  if (isAdmin(adminId, fromId)) return showAdminHome(token, chatId, env);
+  return showUserHome(token, chatId, env, settings);
 }
 
 export default {
@@ -445,6 +608,32 @@ export default {
       return new Response(JSON.stringify({ ok: true, v: VERSION }), {
         headers: { "content-type": "application/json" },
       });
+    }
+
+    // Proxy test-account subscription — hides mother URL
+    if (path === "/sub-proxy") {
+      const token = url.searchParams.get("token") || "";
+      if (!token) return new Response("token required", { status: 400 });
+      const mother = String(env.MOTHER_URL || "").replace(/\/$/, "");
+      const target = `${mother}/pull?token=${encodeURIComponent(token)}${url.search.replace(/[?&]token=[^&]*/g, "").replace(/^&/, "?")}`;
+      try {
+        const res = await fetch(target, {
+          headers: {
+            "User-Agent": request.headers.get("User-Agent") || "SAOW-TG-Proxy",
+            Accept: request.headers.get("Accept") || "*/*",
+          },
+        });
+        const body = await res.arrayBuffer();
+        return new Response(body, {
+          status: res.status,
+          headers: {
+            "content-type": res.headers.get("content-type") || "text/plain;charset=utf-8",
+            "access-control-allow-origin": "*",
+          },
+        });
+      } catch (e) {
+        return new Response("proxy error", { status: 502 });
+      }
     }
 
     if (path === "/setup" && request.method === "GET") {
@@ -480,7 +669,6 @@ export default {
       return new Response("OK");
     }
 
-    // push message from mother
     if (path === "/notify" && request.method === "POST") {
       const secret = request.headers.get("authorization") || "";
       if (env.MOTHER_SECRET && !secret.includes(env.MOTHER_SECRET)) {
@@ -490,14 +678,10 @@ export default {
       try {
         body = await request.json();
       } catch {}
-      const chat = body.chat_id || (await getAdminChatId(env));
+      const settings = await getSettings(env);
+      const chat = body.chat_id || (await getAdminChatId(env, settings));
       if (!chat) return new Response(JSON.stringify({ ok: false, err: "no chat" }), { status: 400 });
-      if (body.document_url || body.document_base64) {
-        // document send via sendDocument with URL or multipart skip - use sendMessage link
-        await send(env.BOT_TOKEN, chat, body.text || "بکاپ آماده است.");
-      } else {
-        await send(env.BOT_TOKEN, chat, body.text || "—");
-      }
+      await send(env.BOT_TOKEN, chat, body.text || "—");
       return new Response(JSON.stringify({ ok: true }), {
         headers: { "content-type": "application/json" },
       });
