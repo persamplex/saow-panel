@@ -826,6 +826,33 @@ table tbody tr{height:auto}
     <section class="section" id="shop">
       <div class="feat-lock-wrap is-locked" data-feature="shop" id="shopLockedArea">
         <div class="feat-lock-content">
+          <div class="card" style="margin:0 0 14px">
+            <div class="card-head"><h3>تنظیمات پرداخت و فروش</h3></div>
+            <div style="padding:4px 2px 8px">
+              <div class="field"><label>کانال اسپانسر (اجباری عضویت)</label>
+                <input type="text" id="shopSponsor" placeholder="@channel یا لینک t.me" style="direction:ltr;text-align:left" />
+              </div>
+              <div class="field"><label>شماره کارت</label>
+                <input type="text" id="shopCardNumber" placeholder="6037-..." style="direction:ltr;text-align:left" />
+              </div>
+              <div class="field"><label>نام صاحب کارت</label>
+                <input type="text" id="shopCardHolder" placeholder="نام و نام خانوادگی" />
+              </div>
+              <div class="row" style="margin:8px 0 12px"><span>فروش پلن (روشن/خاموش)</span><div class="switch" id="swShopSales"></div></div>
+              <button type="button" class="btn btn-primary" id="btnSaveShopPay" style="width:100%">ذخیره تنظیمات فروش</button>
+            </div>
+          </div>
+          <div class="card" style="margin:0 0 14px">
+            <div class="card-head"><h3>درآمد</h3><span id="shopRevenueBadge" class="badge badge-ok">—</span></div>
+            <div style="padding:8px 4px">
+              <div class="tg-stats-grid" style="margin-bottom:12px">
+                <div class="tg-stat"><div class="k">کل درآمد</div><div class="v" id="shopRevTotal">—</div></div>
+                <div class="tg-stat"><div class="k">تأیید / رد / انتظار</div><div class="v" id="shopRevCounts">—</div></div>
+              </div>
+              <div id="shopRevChart" style="display:flex;align-items:flex-end;gap:4px;height:88px;padding:4px 0 0"></div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center">۱۴ روز اخیر</div>
+            </div>
+          </div>
           <div class="card" style="margin:0 0 14px"><div class="card-head"><h3>پلن‌ها</h3>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn" type="button" id="btnReloadShop">بروزرسانی</button>
@@ -989,6 +1016,14 @@ table tbody tr{height:auto}
             <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
             <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
             <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
+          </div>
+          <div class="setting-block" style="margin-top:14px">
+            <h4>پیام‌های ربات</h4>
+            <div class="field"><label>خوش‌آمدگویی</label><textarea id="tgMsgWelcome" rows="3" placeholder="متن /start برای کاربر"></textarea></div>
+            <div class="field"><label>پشتیبانی</label><textarea id="tgMsgSupport" rows="2" placeholder="متن پشتیبانی"></textarea></div>
+            <div class="field"><label>درخواست عضویت کانال</label><textarea id="tgMsgJoin" rows="2" placeholder="وقتی کاربر عضو کانال نیست"></textarea></div>
+            <div class="field"><label>فروش خاموش</label><textarea id="tgMsgSalesOff" rows="2" placeholder="وقتی فروش غیرفعال است"></textarea></div>
+            <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgMsgSave">ذخیره پیام‌ها</button>
           </div>
         </div>
         <div class="feat-lock-overlay">
@@ -2586,9 +2621,36 @@ function openMapProvince(provinceName){
   });
   async function loadShop(){
     try{
-      const[plansRes,ordersRes]=await Promise.all([api("/api/shop/plans"),api("/api/shop/orders")]);
+      const[plansRes,ordersRes,setRes,statRes]=await Promise.all([
+        api("/api/shop/plans"),
+        api("/api/shop/orders"),
+        api("/api/shop/settings").catch(()=>({settings:{}})),
+        api("/api/shop/stats").catch(()=>({revenue:0,series:[]}))
+      ]);
       const plans=plansRes.plans||[],orders=ordersRes.orders||[];
       window.__plansCache=plans;
+      const settings=(setRes&&setRes.settings)||{};
+      const ss=document.getElementById("shopSponsor"); if(ss) ss.value=settings.shop_sponsor_channel||"";
+      const sc=document.getElementById("shopCardNumber"); if(sc) sc.value=settings.shop_card_number||"";
+      const sh=document.getElementById("shopCardHolder"); if(sh) sh.value=settings.shop_card_holder||"";
+      const sw=document.getElementById("swShopSales");
+      if(sw){ const on=String(settings.shop_sales_enabled||"1")!=="0"; sw.classList.toggle("on", on); sw.dataset.on=on?"1":"0"; }
+      const rev=statRes.revenue||0;
+      const rb=document.getElementById("shopRevenueBadge");
+      if(rb) rb.textContent=faNum(rev)+" ت";
+      const rt=document.getElementById("shopRevTotal");
+      if(rt) rt.textContent=faNum(rev)+" تومان";
+      const rc=document.getElementById("shopRevCounts");
+      if(rc) rc.textContent=faNum(statRes.approved||0)+" / "+faNum(statRes.rejected||0)+" / "+faNum(statRes.pending||0);
+      const chart=document.getElementById("shopRevChart");
+      if(chart){
+        const series=statRes.series||[];
+        const max=Math.max(1,...series.map(s=>s.revenue||0));
+        chart.innerHTML=series.map(s=>{
+          const h=Math.max(4, Math.round(70*((s.revenue||0)/max)));
+          return `<div title="${s.day}: ${s.revenue||0}" style="flex:1;height:${h}px;background:linear-gradient(180deg,var(--accent),rgba(56,189,248,.25));border-radius:4px 4px 0 0;min-width:0"></div>`;
+        }).join("")||'<div style="color:var(--text-muted);font-size:12px;width:100%;text-align:center">بدون داده</div>';
+      }
       const pending=orders.filter(o=>o.status==="pending").length;
       const pc=document.getElementById("shopPendingCount");
       if(pc){pc.textContent=pending?("در انتظار "+faNum(pending)):"سفارش‌ها"; pc.className=pending?"badge badge-warn":"badge badge-info";}
@@ -2698,6 +2760,34 @@ function openMapProvince(provinceName){
     }
   });
   document.getElementById("btnReloadShop").addEventListener("click",()=>loadShop());
+  document.getElementById("swShopSales")?.addEventListener("click", function(){
+    const on = !(this.dataset.on==="1");
+    this.dataset.on = on ? "1" : "0";
+    this.classList.toggle("on", on);
+  });
+  document.getElementById("btnSaveShopPay")?.addEventListener("click", async ()=>{
+    try{
+      await api("/api/shop/settings", { method:"POST", body: JSON.stringify({
+        shop_sponsor_channel: document.getElementById("shopSponsor")?.value?.trim()||"",
+        shop_card_number: document.getElementById("shopCardNumber")?.value?.trim()||"",
+        shop_card_holder: document.getElementById("shopCardHolder")?.value?.trim()||"",
+        shop_sales_enabled: document.getElementById("swShopSales")?.dataset?.on === "1" ? "1" : "0"
+      })});
+      toast("تنظیمات فروش ذخیره شد","ok");
+    }catch(e){ toast(e.message||"خطا","err"); }
+  });
+  document.getElementById("btnTgMsgSave")?.addEventListener("click", async ()=>{
+    try{
+      await api("/api/shop/settings", { method:"POST", body: JSON.stringify({
+        tg_msg_welcome: document.getElementById("tgMsgWelcome")?.value||"",
+        tg_msg_support: document.getElementById("tgMsgSupport")?.value||"",
+        tg_msg_join: document.getElementById("tgMsgJoin")?.value||"",
+        tg_msg_sales_off: document.getElementById("tgMsgSalesOff")?.value||""
+      })});
+      toast("پیام‌های ربات ذخیره شد","ok");
+    }catch(e){ toast(e.message||"خطا","err"); }
+  });
+
 
   async function downloadBackup(){try{const data=await api("/api/backup");const blob=new Blob([JSON.stringify(data.backup||data,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="saow-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(a.href);toast("دانلود شد","ok");}catch(e){toast(e.message,"err");}}
   document.getElementById("btnDownloadBackup").addEventListener("click",downloadBackup);
@@ -2805,6 +2895,14 @@ function openMapProvince(provinceName){
   async function loadTelegram(){
     try{
       await refreshRulesLocal();
+      try{
+        const st=await api("/api/shop/settings");
+        const s=(st&&st.settings)||{};
+        const w=document.getElementById("tgMsgWelcome"); if(w) w.value=s.tg_msg_welcome||"";
+        const sp=document.getElementById("tgMsgSupport"); if(sp) sp.value=s.tg_msg_support||"";
+        const j=document.getElementById("tgMsgJoin"); if(j) j.value=s.tg_msg_join||"";
+        const so=document.getElementById("tgMsgSalesOff"); if(so) so.value=s.tg_msg_sales_off||"";
+      }catch{}
       const r=await api("/api/telegram/config");
       if(!r||!r.ok)return;
       const configured=!!(r.configured || (r.has_token && r.bot_worker_url));
@@ -2968,14 +3066,41 @@ function openMapProvince(provinceName){
 })();
 
 (function(){
-  const tip = document.getElementById("floatTip");
-  if (!tip) return;
+  function ensureTip(){
+    let tip = document.getElementById("floatTip");
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.id = "floatTip";
+      tip.setAttribute("role", "tooltip");
+      document.body.appendChild(tip);
+    }
+    return tip;
+  }
   function show(el){
+    const tip = ensureTip();
     const t = el.getAttribute("data-tip");
     if (!t) return;
     tip.textContent = t;
     tip.classList.add("on");
+    tip.style.position = "fixed";
+    tip.style.zIndex = "9999";
+    tip.style.opacity = "1";
+    tip.style.visibility = "visible";
+    tip.style.pointerEvents = "none";
+    tip.style.maxWidth = "min(280px, 90vw)";
+    tip.style.padding = "10px 12px";
+    tip.style.borderRadius = "10px";
+    tip.style.fontSize = "12px";
+    tip.style.lineHeight = "1.55";
+    tip.style.background = "var(--bg-elevated, #1a1f2e)";
+    tip.style.border = "1px solid var(--border, #333)";
+    tip.style.color = "var(--text, #eee)";
+    tip.style.boxShadow = "0 12px 40px rgba(0,0,0,.45)";
+    tip.style.direction = "rtl";
+    tip.style.textAlign = "right";
     const r = el.getBoundingClientRect();
+    // measure after visible
+    tip.style.left = "0px"; tip.style.top = "0px";
     const tw = tip.offsetWidth || 240;
     const th = tip.offsetHeight || 60;
     let left = r.left + r.width/2 - tw/2;
@@ -2986,7 +3111,10 @@ function openMapProvince(provinceName){
     tip.style.left = left + "px";
     tip.style.top = top + "px";
   }
-  function hide(){ tip.classList.remove("on"); }
+  function hide(){
+    const tip = document.getElementById("floatTip");
+    if (tip) { tip.classList.remove("on"); tip.style.opacity = "0"; tip.style.visibility = "hidden"; }
+  }
   document.addEventListener("mouseover", function(e){
     const el = e.target.closest(".stat-warn[data-tip], .help-tip[data-tip]");
     if (el) show(el); else if (!e.target.closest("#floatTip")) hide();
@@ -2997,8 +3125,8 @@ function openMapProvince(provinceName){
   });
   document.addEventListener("click", function(e){
     const el = e.target.closest(".stat-warn[data-tip], .help-tip[data-tip]");
-    if (el) { e.preventDefault(); if (tip.classList.contains("on")) hide(); else show(el); }
-  });
+    if (el) { e.preventDefault(); e.stopPropagation(); const tip = ensureTip(); if (tip.classList.contains("on") && tip.style.opacity !== "0") hide(); else show(el); }
+  }, true);
 })();
 
 </script><div class="sub-qr-overlay" id="subQrOverlay">
