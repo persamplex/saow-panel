@@ -706,6 +706,24 @@ table tbody tr{height:auto}
 }
 .wiz-steps .wiz-step-dot.done{background:var(--success)!important;transform:none;box-shadow:none!important}
 
+
+.rev-card{
+  background:linear-gradient(145deg, rgba(16,185,129,.18), rgba(6,78,59,.35) 40%, rgba(15,23,42,.9));
+  border:1px solid rgba(52,211,153,.25);
+  border-radius:16px;padding:16px 16px 12px;position:relative;overflow:hidden;
+  min-height:160px;display:flex;flex-direction:column;
+}
+.rev-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.rev-title{font-size:13px;color:rgba(167,243,208,.9);font-weight:500}
+.rev-badge{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(52,211,153,.2);color:#6ee7b7;border:1px solid rgba(52,211,153,.3)}
+.rev-main{font-size:28px;font-weight:700;letter-spacing:-.02em;color:#ecfdf5;margin:4px 0 2px}
+.rev-sub{font-size:12px;color:rgba(167,243,208,.75);margin-bottom:8px}
+.rev-spark{flex:1;min-height:56px;display:flex;align-items:flex-end}
+.rev-spark svg{width:100%;height:56px;display:block}
+@media(max-width:720px){
+  .grid-2{grid-template-columns:1fr!important}
+}
+
 </style>
 </head>
 <body>
@@ -826,45 +844,55 @@ table tbody tr{height:auto}
     <section class="section" id="shop">
       <div class="feat-lock-wrap is-locked" data-feature="shop" id="shopLockedArea">
         <div class="feat-lock-content">
-          <div class="card" style="margin:0 0 14px">
-            <div class="card-head"><h3>تنظیمات پرداخت و فروش</h3></div>
-            <div style="padding:4px 2px 8px">
-              <div class="field"><label>کانال اسپانسر (اجباری عضویت)</label>
-                <input type="text" id="shopSponsor" placeholder="@channel یا لینک t.me" style="direction:ltr;text-align:left" />
-              </div>
+          <div class="grid-2" style="margin-bottom:14px">
+            <div class="setting-block">
+              <h4>پرداخت</h4>
               <div class="field"><label>شماره کارت</label>
                 <input type="text" id="shopCardNumber" placeholder="6037-..." style="direction:ltr;text-align:left" />
               </div>
-              <div class="field"><label>نام صاحب کارت</label>
+              <div class="field"><label>صاحب کارت</label>
                 <input type="text" id="shopCardHolder" placeholder="نام و نام خانوادگی" />
               </div>
-              <div class="row" style="margin:8px 0 12px"><span>فروش پلن (روشن/خاموش)</span><div class="switch" id="swShopSales"></div></div>
-              <button type="button" class="btn btn-primary" id="btnSaveShopPay" style="width:100%">ذخیره تنظیمات فروش</button>
+              <div class="row" style="margin:8px 0 10px"><span>فروش فعال</span><div class="switch" id="swShopSales"></div></div>
+              <button type="button" class="btn btn-primary" id="btnSaveShopPay" style="width:100%">ذخیره</button>
             </div>
-          </div>
-          <div class="card" style="margin:0 0 14px">
-            <div class="card-head"><h3>درآمد</h3><span id="shopRevenueBadge" class="badge badge-ok">—</span></div>
-            <div style="padding:8px 4px">
-              <div class="tg-stats-grid" style="margin-bottom:12px">
-                <div class="tg-stat"><div class="k">کل درآمد</div><div class="v" id="shopRevTotal">—</div></div>
-                <div class="tg-stat"><div class="k">تأیید / رد / انتظار</div><div class="v" id="shopRevCounts">—</div></div>
+            <div class="setting-block">
+              <h4>کانال اسپانسر</h4>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">اگر پر باشد، کاربر باید عضو باشد تا ربات جواب دهد.</p>
+              <div class="field"><label>کانال</label>
+                <input type="text" id="shopSponsor" placeholder="@channel یا t.me/..." style="direction:ltr;text-align:left" />
               </div>
-              <div id="shopRevChart" style="display:flex;align-items:flex-end;gap:4px;height:88px;padding:4px 0 0"></div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center">۱۴ روز اخیر</div>
             </div>
           </div>
-          <div class="card" style="margin:0 0 14px"><div class="card-head"><h3>پلن‌ها</h3>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <button class="btn" type="button" id="btnReloadShop">بروزرسانی</button>
-              <button class="btn btn-primary" type="button" id="btnAddPlan">+ پلن</button>
+          <div class="grid-2" style="margin-bottom:14px">
+            <div class="rev-card" id="shopRevCard">
+              <div class="rev-card-top">
+                <span class="rev-title">درآمد تأییدشده</span>
+                <span class="rev-badge" id="shopRevenueBadge">—</span>
+              </div>
+              <div class="rev-main" id="shopRevTotal">—</div>
+              <div class="rev-sub" id="shopRevCounts">—</div>
+              <div id="shopRevChart" class="rev-spark"></div>
+            </div>
+            <div class="setting-block">
+              <h4>پلن‌ها</h4>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+                <button class="btn" type="button" id="btnReloadShop">بروزرسانی</button>
+                <button class="btn btn-primary" type="button" id="btnAddPlan">+ پلن</button>
+              </div>
+              <div class="table-scroll" style="max-height:280px"><table><thead><tr><th>نام</th><th>دسته</th><th>روز</th><th>حجم</th><th>قیمت</th><th></th></tr></thead>
+              <tbody id="plansBody"><tr><td colspan="6" class="empty-msg">پلنی نیست</td></tr></tbody></table></div>
             </div>
           </div>
-            <div class="table-scroll"><table><thead><tr><th>نام</th><th>دسته</th><th>روز</th><th>حجم GB</th><th>روزانه</th><th>IP</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
-            <tbody id="plansBody"><tr><td colspan="9" class="empty-msg">پلنی نیست</td></tr></tbody></table></div>
-          </div>
-          <div class="card"><div class="card-head"><h3>سفارش‌های اخیر</h3><span id="shopPendingCount" class="badge badge-warn">—</span></div>
-            <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>پلن</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
-            <tbody id="ordersBody"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody></table></div>
+          <div class="card" style="margin:0">
+            <div class="card-head"><h3>سفارش‌ها</h3><span id="shopPendingCount" class="badge badge-warn">—</span></div>
+            <div class="search" style="margin:0 0 10px;max-width:100%">
+              <span style="color:var(--text-muted)">⌕</span>
+              <input type="text" id="orderSearch" placeholder="جستجو نام / Chat ID / پلن / وضعیت..." />
+            </div>
+            <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>Chat ID</th><th>پلن</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody id="ordersBody"><tr><td colspan="6" class="empty-msg">—</td></tr></tbody></table></div>
+            <div class="pager" id="ordersPager" style="display:none"></div>
           </div>
         </div>
         <div class="feat-lock-overlay">
@@ -888,7 +916,7 @@ table tbody tr{height:auto}
           <div class="feat-lock-content">
             <h4>ارسال بکاپ خودکار</h4>
             <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">ارسال دوره‌ای بکاپ به تلگرام</p>
-            <div class="field"><label>بازه (دقیقه)</label><input type="number" id="autoBackupMin" value="60" min="15" /></div>
+            <div class="field"><label>بازه (دقیقه — حداقل ۱)</label><input type="number" id="autoBackupMin" value="60" min="15" /></div>
             <div class="row"><span>فعال</span><div class="switch" id="swAutoBackup"></div></div>
             <button type="button" class="btn" style="width:100%;margin-top:10px" id="btnSendBackupNow">ارسال بکاپ الان به تلگرام</button>
           </div>
@@ -1191,7 +1219,7 @@ table tbody tr{height:auto}
         <div class="field"><label>محدودیت IP</label><input type="number" id="planIp" value="1" min="1" /></div>
       </div>
       <div class="field-grid">
-        <div class="field"><label>قیمت</label><input type="number" id="planPrice" value="0" min="0" /></div>
+        <div class="field"><label>قیمت (تومان)</label><input type="number" id="planPrice" value="0" min="0" /></div>
         <div class="field" style="display:flex;align-items:center;justify-content:space-between;padding-top:18px"><label style="margin:0">فعال</label><div class="switch on" id="planEnabled"></div></div>
       </div>
     </div>
@@ -1360,7 +1388,7 @@ table tbody tr{height:auto}
   }
   async function saveAutoBackupSettings(){
     if(!FEATURE_GATES.auto_backup){toast("ابتدا ربات تلگرام را فعال کنید","err");return;}
-    const mins=Math.max(15, Number(document.getElementById("autoBackupMin")&&document.getElementById("autoBackupMin").value)||60);
+    const mins=Math.max(1, Number(document.getElementById("autoBackupMin")&&document.getElementById("autoBackupMin").value)||60);
     const on=!!(document.getElementById("swAutoBackup")&&document.getElementById("swAutoBackup").classList.contains("on"));
     try{
       await api("/api/shop/settings",{method:"POST",body:JSON.stringify({
@@ -2619,6 +2647,57 @@ function openMapProvince(provinceName){
     const inp=document.getElementById("planCat");
     if(inp) inp.value=this.value.trim();
   });
+  function formatPrice(n){
+    const x = Math.round(Number(n)||0);
+    const s = String(x).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return faNum(s) + " تومان";
+  }
+  let __ordersCache = [];
+  let __ordersPage = 1;
+  const ORDERS_PER_PAGE = 15;
+  function renderOrdersPage(){
+    const orders = __ordersCache || [];
+    const q = (document.getElementById("orderSearch")?.value || "").trim().toLowerCase();
+    const filtered = !q ? orders : orders.filter(o=>{
+      const blob = [o.username, o.user_id, o.plan_name, o.plan_id, o.status, o.id, o.note].map(x=>String(x||"").toLowerCase()).join(" ");
+      return blob.includes(q);
+    });
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / ORDERS_PER_PAGE));
+    if (__ordersPage > pages) __ordersPage = pages;
+    const start = (__ordersPage-1)*ORDERS_PER_PAGE;
+    const slice = filtered.slice(start, start+ORDERS_PER_PAGE);
+    const ob=document.getElementById("ordersBody");
+    if(!ob) return;
+    if(!slice.length) ob.innerHTML='<tr><td colspan="6" class="empty-msg">سفارشی نیست</td></tr>';
+    else ob.innerHTML = slice.map(o=>{
+      const st=o.status==="pending"?'<span class="badge badge-warn">در انتظار</span>':o.status==="approved"?'<span class="badge badge-ok">تأیید</span>':o.status==="rejected"?'<span class="badge badge-off">رد</span>':'<span class="badge badge-off">'+esc(o.status)+"</span>";
+      const actions=o.status==="pending"?`<span class="row-actions-inner"><button class="icon-btn" data-oact="approve" data-oid="${esc(o.id)}" title="تأیید">✓</button><button class="icon-btn danger" data-oact="reject" data-oid="${esc(o.id)}" title="رد">✕</button></span>`:"";
+      const uname = o.username ? "@"+o.username : "—";
+      return`<tr>
+        <td data-label="کاربر">${esc(uname)}</td>
+        <td data-label="Chat ID" style="direction:ltr">${esc(o.user_id||"—")}</td>
+        <td data-label="پلن">${esc(o.plan_name||o.plan_id||"—")}</td>
+        <td data-label="قیمت">${formatPrice(o.price)}</td>
+        <td data-label="وضعیت">${st}</td>
+        <td class="row-actions" data-label="">${actions}</td></tr>`;
+    }).join("");
+    ob.querySelectorAll("[data-oact]").forEach(btn=>btn.addEventListener("click",async()=>{
+      try{await api("/api/shop/orders/"+encodeURIComponent(btn.dataset.oid)+"/"+btn.dataset.oact,{method:"POST"});toast("انجام شد","ok");loadShop();}catch(e){toast(e.message,"err");}
+    }));
+    const pager=document.getElementById("ordersPager");
+    if(pager){
+      if(total<=ORDERS_PER_PAGE){ pager.style.display="none"; }
+      else {
+        pager.style.display="flex";
+        pager.innerHTML = `<button type="button" class="pager-btn" id="ordPrev" ${__ordersPage<=1?"disabled":""}>قبلی</button>
+          <span class="pager-info">${faNum(__ordersPage)} / ${faNum(pages)}</span>
+          <button type="button" class="pager-btn" id="ordNext" ${__ordersPage>=pages?"disabled":""}>بعدی</button>`;
+        document.getElementById("ordPrev")?.addEventListener("click",()=>{ if(__ordersPage>1){ __ordersPage--; renderOrdersPage(); }});
+        document.getElementById("ordNext")?.addEventListener("click",()=>{ if(__ordersPage<pages){ __ordersPage++; renderOrdersPage(); }});
+      }
+    }
+  }
   async function loadShop(){
     try{
       const[plansRes,ordersRes,setRes,statRes]=await Promise.all([
@@ -2637,19 +2716,42 @@ function openMapProvince(provinceName){
       if(sw){ const on=String(settings.shop_sales_enabled||"1")!=="0"; sw.classList.toggle("on", on); sw.dataset.on=on?"1":"0"; }
       const rev=statRes.revenue||0;
       const rb=document.getElementById("shopRevenueBadge");
-      if(rb) rb.textContent=faNum(rev)+" ت";
+      if(rb){
+        const series=statRes.series||[];
+        const last=series.length? (series[series.length-1].revenue||0) : 0;
+        const prev=series.length>1? (series[series.length-2].revenue||0) : last;
+        const pct = prev>0 ? ((last-prev)/prev*100) : 0;
+        const sign = pct>=0 ? "↑" : "↓";
+        rb.textContent = sign + " " + faNum(Math.abs(pct).toFixed(1)) + "%";
+      }
       const rt=document.getElementById("shopRevTotal");
-      if(rt) rt.textContent=faNum(rev)+" تومان";
+      if(rt) rt.textContent=formatPrice(rev);
       const rc=document.getElementById("shopRevCounts");
-      if(rc) rc.textContent=faNum(statRes.approved||0)+" / "+faNum(statRes.rejected||0)+" / "+faNum(statRes.pending||0);
+      if(rc) rc.textContent="تأیید "+faNum(statRes.approved||0)+" · رد "+faNum(statRes.rejected||0)+" · انتظار "+faNum(statRes.pending||0);
       const chart=document.getElementById("shopRevChart");
       if(chart){
         const series=statRes.series||[];
-        const max=Math.max(1,...series.map(s=>s.revenue||0));
-        chart.innerHTML=series.map(s=>{
-          const h=Math.max(4, Math.round(70*((s.revenue||0)/max)));
-          return `<div title="${s.day}: ${s.revenue||0}" style="flex:1;height:${h}px;background:linear-gradient(180deg,var(--accent),rgba(56,189,248,.25));border-radius:4px 4px 0 0;min-width:0"></div>`;
-        }).join("")||'<div style="color:var(--text-muted);font-size:12px;width:100%;text-align:center">بدون داده</div>';
+        const vals=series.map(s=>Number(s.revenue)||0);
+        const max=Math.max(1,...vals);
+        const min=Math.min(0,...vals);
+        const w=280,h=56,pad=2;
+        if(!vals.length){ chart.innerHTML='<div style="color:rgba(167,243,208,.6);font-size:12px">بدون داده</div>'; }
+        else {
+          const pts=vals.map((v,i)=>{
+            const x = pad + (i/(Math.max(1,vals.length-1)))*(w-pad*2);
+            const y = h - pad - ((v-min)/(max-min||1))*(h-pad*2);
+            return [x,y];
+          });
+          const line = pts.map((p,i)=> (i?"L":"M")+p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+          const area = line + ` L${pts[pts.length-1][0].toFixed(1)},${h} L${pts[0][0].toFixed(1)},${h} Z`;
+          chart.innerHTML = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(52,211,153,.45)"/><stop offset="100%" stop-color="rgba(52,211,153,0)"/>
+            </linearGradient></defs>
+            <path d="${area}" fill="url(#revGrad)"/>
+            <path d="${line}" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>`;
+        }
       }
       const pending=orders.filter(o=>o.status==="pending").length;
       const pc=document.getElementById("shopPendingCount");
@@ -2658,18 +2760,15 @@ function openMapProvince(provinceName){
       const dl=document.getElementById("planCatList");
       if(dl) dl.innerHTML=cats.map(c=>`<option value="${esc(c)}"></option>`).join("");
       const pb=document.getElementById("plansBody");
-      if(!plans.length) pb.innerHTML='<tr><td colspan="9" class="empty-msg">پلنی نیست</td></tr>';
+      if(!plans.length) pb.innerHTML='<tr><td colspan="6" class="empty-msg">پلنی نیست</td></tr>';
       else pb.innerHTML=plans.map(p=>{
-        const st=p.enabled?'<span class="badge badge-ok">فعال</span>':'<span class="badge badge-off">غیرفعال</span>';
+        const st=p.enabled?'<span class="badge badge-ok">فعال</span>':'<span class="badge badge-off">خاموش</span>';
         return `<tr>
-          <td data-label="نام">${esc(p.name)}</td>
+          <td data-label="نام">${esc(p.name)} ${st}</td>
           <td data-label="دسته">${esc(p.category||"—")}</td>
           <td data-label="روز">${faNum(p.days)}</td>
-          <td data-label="حجم">${faNum(p.quota_gb)}</td>
-          <td data-label="روزانه">${faNum(p.daily_gb||0)}</td>
-          <td data-label="IP">${faNum(p.ip_limit||1)}</td>
-          <td data-label="قیمت">${faNum(p.price)}</td>
-          <td data-label="وضعیت">${st}</td>
+          <td data-label="حجم">${faNum(p.quota_gb)} GB</td>
+          <td data-label="قیمت">${formatPrice(p.price)}</td>
           <td class="row-actions" data-label=""><span class="row-actions-inner">
             <button type="button" class="icon-btn" data-pedit="${esc(p.id)}" title="ویرایش">✎</button>
             <button type="button" class="icon-btn danger" data-pdel="${esc(p.id)}" title="حذف">🗑</button>
@@ -2683,14 +2782,11 @@ function openMapProvince(provinceName){
         if(!confirm("حذف این پلن؟"))return;
         try{await api("/api/shop/plans/"+encodeURIComponent(btn.dataset.pdel),{method:"DELETE"});toast("حذف شد","ok");loadShop();}catch(e){toast(e.message,"err");}
       }));
-      const ob=document.getElementById("ordersBody");
-      if(!orders.length)ob.innerHTML='<tr><td colspan="5" class="empty-msg">سفارشی نیست</td></tr>';
-      else ob.innerHTML=orders.slice(0,30).map(o=>{
-        const st=o.status==="pending"?'<span class="badge badge-warn">در انتظار</span>':o.status==="approved"?'<span class="badge badge-ok">تأیید</span>':'<span class="badge badge-off">'+esc(o.status)+"</span>";
-        const actions=o.status==="pending"?`<button class="icon-btn" data-oact="approve" data-oid="${esc(o.id)}">✓</button><button class="icon-btn danger" data-oact="reject" data-oid="${esc(o.id)}">✕</button>`:"";
-        return`<tr><td data-label="کاربر">${esc(o.username||o.user_id||"—")}</td><td data-label="پلن">${esc(o.plan_name||o.plan_id)}</td><td data-label="قیمت">${faNum(o.price)}</td><td data-label="وضعیت">${st}</td><td class="row-actions" data-label="">${actions}</td></tr>`;
-      }).join("");
-      ob.querySelectorAll("[data-oact]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/shop/orders/"+encodeURIComponent(btn.dataset.oid)+"/"+btn.dataset.oact,{method:"POST"});toast("انجام شد","ok");loadShop();}catch(e){toast(e.message,"err");}}));
+      __ordersCache = orders;
+      __ordersPage = 1;
+      renderOrdersPage();
+      const os=document.getElementById("orderSearch");
+      if(os && !os._bound){ os._bound=true; os.addEventListener("input",()=>{ __ordersPage=1; renderOrdersPage(); }); }
     }catch(e){toast("فروشگاه: "+e.message,"err");}
   }
   function openPlanModal(plan){
@@ -3123,10 +3219,25 @@ function openMapProvince(provinceName){
     const el = e.target.closest(".stat-warn[data-tip], .help-tip[data-tip]");
     if (el) hide();
   });
+  let tipTimer = null;
+  function toggleTip(el){
+    const tip = ensureTip();
+    const open = tip.classList.contains("on") && tip.style.opacity !== "0";
+    if (open) hide(); else {
+      show(el);
+      clearTimeout(tipTimer);
+      tipTimer = setTimeout(hide, 4000);
+    }
+  }
   document.addEventListener("click", function(e){
     const el = e.target.closest(".stat-warn[data-tip], .help-tip[data-tip]");
-    if (el) { e.preventDefault(); e.stopPropagation(); const tip = ensureTip(); if (tip.classList.contains("on") && tip.style.opacity !== "0") hide(); else show(el); }
+    if (el) { e.preventDefault(); e.stopPropagation(); toggleTip(el); }
+    else if (!e.target.closest("#floatTip")) hide();
   }, true);
+  document.addEventListener("touchend", function(e){
+    const el = e.target.closest(".stat-warn[data-tip], .help-tip[data-tip]");
+    if (el) { e.preventDefault(); toggleTip(el); }
+  }, { passive: false });
 })();
 
 </script><div class="sub-qr-overlay" id="subQrOverlay">
