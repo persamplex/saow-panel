@@ -184,12 +184,11 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     <div class="card card-compact" id="specialCard">
       <div class="compact-row">
         <div class="compact-label">
-          <span>کانفیگ ویژه v2rayNG</span>
+          <span>کانفیگ ویژه v2rayNG / v2rayN</span>
           <button type="button" class="info-btn" id="btnSpecialInfo" title="توضیحات">!</button>
         </div>
         <div class="compact-acts">
-          <button type="button" class="btn btn-sm btn-primary" id="btnCopyFull" title="کپی لینک">کپی لینک</button>
-          <button type="button" class="btn btn-sm" id="btnQrFull" title="QR کد">QR</button>
+          <button type="button" class="btn btn-sm btn-primary" id="btnCopyFull" title="کپی JSON">کپی JSON</button>
         </div>
       </div>
     </div>
@@ -363,19 +362,17 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 
       const locFromTrace = await Promise.all(tasks).then(rs => rs[0]);
 
-      // رأی‌گیری
+      // رأی‌گیری — WebRTC وزن بیشتر (معتبرتر از edge CF)
       const counts = {};
-      for (const s of sources) counts[s.ip] = (counts[s.ip] || 0) + 1;
+      for (const s of sources) {
+        const w = s.src === "webrtc" ? 4 : (s.src === "cf-trace" ? 2 : 1);
+        counts[s.ip] = (counts[s.ip] || 0) + w;
+      }
       let best = null, bestN = 0;
       for (const [ip, n] of Object.entries(counts)) {
         if (n > bestN) { best = ip; bestN = n; }
       }
-      // اگر سرور IP داده و در منابع هم هست، اولویت
-      if (DATA.clientIP && counts[DATA.clientIP]) {
-        best = DATA.clientIP;
-        bestN = counts[DATA.clientIP];
-      }
-      // اگر اجماع نیست ولی سرور IP دارد و هیچ منبعی نداریم
+      // فقط اگر هیچ منبع مرورگری نبود از IP سرور استفاده کن
       if (!best && DATA.clientIP && isPub(DATA.clientIP)) {
         best = DATA.clientIP;
         bestN = 1;
@@ -441,11 +438,25 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       navigator.clipboard.writeText(subUrl).then(() => toast("لینک کپی شد")).catch(() => toast("کپی نشد"));
     });
     const fullUrl = DATA.fullJsonUrl || (subUrl + (subUrl.indexOf("?") >= 0 ? "&" : "?") + "format=full");
-    document.getElementById("btnCopyFull").addEventListener("click", () => {
-      navigator.clipboard.writeText(fullUrl).then(() => toast("لینک کانفیگ ویژه کپی شد")).catch(() => toast("کپی نشد"));
-    });
-    document.getElementById("btnQrFull").addEventListener("click", () => {
-      openQr(fullUrl, "کانفیگ ویژه v2rayNG");
+    document.getElementById("btnCopyFull").addEventListener("click", async () => {
+      const btn = document.getElementById("btnCopyFull");
+      const prev = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "…";
+      try {
+        const res = await fetch(fullUrl, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const text = await res.text();
+        // اطمینان از JSON
+        JSON.parse(text);
+        await navigator.clipboard.writeText(text);
+        toast("JSON کانفیگ کپی شد");
+      } catch (e) {
+        toast("کپی JSON ناموفق");
+        console.warn(e);
+      }
+      btn.disabled = false;
+      btn.textContent = prev;
     });
     document.getElementById("btnSpecialInfo").addEventListener("click", () => {
       document.getElementById("infoModal").classList.add("open");
@@ -539,48 +550,30 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       return pool.slice(0, n);
     }
 
-    async function testIp(ip, timeoutMs) {
-      // پینگ واقعی: فقط پاسخ موفق شبکه (نه خطای فوری) و latency معقول
-      const timeout = Math.max(200, Math.min(timeoutMs || 1200, 2000));
-      const start = performance.now();
-      const controller = new AbortController();
-      const tid = setTimeout(function () { controller.abort(); }, timeout);
-      let ok = false;
-      try {
-        // no-cors: وقتی به CF برسیم opaque response می‌آید؛ unreachable سریع reject می‌شود
-        await fetch("https://" + ip + "/cdn-cgi/trace", {
-          method: "GET",
-          mode: "no-cors",
-          cache: "no-store",
-          redirect: "manual",
-          signal: controller.signal
-        });
-        ok = true;
-      } catch (e) {
-        // AbortError = timeout؛ TypeError/failed = unreachable
-        ok = false;
+    async function testIp(ip, maxLatency) {
+      // منطق drunkleen/ip-scanner: https://ip:2096/__down × ۵ بار
+      // هر پاسخ غیر از AbortError = موفق (شامل CORS error)
+      const url = "https://" + ip + ":2096/__down";
+      const startTime = performance.now();
+      const multiply = maxLatency <= 500 ? 1.5 : (maxLatency <= 1000 ? 1.2 : 1);
+      let testResult = 0;
+      let timeout = 1.5 * multiply * maxLatency;
+      for (let ch = 0; ch < 5; ch++) {
+        if (abortScan) break;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(function () { controller.abort(); }, timeout);
+        timeout = 1 * multiply * maxLatency;
+        try {
+          await fetch(url, { signal: controller.signal, cache: "no-store" });
+          testResult++;
+        } catch (error) {
+          if (error && error.name !== "AbortError") testResult++;
+        }
+        clearTimeout(timeoutId);
       }
-      clearTimeout(tid);
-      const latency = Math.round(performance.now() - start);
-      // زیر ۱۵ms معمولاً fail فوری مرورگر است، نه پینگ واقعی CF
-      if (!ok || latency < 15) {
-        return { ip: ip, ok: false, latency: latency };
-      }
-      // پروب دوم اختیاری روی 443 با Image برای تأیید
-      const start2 = performance.now();
-      const ok2 = await new Promise(function (resolve) {
-        const img = new Image();
-        const t = setTimeout(function () { try { img.src = ""; } catch (_) {} resolve(false); }, Math.min(800, timeout));
-        img.onload = img.onerror = function () {
-          clearTimeout(t);
-          const ms = performance.now() - start2;
-          // onerror/onload هر دو بعد از تلاش شبکه می‌آیند
-          resolve(ms >= 10);
-        };
-        img.src = "https://" + ip + "/favicon.ico?" + Date.now();
-      });
-      const finalLat = Math.round(performance.now() - start);
-      return { ip: ip, ok: ok2, latency: Math.max(latency, finalLat > latency ? latency : finalLat) };
+      const latency = Math.floor((performance.now() - startTime) / 5);
+      const ok = testResult === 5 && latency <= maxLatency && latency >= 8;
+      return { ip: ip, ok: ok, latency: latency };
     }
 
     function setScanUi(text, pct) {
@@ -676,17 +669,16 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       for (let step = 0; step < THRESHOLDS.length; step++) {
         if (abortScan) break;
         const limit = THRESHOLDS[step];
-        const timeout = Math.min(1400, Math.max(350, limit * 1.5));
         setScanUi("پله " + fa(step + 1) + " · سقف " + fa(limit) + "ms", (step / THRESHOLDS.length) * 100);
         let got = null;
-        const CONC = 6;
+        const CONC = 4;
         while (poolIdx < pool.length && !got && !abortScan) {
           const batch = pool.slice(poolIdx, poolIdx + CONC);
           poolIdx += CONC;
-          const results = await Promise.all(batch.map(function (ip) { return testIp(ip, timeout); }));
+          const results = await Promise.all(batch.map(function (ip) { return testIp(ip, limit); }));
           tried += batch.length;
           const ok = results
-            .filter(function (r) { return r.ok && r.latency >= 15 && r.latency <= limit && !usedIps[r.ip]; })
+            .filter(function (r) { return r.ok && r.latency <= limit && !usedIps[r.ip]; })
             .sort(function (a, b) { return a.latency - b.latency; });
           if (ok.length) {
             got = { ip: ok[0].ip, latency: ok[0].latency, limit: limit, ok: true };
