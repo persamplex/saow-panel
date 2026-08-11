@@ -538,6 +538,29 @@ table tbody tr{height:auto}
 .feat-lock-overlay .lock-ico{font-size:28px;opacity:.9}
 .feat-lock-overlay p{font-size:13px;color:var(--text-secondary);max-width:260px;line-height:1.6;margin:0}
 .feat-lock-overlay .btn{margin-top:4px}
+.overlay.open .modal.feat-lock-wrap{position:relative;overflow:hidden}
+.overlay.open .modal.is-locked .feat-lock-content{filter:grayscale(.9) brightness(.45);pointer-events:none;user-select:none;opacity:.5}
+.section.feat-lock-wrap{position:relative}
+.section.is-locked > .feat-lock-content{filter:grayscale(.85) brightness(.5);pointer-events:none;user-select:none;opacity:.5;min-height:180px}
+/* قفل سراسری پنل — همه بخش‌ها به‌جز تنظیمات */
+#appRoot.panel-locked .section:not(#settings){
+  position:relative;
+}
+#appRoot.panel-locked .section:not(#settings)::after{
+  content:"";position:absolute;inset:0;z-index:40;
+  background:rgba(5,5,8,.55);backdrop-filter:blur(3px);border-radius:var(--radius-lg);
+}
+#appRoot.panel-locked .section:not(#settings) > *{filter:grayscale(.9) brightness(.4);pointer-events:none;user-select:none}
+#appRoot.panel-locked #globalLockBanner{display:flex}
+#globalLockBanner{
+  display:none;position:sticky;top:0;z-index:50;margin-bottom:14px;
+  align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  padding:14px 16px;border-radius:12px;
+  background:rgba(15,15,20,.95);border:1px solid rgba(248,113,113,.35);
+  color:var(--text);font-size:13px;text-align:center;
+}
+#globalLockBanner .lock-ico{font-size:20px}
+
 
 
 /* Wizard steps */
@@ -1037,11 +1060,40 @@ table tbody tr{height:auto}
   function clearLockOverlay(el){
     if(!el)return;
     el.classList.remove("is-locked");
+    const ov=el.querySelector(":scope > .feat-lock-overlay");
+    if(ov) ov.remove();
+    // اگر محتوا در feat-lock-content پیچیده شده، باز نکن (ساختار بماند)
   }
   let PANEL_RULES={};
   async function refreshRulesLocal(){
-    try{const r=await api("/api/rules");if(r&&r.ok)PANEL_RULES=r.rules||r;}catch{}
+    try{const r=await api("/api/rules");if(r&&r.ok){PANEL_RULES=r.rules||r;applyPanelLocksFromRules();}}catch{}
   }
+
+  function applyPanelLocksFromRules(){
+    const r=PANEL_RULES||{};
+    const root=document.getElementById("appRoot");
+    if(!root)return;
+    // قفل کامل پنل (همه به‌جز تنظیمات)
+    if(r.lock_panel){
+      root.classList.add("panel-locked");
+      const msg=r.message||"پنل توسط لایسنس قفل شده است";
+      const el=document.getElementById("globalLockMsg");
+      if(el) el.textContent=msg;
+    } else {
+      root.classList.remove("panel-locked");
+    }
+    // قفل فروشگاه از لایسنس
+    if(r.lock_shop){
+      setFeatureGate("shop", false);
+      const shop=document.getElementById("shopLockedArea");
+      if(shop){
+        shop.classList.add("is-locked");
+        const ov=shop.querySelector(".feat-lock-overlay p");
+        if(ov) ov.textContent=r.message||"فروشگاه توسط لایسنس قفل شده است";
+      }
+    }
+  }
+
   function canCreateUserUi(){
     if(PANEL_RULES.lock_create_user) return {ok:false,msg:PANEL_RULES.message||"ساخت کاربر توسط لایسنس قفل شده"};
     if(PANEL_RULES.max_users>0){
@@ -1859,13 +1911,27 @@ function openMapProvince(provinceName){
     populateCSelect(root, opts, cur);
   }
   function openUserModal(user){
+    const ov=document.getElementById("userOverlay");
+    const modal=ov?.querySelector(".modal");
     if(!user){
       const gate=canCreateUserUi();
-      if(!gate.ok){toast(gate.msg,"err");
-        const ov=document.getElementById("userOverlay");
-        if(ov){applyLockOverlay(ov.querySelector(".modal")||ov,{message:gate.msg});setTimeout(()=>clearLockOverlay(ov.querySelector(".modal")||ov),1);}
+      // باز کردن مودال با قفل UI (نه toast)
+      document.getElementById("editUserId").value="";
+      document.getElementById("userModalTitle").textContent="افزودن کاربر جدید";
+      ov?.classList.add("open");
+      if(!gate.ok){
+        applyLockOverlay(modal,{message:gate.msg||"ساخت کاربر قفل است"});
+        const foot=modal?.querySelector(".modal-f");
+        if(foot) foot.style.display="none";
         return;
       }
+      clearLockOverlay(modal);
+      const foot=modal?.querySelector(".modal-f");
+      if(foot) foot.style.display="";
+    } else {
+      clearLockOverlay(modal);
+      const foot=modal?.querySelector(".modal-f");
+      if(foot) foot.style.display="";
     }
     document.getElementById("editUserId").value=user?user.id:"";
     document.getElementById("userModalTitle").textContent=user?"ویرایش کاربر":"افزودن کاربر جدید";
@@ -2111,12 +2177,33 @@ function openMapProvince(provinceName){
     if(act==="del"){if(!confirm("حذف نود از پنل؟"))return;try{await api("/api/nodes/"+encodeURIComponent(id),{method:"DELETE"});toast("حذف شد","ok");loadNodes();}catch(e){toast(e.message,"err");}}
   }
   function openNodeModal(){
-    const gate=canCreateNodeUi();
-    if(!gate.ok){toast(gate.msg,"err");return;}
+    const ov=document.getElementById("nodeOverlay");
+    const modal=ov?.querySelector(".modal");
     document.getElementById("fCfToken").value="";
-    document.getElementById("nodeOverlay").classList.add("open");
+    ov.classList.add("open");
+    const gate=canCreateNodeUi();
+    if(!gate.ok){
+      applyLockOverlay(modal,{
+        message:gate.msg||"ساخت نود قفل است",
+        btnHtml:""
+      });
+      // مخفی کردن فوتر دکمه‌ها وقتی قفل است
+      const foot=modal?.querySelector(".modal-f");
+      if(foot) foot.style.display="none";
+      return;
+    }
+    clearLockOverlay(modal);
+    const foot=modal?.querySelector(".modal-f");
+    if(foot) foot.style.display="";
   }
-  function closeNodeModal(){document.getElementById("nodeOverlay").classList.remove("open");}
+  function closeNodeModal(){
+    const ov=document.getElementById("nodeOverlay");
+    ov.classList.remove("open");
+    const modal=ov?.querySelector(".modal");
+    clearLockOverlay(modal);
+    const foot=modal?.querySelector(".modal-f");
+    if(foot) foot.style.display="";
+  }
   document.getElementById("nodeModalClose").addEventListener("click",closeNodeModal);
   document.getElementById("nodeModalCancel").addEventListener("click",closeNodeModal);
   document.getElementById("nodeOverlay").addEventListener("click",e=>{if(e.target===e.currentTarget)closeNodeModal();});
