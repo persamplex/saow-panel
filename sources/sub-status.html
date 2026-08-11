@@ -38,6 +38,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 .btn:hover{border-color:var(--border-hover);background:rgba(255,255,255,.04)}
 .btn-primary{background:var(--accent-dim);border-color:rgba(125,211,252,.25);color:var(--accent)}
 .btn-primary:hover{background:rgba(125,211,252,.2)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 .links{margin-top:8px}
 .link-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-size:12px}
 .link-item code{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:left;color:var(--text-secondary);font-family:ui-monospace,monospace}
@@ -46,6 +47,20 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 .foot{text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--bg-elevated);border:1px solid var(--border);padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* custom CF scan — compact */
+.scan-hint{font-size:12px;color:var(--text-muted);line-height:1.65;margin:-6px 0 12px}
+.scan-status{font-size:12px;color:var(--text-secondary);min-height:18px;margin-top:10px}
+.scan-prog{height:3px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:8px;overflow:hidden}
+.scan-prog>i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .25s ease}
+.scan-item{display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-top:8px;font-size:12px}
+.scan-item .rank{flex-shrink:0;width:22px;height:22px;border-radius:7px;background:var(--accent-dim);color:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:600}
+.scan-item .meta{flex:1;min-width:0}
+.scan-item .meta strong{display:block;font-weight:500;font-size:12.5px}
+.scan-item .meta small{color:var(--text-muted);font-size:11px;direction:ltr}
+.scan-item code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:left;color:var(--text-secondary);font-family:ui-monospace,monospace;font-size:11px}
+.scan-item button{flex-shrink:0;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer}
+.scan-item button:hover{color:var(--accent);border-color:rgba(125,211,252,.3)}
+.scan-better{color:var(--success);font-size:11px;margin-right:4px}
   </style>
 </head>
 <body>
@@ -97,6 +112,15 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       <div class="links" id="linksList"></div>
     </div>
 
+    <div class="card" id="scanCard">
+      <div class="card-title">کانفیگ اختصاصی برای اینترنت شما</div>
+      <p class="scan-hint">به‌صورت خودکار بهترین IPهای کلودفلر با کمترین پینگ برای شبکهٔ شما پیدا می‌شود و ۵ لینک vless ساخته می‌شود — بدون تنظیم دستی.</p>
+      <button type="button" class="btn btn-primary" id="btnScan" style="width:100%">شروع ساخت کانفیگ</button>
+      <div class="scan-prog"><i id="scanBar"></i></div>
+      <div class="scan-status" id="scanStatus"></div>
+      <div id="scanResults"></div>
+    </div>
+
     <p class="foot">Powered by SAOW · <span id="footVer"></span></p>
   </div>
   <div class="toast" id="toast"></div>
@@ -107,7 +131,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     function toast(msg) {
       const t = document.getElementById("toast");
       t.textContent = msg; t.classList.add("show");
-      clearTimeout(t._x); t._x = setTimeout(() => t.classList.remove("show"), 2000);
+      clearTimeout(t._x); t._x = setTimeout(() => t.classList.remove("show"), 2200);
     }
     function statusBadge(s) {
       const map = {
@@ -166,6 +190,195 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
         });
       });
     }
+
+    /* ─── Clean CF IP scanner (inspired by drunkleen/ip-scanner) ─── */
+    // رنج‌های رایج Cloudflare (نمونه‌برداری تصادفی)
+    const CF_CIDRS = [
+      "104.16.0.0/13","104.24.0.0/14","172.64.0.0/13","162.158.0.0/15",
+      "188.114.96.0/20","190.93.240.0/20","197.234.240.0/22","198.41.128.0/17",
+      "141.101.64.0/18","103.21.244.0/22","103.22.200.0/22","103.31.4.0/22",
+      "108.162.192.0/18","131.0.72.0/22","173.245.48.0/20","103.21.244.0/22"
+    ];
+    const NEED = 5;
+    const MAX_LATENCY = 450;
+    const MAX_TRY = 80;
+    let scanning = false;
+
+    function parseVless(link) {
+      try {
+        const s = String(link || "");
+        const m = s.match(/^vless:\/\/([^@]+)@([^:]+):(\d+)\?([^#]*)(?:#(.*))?$/i);
+        if (!m) return null;
+        const qs = new URLSearchParams(m[4] || "");
+        return {
+          uuid: m[1],
+          address: m[2],
+          port: Number(m[3]) || 443,
+          params: qs,
+          remark: decodeURIComponent(m[5] || "SAOW"),
+          raw: s,
+        };
+      } catch { return null; }
+    }
+
+    function buildVlessWithIp(base, ip, rank, latency) {
+      const qs = new URLSearchParams(base.params.toString());
+      const sni = qs.get("sni") || qs.get("host") || base.address;
+      const host = qs.get("host") || sni;
+      if (sni && !/^\d+\.\d+\.\d+\.\d+$/.test(sni)) qs.set("sni", sni);
+      if (host && !/^\d+\.\d+\.\d+\.\d+$/.test(host)) qs.set("host", host);
+      if (!qs.get("encryption")) qs.set("encryption", "none");
+      if (!qs.get("security")) qs.set("security", "tls");
+      if (!qs.get("fp")) qs.set("fp", "chrome");
+      const remark = `${base.remark} · IP${rank} · ${latency}ms`;
+      return `vless://${base.uuid}@${ip}:${base.port}?${qs.toString()}#${encodeURIComponent(remark)}`;
+    }
+
+    function cidrToRandomIps(cidr, count) {
+      const [ip, bits] = cidr.split("/");
+      const mask = parseInt(bits, 10);
+      const parts = ip.split(".").map(Number);
+      const base = ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+      const size = 2 ** (32 - mask);
+      const out = [];
+      const seen = new Set();
+      for (let i = 0; i < count * 4 && out.length < count; i++) {
+        const off = Math.floor(Math.random() * size);
+        let n = (base + off) >>> 0;
+        // avoid .0 and .255 in last octet when possible
+        const last = n & 0xff;
+        if (last === 0 || last === 255) n = (n & 0xffffff00) | (1 + Math.floor(Math.random() * 254));
+        if (seen.has(n)) continue;
+        seen.add(n);
+        out.push([(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join("."));
+      }
+      return out;
+    }
+
+    function randomPool(n) {
+      const pool = [];
+      const per = Math.max(4, Math.ceil(n / CF_CIDRS.length));
+      for (const c of CF_CIDRS) pool.push(...cidrToRandomIps(c, per));
+      // shuffle
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, n);
+    }
+
+    /** تست پینگ به IP کلودفلر — مشابه drunkleen: fetch به https://IP:2096/__down */
+    async function testIp(ip, timeoutMs) {
+      const url = `https://${ip}:2096/__down`;
+      const start = performance.now();
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), timeoutMs);
+      let ok = false;
+      try {
+        await fetch(url, { signal: controller.signal, mode: "no-cors", cache: "no-store" });
+        ok = true;
+      } catch (e) {
+        // در مرورگر TLS به IP اغلب error می‌دهد؛ اگر timeout نبود = مسیر باز است
+        if (e && e.name !== "AbortError") ok = true;
+      }
+      clearTimeout(tid);
+      const latency = Math.round(performance.now() - start);
+      return { ip, ok, latency };
+    }
+
+    function setScanUi(text, pct) {
+      document.getElementById("scanStatus").textContent = text || "";
+      if (pct != null) document.getElementById("scanBar").style.width = Math.min(100, pct) + "%";
+    }
+
+    function renderFound(found, base) {
+      const box = document.getElementById("scanResults");
+      const sorted = [...found].sort((a, b) => a.latency - b.latency);
+      box.innerHTML = sorted.map((f, i) => {
+        const link = buildVlessWithIp(base, f.ip, i + 1, f.latency);
+        const better = i === 0
+          ? `<span class="scan-better">بهترین</span>`
+          : `<span class="scan-better">سریع‌تر از قبلی</span>`;
+        return `<div class="scan-item">
+          <span class="rank">${fa(i + 1)}</span>
+          <div class="meta"><strong>${better} · ${fa(f.latency)}ms</strong><small>${f.ip}</small></div>
+          <code title="${link.replace(/"/g, "&quot;")}">${link.replace(/</g, "")}</code>
+          <button type="button" data-v="${encodeURIComponent(link)}" title="کپی">⧉</button>
+        </div>`;
+      }).join("");
+      box.querySelectorAll("button[data-v]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          navigator.clipboard.writeText(decodeURIComponent(btn.dataset.v)).then(() => toast("کانفیگ کپی شد"));
+        });
+      });
+    }
+
+    async function startScan() {
+      if (scanning) return;
+      const raw = links.length
+        ? (typeof links[0] === "string" ? links[0] : (links[0].link || links[0].url || ""))
+        : "";
+      const base = parseVless(raw);
+      if (!base) {
+        toast("لینک vless در دسترس نیست");
+        setScanUi("ابتدا لینک اتصال از پنل ساخته شود", 0);
+        return;
+      }
+      scanning = true;
+      const btn = document.getElementById("btnScan");
+      btn.disabled = true;
+      btn.textContent = "در حال جستجو…";
+      document.getElementById("scanResults").innerHTML = "";
+      setScanUi("انتخاب تصادفی IPهای کلودفلر…", 2);
+
+      const pool = randomPool(MAX_TRY);
+      const found = [];
+      const timeout = Math.min(1200, Math.max(400, MAX_LATENCY * 1.4));
+      let tried = 0;
+
+      // دسته‌های موازی کوچک برای سرعت
+      const CONC = 6;
+      for (let i = 0; i < pool.length && found.length < NEED; i += CONC) {
+        const batch = pool.slice(i, i + CONC);
+        const results = await Promise.all(batch.map((ip) => testIp(ip, timeout)));
+        tried += batch.length;
+        for (const r of results) {
+          if (r.ok && r.latency <= MAX_LATENCY) {
+            if (!found.some((x) => x.ip === r.ip)) {
+              found.push(r);
+              found.sort((a, b) => a.latency - b.latency);
+              if (found.length > NEED) found.length = NEED;
+              renderFound(found, base);
+              setScanUi(
+                `پیدا شد ${fa(found.length)} از ${fa(NEED)} · آخرین: ${r.ip} (${fa(r.latency)}ms)`,
+                (found.length / NEED) * 100
+              );
+            }
+          }
+        }
+        setScanUi(
+          found.length
+            ? `پیدا شد ${fa(found.length)} از ${fa(NEED)} · تست‌شده: ${fa(tried)}`
+            : `در حال تست… ${fa(tried)} IP`,
+          Math.max((found.length / NEED) * 100, (tried / MAX_TRY) * 70)
+        );
+        if (found.length >= NEED) break;
+      }
+
+      if (found.length) {
+        renderFound(found, base);
+        setScanUi(`تمام — ${fa(found.length)} کانفیگ آماده (مرتب‌شده از سریع‌تر)`, 100);
+        toast(found.length + " کانفیگ ساخته شد");
+      } else {
+        setScanUi("IP مناسبی پیدا نشد — دوباره تلاش کنید", 0);
+        toast("نتیجه‌ای نبود");
+      }
+      btn.disabled = false;
+      btn.textContent = "ساخت مجدد";
+      scanning = false;
+    }
+
+    document.getElementById("btnScan").addEventListener("click", startScan);
   })();
   </script>
 </body>
