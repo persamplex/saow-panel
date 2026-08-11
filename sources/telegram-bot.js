@@ -1,16 +1,25 @@
 /**
  * SAOW Telegram Bot Worker
- * Deploy on a SEPARATE Cloudflare account/token from the mother node
- * to avoid mother IP/account blocks.
+ * Version: 1.0.1-tg
  *
- * Bindings (env):
- *   BOT_TOKEN          - Telegram bot token
- *   MOTHER_URL         - https://your-mother.workers.dev
- *   MOTHER_SECRET      - API_SECRET of mother (or panel session not needed — use API secret)
- *   ADMIN_CHAT_ID      - optional; if empty, first /start becomes admin (stored in KV)
- *   ADMIN_KV           - optional KV namespace for admin chat id
+ * Deploy on a SEPARATE Cloudflare account (not mother) to avoid blocks.
+ * Mother pulls this file from GitHub and deploys it automatically.
+ *
+ * Bindings (plain_text):
+ *   BOT_TOKEN       - Telegram bot token from BotFather
+ *   MOTHER_URL      - https://your-mother.workers.dev
+ *   MOTHER_SECRET   - mother API_SECRET
+ *   ADMIN_CHAT_ID   - optional; if empty, first /start becomes admin
+ *
+ * Optional KV:
+ *   ADMIN_KV        - stores admin_chat_id when auto-detected
+ *
+ * Routes:
+ *   POST /webhook   - Telegram updates
+ *   GET  /setup     - setWebhook (optional secret=MOTHER_SECRET)
+ *   GET  /health    - health check
  */
-const VERSION = "1.0.0-tg";
+const VERSION = "1.0.1-tg";
 
 async function tg(token, method, body) {
   const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
@@ -18,21 +27,26 @@ async function tg(token, method, body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body || {}),
   });
-  return res.json();
+  return res.json().catch(() => ({ ok: false }));
 }
 
 async function motherApi(env, path, opts = {}) {
   const base = String(env.MOTHER_URL || "").replace(/\/$/, "");
+  if (!base) return {};
   const secret = env.MOTHER_SECRET || "";
-  const res = await fetch(base + path, {
-    ...opts,
-    headers: {
-      Authorization: `Bearer ${secret}`,
-      "Content-Type": "application/json",
-      ...(opts.headers || {}),
-    },
-  });
-  return res.json().catch(() => ({}));
+  try {
+    const res = await fetch(base + path, {
+      ...opts,
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        "Content-Type": "application/json",
+        ...(opts.headers || {}),
+      },
+    });
+    return await res.json().catch(() => ({}));
+  } catch {
+    return {};
+  }
 }
 
 async function getAdminChatId(env) {
@@ -40,7 +54,7 @@ async function getAdminChatId(env) {
   try {
     if (env.ADMIN_KV) {
       const v = await env.ADMIN_KV.get("admin_chat_id");
-      if (v) return v;
+      if (v) return String(v);
     }
   } catch {}
   return null;
@@ -55,18 +69,18 @@ async function setAdminChatId(env, id) {
 async function handleUpdate(env, update) {
   const token = env.BOT_TOKEN;
   if (!token) return;
+
   const msg = update.message || update.edited_message;
   if (!msg || !msg.chat) return;
+
   const chatId = String(msg.chat.id);
   const text = String(msg.text || "").trim();
-
   let admin = await getAdminChatId(env);
 
   if (text.startsWith("/start")) {
     if (!admin) {
       await setAdminChatId(env, chatId);
       admin = chatId;
-      // mirror to mother if possible
       try {
         await motherApi(env, "/api/telegram/config", {
           method: "POST",
@@ -82,24 +96,35 @@ async function handleUpdate(env, update) {
     }
     await tg(token, "sendMessage", {
       chat_id: chatId,
-      text: chatId === admin
-        ? "سلام ادمین 👋 ربات SAOW آنلاین است."
-        : "ربات SAOW — فقط ادمین پاسخ داده می‌شود.",
+      text:
+        chatId === String(admin)
+          ? "سلام ادمین 👋\nربات SAOW آنلاین است.\n/status — وضعیت مادر"
+          : "ربات SAOW — فقط ادمین پاسخ داده می‌شود.",
     });
     return;
   }
 
-  if (admin && chatId !== admin) return;
+  if (admin && chatId !== String(admin)) return;
 
   if (text === "/status" || text === "/ping") {
     let mother = "—";
     try {
       const r = await motherApi(env, "/api/ping");
-      mother = r && r.ok ? ("ok v" + (r.v || "")) : "fail";
-    } catch { mother = "error"; }
+      mother = r && r.ok ? "ok v" + (r.v || r.version || "") : "fail";
+    } catch {
+      mother = "error";
+    }
     await tg(token, "sendMessage", {
       chat_id: chatId,
       text: `SAOW Bot v${VERSION}\nMother: ${mother}\nChat: ${chatId}`,
+    });
+    return;
+  }
+
+  if (text === "/help") {
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "دستورات:\n/start\n/status\n/help",
     });
   }
 }
@@ -107,24 +132,36 @@ async function handleUpdate(env, update) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
     if (request.method === "POST" && (url.pathname === "/" || url.pathname === "/webhook")) {
       try {
         const update = await request.json();
         await handleUpdate(env, update);
       } catch (e) {
-        console.log("tg update", e?.message);
+        console.log("tg update", e?.message || e);
       }
       return new Response("ok");
     }
+
     if (url.pathname === "/setup") {
-      // setWebhook helper: GET /setup?secret=MOTHER_SECRET
+      if (!env.BOT_TOKEN) return new Response("no BOT_TOKEN", { status: 400 });
       const secret = url.searchParams.get("secret") || "";
-      if (!env.BOT_TOKEN) return new Response("no token", { status: 400 });
-      if (secret !== (env.MOTHER_SECRET || "")) return new Response("forbidden", { status: 403 });
+      if (env.MOTHER_SECRET && secret !== env.MOTHER_SECRET) {
+        return new Response("forbidden", { status: 403 });
+      }
       const hook = url.origin + "/webhook";
-      const r = await tg(env.BOT_TOKEN, "setWebhook", { url: hook, drop_pending_updates: true });
-      return Response.json({ ok: !!r.ok, hook, result: r });
+      const r = await tg(env.BOT_TOKEN, "setWebhook", {
+        url: hook,
+        drop_pending_updates: true,
+        allowed_updates: ["message"],
+      });
+      return Response.json({ ok: !!r.ok, hook, result: r, v: VERSION });
     }
+
+    if (url.pathname === "/health" || url.pathname === "/ping") {
+      return Response.json({ ok: true, v: VERSION });
+    }
+
     return new Response(`SAOW Telegram Bot ${VERSION}`);
   },
 };
