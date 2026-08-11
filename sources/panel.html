@@ -355,15 +355,29 @@ td.row-actions::before{display:none}
 }
 
 
-/* map province popup */
+/* map province popup — fixed center, smooth open */
 .map-wrap{position:relative}
-.map-pop{
-  display:none;position:absolute;z-index:40;min-width:200px;max-width:min(320px,92vw);
-  background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;
-  box-shadow:0 18px 50px rgba(0,0,0,.55);padding:0;overflow:hidden;
-  animation:fade .18s ease;
+.map-pop-backdrop{
+  display:block;position:absolute;inset:0;z-index:35;
+  background:rgba(0,0,0,0);pointer-events:none;
+  transition:background .28s ease;
 }
-.map-pop.open{display:block}
+.map-pop-backdrop.open{
+  background:rgba(0,0,0,.35);pointer-events:auto;
+}
+.map-pop{
+  position:absolute;z-index:40;left:50%;top:42%;
+  width:min(300px,88%);max-width:92%;
+  background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 20px 56px rgba(0,0,0,.55);padding:0;overflow:hidden;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transform:translate(-50%,-46%) scale(.92);
+  transition:opacity .28s cubic-bezier(.16,1,.3,1),transform .32s cubic-bezier(.16,1,.3,1),visibility .28s;
+}
+.map-pop.open{
+  opacity:1;visibility:visible;pointer-events:auto;
+  transform:translate(-50%,-50%) scale(1);
+}
 .map-pop-head{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);
@@ -375,25 +389,37 @@ td.row-actions::before{display:none}
   background:transparent;color:var(--text-muted);cursor:pointer;font-size:16px;line-height:1;
 }
 .map-pop-close:hover{color:var(--text);border-color:var(--border-hover)}
-.map-pop-body{padding:10px 12px 12px;max-height:min(240px,40vh);overflow-y:auto}
+/* ~3 user rows visible, then scroll without scrollbar */
+.map-pop-body{
+  padding:10px 12px 12px;
+  max-height:calc(3 * 52px + 12px);
+  overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.map-pop-body::-webkit-scrollbar{display:none;width:0;height:0}
 .map-pop-user{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid rgba(255,255,255,.04);
-  margin-bottom:6px;font-size:13px;
+  margin-bottom:6px;font-size:13px;min-height:44px;box-sizing:border-box;
 }
 .map-pop-user:last-child{margin-bottom:0}
 .map-pop-user strong{font-weight:500}
 .map-pop-user small{color:var(--text-muted);font-size:11px;direction:ltr}
 .map-pop-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:13px}
 @media(max-width:768px){
-  .map-pop{
-    position:fixed;left:12px;right:12px;bottom:16px;top:auto;max-width:none;width:auto;
-    border-radius:16px;z-index:120;transform:none!important;
-  }
   .map-pop-backdrop{
-    display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:110;
+    position:fixed;inset:0;z-index:110;
   }
-  .map-pop-backdrop.open{display:block}
+  .map-pop-backdrop.open{background:rgba(0,0,0,.45)}
+  .map-pop{
+    position:fixed;left:12px;right:12px;top:auto;bottom:20px;
+    width:auto;max-width:none;
+    transform:translateY(18px) scale(.98);
+    border-radius:16px;z-index:120;
+  }
+  .map-pop.open{
+    transform:translateY(0) scale(1);
+  }
 }
 
 </style>
@@ -817,17 +843,10 @@ td.row-actions::before{display:none}
     } else {
       body.innerHTML=users.map(u=>`<div class="map-pop-user"><div><strong>${esc(u.name)}</strong>${u.city?`<br><small style="direction:rtl;color:var(--text-muted)">${esc(u.city)}</small>`:""}</div><small>${esc(u.ip||"")}</small></div>`).join("");
     }
+    body.scrollTop=0;
+    // فقط class — موقعیت از CSS؛ بدون پرش left/top
     pop.classList.add("open");
-    if(window.matchMedia("(max-width:768px)").matches){
-      document.getElementById("mapPopBackdrop")?.classList.add("open");
-      pop.style.left="";pop.style.right="";pop.style.top="";pop.style.bottom="";pop.style.transform="";
-    } else {
-      pop.style.left="50%";
-      pop.style.top="18%";
-      pop.style.transform="translateX(-50%)";
-      pop.style.right="auto";
-      pop.style.bottom="auto";
-    }
+    document.getElementById("mapPopBackdrop")?.classList.add("open");
   }
   function renderMap(provinces, devices){
     if(Array.isArray(devices)) mapDevicesCache=devices;
@@ -841,13 +860,7 @@ td.row-actions::before{display:none}
     const sActive=map.marker(online.filter(m=>m.users<3));sActive.name("آنلاین").type("circle").size(8).fill("#7dd3fc").stroke("1.5 #0ea5e9").labels(false).selectionMode("none");
     const sHot=map.marker(online.filter(m=>m.users>=3));sHot.name("پرترافیک").type("circle").size(10).fill("#f472b6").stroke("1.5 #db2777").labels(false).selectionMode("none");
     [sIdle,sActive,sHot].forEach(s=>{
-      s.tooltip().useHtml(true).fontFamily("Vazirmatn,Tahoma,sans-serif").fontSize(13)
-        .titleFormat(function(){return'<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:14px;font-weight:600">'+this.getData("name")+"</span>";})
-        .format(function(){
-          const u=this.getData("users");
-          const txt=u>0?(u+" کاربر آنلاین — کلیک برای جزئیات"):"بدون کاربر آنلاین";
-          return '<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:13px">'+txt+"</span>";
-        });
+      try{s.tooltip(false);}catch{}
       s.listen("pointClick", function(e){
         let pName=null;
         try{pName=e.point.get("name");}catch{}
