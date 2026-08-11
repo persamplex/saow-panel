@@ -813,22 +813,16 @@ table tbody tr{height:auto}
     <section class="section" id="shop">
       <div class="feat-lock-wrap is-locked" data-feature="shop" id="shopLockedArea">
         <div class="feat-lock-content">
-          <div class="grid-2">
-            <div class="setting-block"><h4>وضعیت فروشگاه</h4>
-              <div class="row"><span>قفل لایسنس فروشگاه</span><div class="switch" id="shopLockSwitch"></div></div>
-              <p style="font-size:12px;color:var(--text-muted);margin-top:10px">قفل لایسنس از سرویس مدیریت اعمال می‌شود.</p>
-            </div>
-            <div class="setting-block"><h4>پلن‌ها و سفارش‌ها</h4>
-              <div class="row"><span>پلن‌های فعال</span><span id="shopPlansCount">—</span></div>
-              <div class="row"><span>سفارش در انتظار</span><span id="shopPendingCount" style="color:var(--warning)">—</span></div>
-              <button class="btn" style="width:100%;margin-top:12px" id="btnReloadShop" type="button">بروزرسانی</button>
+          <div class="card" style="margin:0 0 14px"><div class="card-head"><h3>پلن‌ها</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn" type="button" id="btnReloadShop">بروزرسانی</button>
+              <button class="btn btn-primary" type="button" id="btnAddPlan">+ پلن</button>
             </div>
           </div>
-          <div class="card" style="margin-top:14px"><div class="card-head"><h3>پلن‌ها</h3><button class="btn btn-primary" type="button" id="btnAddPlan">+ پلن</button></div>
-            <div class="table-scroll"><table><thead><tr><th>نام</th><th>دسته</th><th>روز</th><th>حجم GB</th><th>قیمت</th><th>وضعیت</th></tr></thead>
-            <tbody id="plansBody"><tr><td colspan="6" class="empty-msg">پلنی نیست</td></tr></tbody></table></div>
+            <div class="table-scroll"><table><thead><tr><th>نام</th><th>دسته</th><th>روز</th><th>حجم GB</th><th>روزانه</th><th>IP</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody id="plansBody"><tr><td colspan="9" class="empty-msg">پلنی نیست</td></tr></tbody></table></div>
           </div>
-          <div class="card"><div class="card-head"><h3>سفارش‌های اخیر</h3></div>
+          <div class="card"><div class="card-head"><h3>سفارش‌های اخیر</h3><span id="shopPendingCount" class="badge badge-warn">—</span></div>
             <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>پلن</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
             <tbody id="ordersBody"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody></table></div>
           </div>
@@ -999,6 +993,8 @@ table tbody tr{height:auto}
           <div class="row"><span>قفل ساخت نود</span><div class="switch" id="swLockCreateNode"></div></div>
           <div class="sub-panel" id="sub-create-node"><div class="field"><label>حداکثر نودها (۰=∞)</label><input type="number" id="rulesMaxNodes" value="0" /></div></div>
           <div class="row"><span>قفل فروشگاه</span><div class="switch" id="swLockShop"></div></div>
+          <div class="row"><span>قفل ساب (لینک‌ها بسته)</span><div class="switch" id="swLockSub"></div></div>
+          <div class="row"><span>خاموشی اتصال (قطع VPN)</span><div class="switch" id="swLockConnect"></div></div>
           <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnSaveRules" type="button">ذخیره قوانین</button>
         </div>
                 <div class="setting-block"><h4>امنیت ورود</h4>
@@ -1013,7 +1009,8 @@ table tbody tr{height:auto}
           <div class="row"><span>نسخه مادر</span><span id="sysVersion" style="color:var(--accent)">—</span></div>
           <div class="row"><span>حالت</span><span class="badge badge-info">Push</span></div>
           <div class="row"><span>API Base</span><span id="sysBase" style="font-size:12px">—</span></div>
-          <button class="btn" style="width:100%;margin-top:12px" id="btnLogout" type="button">خروج</button>
+          <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnUpdateMother" type="button">بروزرسانی پنل از GitHub</button>
+          <button class="btn" style="width:100%;margin-top:8px" id="btnLogout" type="button">خروج</button>
         </div>
       </div>
     </section>
@@ -2329,16 +2326,40 @@ function openMapProvince(provinceName){
 
   async function loadShop(){
     try{
-      const[plansRes,ordersRes,rulesRes]=await Promise.all([api("/api/shop/plans"),api("/api/shop/orders"),api("/api/rules")]);
-      const plans=plansRes.plans||[],orders=ordersRes.orders||[],rules=rulesRes.rules||{};
-      document.getElementById("shopPlansCount").textContent=faNum(plans.filter(p=>p.enabled).length);
-      document.getElementById("shopPendingCount").textContent=faNum(orders.filter(o=>o.status==="pending").length);
-      const lockSw=document.getElementById("shopLockSwitch");
-      if(rules.lock_shop)lockSw.classList.add("on");else lockSw.classList.remove("on");
-      lockSw.onclick=async()=>{lockSw.classList.toggle("on");try{await api("/api/rules",{method:"POST",body:JSON.stringify({lock_shop:lockSw.classList.contains("on")})});toast("ذخیره شد","ok");}catch(e){toast(e.message,"err");}};
+      const[plansRes,ordersRes]=await Promise.all([api("/api/shop/plans"),api("/api/shop/orders")]);
+      const plans=plansRes.plans||[],orders=ordersRes.orders||[];
+      const pending=orders.filter(o=>o.status==="pending").length;
+      const pc=document.getElementById("shopPendingCount");
+      if(pc){pc.textContent=pending?("در انتظار "+faNum(pending)):"سفارش‌ها"; pc.className=pending?"badge badge-warn":"badge badge-info";}
+      const cats=[...new Set(plans.map(p=>p.category).filter(Boolean))];
+      const dl=document.getElementById("planCatList");
+      if(dl) dl.innerHTML=cats.map(c=>`<option value="${esc(c)}"></option>`).join("");
       const pb=document.getElementById("plansBody");
-      if(!plans.length)pb.innerHTML='<tr><td colspan="5" class="empty-msg">پلنی نیست</td></tr>';
-      else pb.innerHTML=plans.map(p=>`<tr><td data-label="نام">${esc(p.name)}</td><td data-label="روز">${faNum(p.days)}</td><td data-label="حجم">${faNum(p.quota_gb)}</td><td data-label="قیمت">${faNum(p.price)}</td><td data-label="وضعیت">${p.enabled?'<span class="badge badge-ok">فعال</span>':'<span class="badge badge-off">غیرفعال</span>'}</td></tr>`).join("");
+      if(!plans.length) pb.innerHTML='<tr><td colspan="9" class="empty-msg">پلنی نیست</td></tr>';
+      else pb.innerHTML=plans.map(p=>{
+        const st=p.enabled?'<span class="badge badge-ok">فعال</span>':'<span class="badge badge-off">غیرفعال</span>';
+        return `<tr>
+          <td data-label="نام">${esc(p.name)}</td>
+          <td data-label="دسته">${esc(p.category||"—")}</td>
+          <td data-label="روز">${faNum(p.days)}</td>
+          <td data-label="حجم">${faNum(p.quota_gb)}</td>
+          <td data-label="روزانه">${faNum(p.daily_gb||0)}</td>
+          <td data-label="IP">${faNum(p.ip_limit||1)}</td>
+          <td data-label="قیمت">${faNum(p.price)}</td>
+          <td data-label="وضعیت">${st}</td>
+          <td class="row-actions" data-label=""><span class="row-actions-inner">
+            <button type="button" class="icon-btn" data-pedit="${esc(p.id)}" title="ویرایش">✎</button>
+            <button type="button" class="icon-btn danger" data-pdel="${esc(p.id)}" title="حذف">🗑</button>
+          </span></td></tr>`;
+      }).join("");
+      pb.querySelectorAll("[data-pedit]").forEach(btn=>btn.addEventListener("click",()=>{
+        const pl=plans.find(x=>String(x.id)===String(btn.dataset.pedit));
+        if(pl) openPlanModal(pl);
+      }));
+      pb.querySelectorAll("[data-pdel]").forEach(btn=>btn.addEventListener("click",async()=>{
+        if(!confirm("حذف این پلن؟"))return;
+        try{await api("/api/shop/plans/"+encodeURIComponent(btn.dataset.pdel),{method:"DELETE"});toast("حذف شد","ok");loadShop();}catch(e){toast(e.message,"err");}
+      }));
       const ob=document.getElementById("ordersBody");
       if(!orders.length)ob.innerHTML='<tr><td colspan="5" class="empty-msg">سفارشی نیست</td></tr>';
       else ob.innerHTML=orders.slice(0,30).map(o=>{
@@ -2349,6 +2370,44 @@ function openMapProvince(provinceName){
       ob.querySelectorAll("[data-oact]").forEach(btn=>btn.addEventListener("click",async()=>{try{await api("/api/shop/orders/"+encodeURIComponent(btn.dataset.oid)+"/"+btn.dataset.oact,{method:"POST"});toast("انجام شد","ok");loadShop();}catch(e){toast(e.message,"err");}}));
     }catch(e){toast("فروشگاه: "+e.message,"err");}
   }
+  function openPlanModal(plan){
+    document.getElementById("planId").value=plan&&plan.id||"";
+    document.getElementById("planModalTitle").textContent=plan&&plan.id?"ویرایش پلن":"پلن جدید";
+    document.getElementById("planName").value=plan&&plan.name||"";
+    document.getElementById("planCat").value=plan&&plan.category||"";
+    document.getElementById("planDays").value=plan&&plan.days!=null?plan.days:30;
+    document.getElementById("planQuota").value=plan&&plan.quota_gb!=null?plan.quota_gb:30;
+    document.getElementById("planDaily").value=plan&&plan.daily_gb!=null?plan.daily_gb:0;
+    document.getElementById("planIp").value=plan&&plan.ip_limit!=null?plan.ip_limit:1;
+    document.getElementById("planPrice").value=plan&&plan.price!=null?plan.price:0;
+    const sw=document.getElementById("planEnabled");
+    if(plan&&plan.enabled===0)sw.classList.remove("on");else sw.classList.add("on");
+    document.getElementById("planOverlay").classList.add("open");
+  }
+  function closePlanModal(){document.getElementById("planOverlay").classList.remove("open");}
+  document.getElementById("btnAddPlan")?.addEventListener("click",()=>openPlanModal(null));
+  document.getElementById("planModalX")?.addEventListener("click",closePlanModal);
+  document.getElementById("planModalCancel")?.addEventListener("click",closePlanModal);
+  document.getElementById("planEnabled")?.addEventListener("click",function(){this.classList.toggle("on");});
+  document.getElementById("planModalSave")?.addEventListener("click",async()=>{
+    const name=document.getElementById("planName").value.trim();
+    if(!name){toast("نام پلن لازم است","err");return;}
+    const body={
+      id:document.getElementById("planId").value||undefined,
+      name,
+      category:document.getElementById("planCat").value.trim(),
+      days:Number(document.getElementById("planDays").value)||0,
+      quota_gb:Number(document.getElementById("planQuota").value)||0,
+      daily_gb:Number(document.getElementById("planDaily").value)||0,
+      ip_limit:Number(document.getElementById("planIp").value)||1,
+      price:Number(document.getElementById("planPrice").value)||0,
+      enabled:document.getElementById("planEnabled").classList.contains("on"),
+    };
+    try{
+      await api("/api/shop/plans",{method:"POST",body:JSON.stringify(body)});
+      toast("پلن ذخیره شد","ok");closePlanModal();loadShop();
+    }catch(e){toast(e.message,"err");}
+  });
   document.getElementById("btnReloadShop").addEventListener("click",()=>loadShop());
 
   async function downloadBackup(){try{const data=await api("/api/backup");const blob=new Blob([JSON.stringify(data.backup||data,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="saow-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(a.href);toast("دانلود شد","ok");}catch(e){toast(e.message,"err");}}
@@ -2377,19 +2436,30 @@ function openMapProvince(provinceName){
 
   async function loadRules(){
     try{const data=await api("/api/rules");const r=data.rules||{};
-      setSw("swLockPanel",r.lock_panel);setSw("swLockCreateUser",r.lock_create_user);setSw("swLockCreateNode",r.lock_create_node);setSw("swLockShop",r.lock_shop);
+      setSw("swLockPanel",r.lock_panel);setSw("swLockCreateUser",r.lock_create_user);setSw("swLockCreateNode",r.lock_create_node);setSw("swLockShop",r.lock_shop);setSw("swLockSub",r.lock_sub);setSw("swLockConnect",r.lock_connect);
       document.getElementById("rulesMaxUsers").value=r.max_users||0;document.getElementById("rulesMaxNodes").value=r.max_nodes||0;document.getElementById("rulesMessage").value=r.message||"";
       toggleSub("swLockPanel","sub-panel-lock");toggleSub("swLockCreateUser","sub-create-user");toggleSub("swLockCreateNode","sub-create-node");
     }catch(e){console.warn(e);}
   }
   function setSw(id,on){const el=document.getElementById(id);if(on)el.classList.add("on");else el.classList.remove("on");}
   function toggleSub(swId,panelId){const sw=document.getElementById(swId),panel=document.getElementById(panelId);if(!panel)return;if(sw.classList.contains("on"))panel.classList.add("open");else panel.classList.remove("open");}
-  ["swLockPanel","swLockCreateUser","swLockCreateNode","swLockShop"].forEach(id=>{document.getElementById(id).addEventListener("click",function(){this.classList.toggle("on");if(id==="swLockPanel")toggleSub(id,"sub-panel-lock");if(id==="swLockCreateUser")toggleSub(id,"sub-create-user");if(id==="swLockCreateNode")toggleSub(id,"sub-create-node");});});
+  ["swLockPanel","swLockCreateUser","swLockCreateNode","swLockShop","swLockSub","swLockConnect"].forEach(id=>{document.getElementById(id).addEventListener("click",function(){this.classList.toggle("on");if(id==="swLockPanel")toggleSub(id,"sub-panel-lock");if(id==="swLockCreateUser")toggleSub(id,"sub-create-user");if(id==="swLockCreateNode")toggleSub(id,"sub-create-node");});});
   document.getElementById("btnSaveRules").addEventListener("click",async()=>{
-    const body={lock_panel:document.getElementById("swLockPanel").classList.contains("on"),lock_create_user:document.getElementById("swLockCreateUser").classList.contains("on"),lock_create_node:document.getElementById("swLockCreateNode").classList.contains("on"),lock_shop:document.getElementById("swLockShop").classList.contains("on"),max_users:Number(document.getElementById("rulesMaxUsers").value)||0,max_nodes:Number(document.getElementById("rulesMaxNodes").value)||0,message:document.getElementById("rulesMessage").value.trim()};
+    const body={lock_panel:document.getElementById("swLockPanel").classList.contains("on"),lock_create_user:document.getElementById("swLockCreateUser").classList.contains("on"),lock_create_node:document.getElementById("swLockCreateNode").classList.contains("on"),lock_shop:document.getElementById("swLockShop").classList.contains("on"),lock_sub:document.getElementById("swLockSub").classList.contains("on"),lock_connect:document.getElementById("swLockConnect").classList.contains("on"),max_users:Number(document.getElementById("rulesMaxUsers").value)||0,max_nodes:Number(document.getElementById("rulesMaxNodes").value)||0,message:document.getElementById("rulesMessage").value.trim()};
     try{await api("/api/rules",{method:"POST",body:JSON.stringify(body)});toast("قوانین ذخیره شد","ok");}catch(e){toast(e.message,"err");}
   });
   document.getElementById("btnLogout").addEventListener("click",logout);
+  document.getElementById("btnUpdateMother")?.addEventListener("click",async()=>{
+    if(!confirm("بروزرسانی مادر از GitHub؟ ممکن است چند ثانیه طول بکشد."))return;
+    try{
+      toast("در حال بروزرسانی…","ok");
+      const r=await api("/api/update",{method:"POST",body:"{}"});
+      if(!r||!r.ok)throw new Error((r&&r.err)||"ناموفق");
+      toast("بروزرسانی انجام شد · v"+(r.v||""),"ok");
+      setTimeout(()=>location.reload(),1200);
+    }catch(e){toast(e.message||"خطا","err");}
+  });
+
 
   document.getElementById("syncBtn").addEventListener("click",async function(){const btn=this;btn.textContent="در حال همگام‌سازی...";btn.disabled=true;try{await api("/api/nodes/sync",{method:"POST"});toast("همگام‌سازی شروع شد","ok");try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"sync",message:"همگام‌سازی دستی"})});}catch{}if(currentSec==="dash")await loadDashboard(true);if(currentSec==="nodes")await loadNodes();}catch(e){toast(e.message,"err");}finally{btn.textContent="همگام‌سازی";btn.disabled=false;}});
 
@@ -2547,6 +2617,10 @@ function openMapProvince(provinceName){
     if(!confirm("حذف تنظیمات ربات؟"))return;
     try{await api("/api/telegram/delete",{method:"POST",body:"{}"});toast("حذف شد","ok");await refreshFeatureGates();setTgWiz(1);loadTelegram();}catch(e){toast(e.message,"err");}
   });
+  ["tgRepPanel","tgRepSub","tgRepAuth","tgRepNode"].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.addEventListener("click",function(){ this.classList.toggle("on"); });
+  });
   document.getElementById("btnTgRepSave")?.addEventListener("click",async()=>{
     if(!requireFeature("telegram_bot"))return;
     try{
@@ -2574,6 +2648,35 @@ function openMapProvince(provinceName){
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&currentSec==="dash")loadDashboard(false);});
 })();
 </script>
+
+
+<div class="overlay" id="planOverlay">
+  <div class="modal">
+    <div class="modal-h"><h3 id="planModalTitle">پلن جدید</h3><button class="icon-btn" type="button" id="planModalX">✕</button></div>
+    <div class="modal-b">
+      <input type="hidden" id="planId" value="" />
+      <div class="field"><label>نام پلن</label><input type="text" id="planName" placeholder="مثلاً یک‌ماهه ۲۰ گیگ" /></div>
+      <div class="field"><label>دسته‌بندی</label><input type="text" id="planCat" placeholder="مثلاً ارزان · پرحجم · ویژه" list="planCatList" /></div>
+      <datalist id="planCatList"></datalist>
+      <div class="field-grid">
+        <div class="field"><label>روز</label><input type="number" id="planDays" value="30" min="0" /></div>
+        <div class="field"><label>حجم کل (GB)</label><input type="number" id="planQuota" value="30" min="0" step="0.1" /></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>حجم روزانه (GB)</label><input type="number" id="planDaily" value="0" min="0" step="0.1" /></div>
+        <div class="field"><label>محدودیت IP</label><input type="number" id="planIp" value="1" min="1" /></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>قیمت</label><input type="number" id="planPrice" value="0" min="0" /></div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between;padding-top:18px"><label style="margin:0">فعال</label><div class="switch on" id="planEnabled"></div></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" type="button" id="planModalCancel">انصراف</button>
+      <button class="btn btn-primary" type="button" id="planModalSave">ذخیره</button>
+    </div>
+  </div>
+</div>
 
 <div class="sub-qr-overlay" id="subQrOverlay">
   <div class="sub-qr-box" role="dialog" aria-modal="true">
