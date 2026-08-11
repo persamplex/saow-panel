@@ -539,6 +539,44 @@ table tbody tr{height:auto}
 .feat-lock-overlay p{font-size:13px;color:var(--text-secondary);max-width:260px;line-height:1.6;margin:0}
 .feat-lock-overlay .btn{margin-top:4px}
 
+
+/* Wizard steps */
+.wiz-steps{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.wiz-step-dot{
+  flex:1;min-width:70px;text-align:center;padding:8px 6px;border-radius:10px;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:11px;color:var(--text-muted);
+}
+.wiz-step-dot.on{border-color:rgba(56,189,248,.45);color:var(--accent);background:rgba(56,189,248,.08)}
+.wiz-step-dot.done{border-color:rgba(74,222,128,.35);color:var(--success)}
+.wiz-pane{display:none}
+.wiz-pane.on{display:block;animation:fade .25s ease}
+.help-tip{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;border:1px solid var(--border);
+  font-size:11px;color:var(--text-muted);cursor:pointer;margin-right:6px;vertical-align:middle;
+  position:relative;
+}
+.help-tip:hover{color:var(--accent);border-color:var(--accent)}
+.help-tip[data-tip]:hover::after{
+  content:attr(data-tip);position:absolute;z-index:20;bottom:calc(100% + 8px);right:0;
+  width:min(260px,70vw);padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.55;
+  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);text-align:right;
+  box-shadow:0 12px 40px rgba(0,0,0,.45);white-space:normal;
+}
+.tg-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.tg-stat{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.tg-stat .k{font-size:11px;color:var(--text-muted)}
+.tg-stat .v{font-size:15px;font-weight:600;margin-top:4px}
+@media(max-width:600px){.tg-stats-grid{grid-template-columns:1fr}}
+
+
+.pager{
+  display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
+  padding:12px 14px;border-top:1px solid var(--border);
+}
+.pager .btn{min-width:36px;padding:6px 10px;font-size:12.5px}
+.pager .pager-info{font-size:12.5px;color:var(--text-muted);padding:0 6px}
+.pager .btn:disabled{opacity:.35;pointer-events:none}
 </style>
 </head>
 <body>
@@ -639,6 +677,7 @@ table tbody tr{height:auto}
         </div>
         <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>مصرف</th><th>IP</th><th>انقضا</th><th></th></tr></thead>
         <tbody id="usersBody"><tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
+        <div class="pager" id="usersPager" style="display:none"></div>
       </div>
     </section>
     <section class="section" id="nodes">
@@ -651,46 +690,39 @@ table tbody tr{height:auto}
         </div>
         <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>نسخه</th><th>کاربران</th><th>ریکوست امروز</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
         <tbody id="nodesBody"><tr><td colspan="7" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
+        <div class="pager" id="nodesPager" style="display:none"></div>
       </div>
     </section>
     <section class="section" id="shop">
-      <div class="grid-2" style="margin-bottom:14px">
-        <div class="setting-block" id="shopEnableWrap">
-          <h4>فعال‌سازی فروشگاه</h4>
-          <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">تا فعال نشود، مدیریت پلن‌ها قفل است. نیاز به ربات تلگرام دارد.</p>
-          <div class="row"><span>فروشگاه فعال</span><div class="switch" id="swShopEnable"></div></div>
-        </div>
-      </div>
       <div class="feat-lock-wrap is-locked" data-feature="shop" id="shopLockedArea">
         <div class="feat-lock-content">
-
-      <div class="grid-2">
-        <div class="setting-block"><h4>وضعیت فروشگاه</h4>
-          <div class="row"><span>قفل فروشگاه</span><div class="switch" id="shopLockSwitch"></div></div>
-          <p style="font-size:12px;color:var(--text-muted);margin-top:10px">از قوانین پنل کنترل می‌شود.</p>
-        </div>
-        <div class="setting-block"><h4>پلن‌ها و سفارش‌ها</h4>
-          <div class="row"><span>پلن‌های فعال</span><span id="shopPlansCount">—</span></div>
-          <div class="row"><span>سفارش در انتظار</span><span id="shopPendingCount" style="color:var(--warning)">—</span></div>
-          <button class="btn" style="width:100%;margin-top:12px" id="btnReloadShop" type="button">بروزرسانی</button>
-        </div>
-      </div>
-      <div class="card" style="margin-top:14px"><div class="card-head"><h3>پلن‌ها</h3></div>
-        <div class="table-scroll"><table><thead><tr><th>نام</th><th>روز</th><th>حجم GB</th><th>قیمت</th><th>وضعیت</th></tr></thead>
-        <tbody id="plansBody"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody></table></div>
-      </div>
-      <div class="card"><div class="card-head"><h3>سفارش‌های اخیر</h3></div>
-        <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>پلن</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
-        <tbody id="ordersBody"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody></table></div>
-      </div>
-    
+          <div class="grid-2">
+            <div class="setting-block"><h4>وضعیت فروشگاه</h4>
+              <div class="row"><span>قفل لایسنس فروشگاه</span><div class="switch" id="shopLockSwitch"></div></div>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:10px">قفل لایسنس از سرویس مدیریت اعمال می‌شود.</p>
+            </div>
+            <div class="setting-block"><h4>پلن‌ها و سفارش‌ها</h4>
+              <div class="row"><span>پلن‌های فعال</span><span id="shopPlansCount">—</span></div>
+              <div class="row"><span>سفارش در انتظار</span><span id="shopPendingCount" style="color:var(--warning)">—</span></div>
+              <button class="btn" style="width:100%;margin-top:12px" id="btnReloadShop" type="button">بروزرسانی</button>
+            </div>
+          </div>
+          <div class="card" style="margin-top:14px"><div class="card-head"><h3>پلن‌ها</h3><button class="btn btn-primary" type="button" id="btnAddPlan">+ پلن</button></div>
+            <div class="table-scroll"><table><thead><tr><th>نام</th><th>دسته</th><th>روز</th><th>حجم GB</th><th>قیمت</th><th>وضعیت</th></tr></thead>
+            <tbody id="plansBody"><tr><td colspan="6" class="empty-msg">پلنی نیست</td></tr></tbody></table></div>
+          </div>
+          <div class="card"><div class="card-head"><h3>سفارش‌های اخیر</h3></div>
+            <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>پلن</th><th>قیمت</th><th>وضعیت</th><th></th></tr></thead>
+            <tbody id="ordersBody"><tr><td colspan="5" class="empty-msg">—</td></tr></tbody></table></div>
+          </div>
         </div>
         <div class="feat-lock-overlay">
           <div class="lock-ico">🔒</div>
-          <p>فروشگاه را از کارت بالا فعال کنید (نیاز به ربات تلگرام)</p>
+          <p>برای استفاده از فروشگاه، ابتدا ربات تلگرام را فعال کنید</p>
+          <button type="button" class="btn btn-primary" data-go-sec="telegram">اتصال ربات تلگرام</button>
         </div>
       </div>
-</section>
+    </section>
     <section class="section" id="backup">
       <div class="grid-2">
         <div class="setting-block"><h4>خروجی بکاپ</h4>
@@ -761,38 +793,78 @@ table tbody tr{height:auto}
           <thead><tr><th>کاربر</th><th>رویداد</th><th>پیام</th><th>نود</th><th>زمان</th><th></th></tr></thead>
           <tbody id="logsBody"><tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr></tbody>
         </table></div>
+        <div class="pager" id="logsPager" style="display:none"></div>
       </div>
     </section>
 
     <section class="section" id="telegram">
-      <div class="grid-2">
-        <div class="setting-block">
-          <h4>ربات تلگرام</h4>
-          <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">توکن ربات و Chat ID ادمین. وب‌هوک روی ورکر جدا (توکن CF جدا) تنظیم می‌شود.</p>
-          <div class="field"><label>توکن ربات</label><input type="password" id="tgToken" placeholder="123456:ABC..." autocomplete="off" /></div>
-          <div class="field"><label>Chat ID ادمین</label><input type="text" id="tgChatId" placeholder="خالی = اولین /start" autocomplete="off" /></div>
-          <div class="field"><label>توکن Cloudflare (برای ورکر ربات)</label><input type="password" id="tgCfToken" placeholder="CF API Token جدا از مادر" autocomplete="off" /></div>
-          <div class="field"><label>Account ID کلودفلر ربات</label><input type="text" id="tgCfAccount" placeholder="Account ID" autocomplete="off" /></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
-            <button type="button" class="btn btn-primary" id="btnTgSave">ثبت</button>
-            <button type="button" class="btn" id="btnTgTest">تست</button>
-          </div>
-          <button type="button" class="btn btn-danger-soft" style="width:100%;margin-top:8px" id="btnTgDelete">حذف ربات</button>
-          <p id="tgStatus" style="font-size:12px;color:var(--text-muted);margin-top:10px"></p>
+      <div class="setting-block" style="margin-bottom:14px">
+        <h4>راه‌اندازی ربات تلگرام</h4>
+        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">مرحله‌به‌مرحله · ورکر ربات روی اکانت جدا از مادر ساخته می‌شود</p>
+        <div class="wiz-steps">
+          <div class="wiz-step-dot on" data-wiz="1">۱ · توکن ربات</div>
+          <div class="wiz-step-dot" data-wiz="2">۲ · Chat ID</div>
+          <div class="wiz-step-dot" data-wiz="3">۳ · ورکر CF</div>
         </div>
-        <div class="setting-block feat-lock-wrap is-locked" data-feature="telegram_bot">
-          <div class="feat-lock-content">
-            <h4>گزارش‌های اعلان</h4>
-            <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
-            <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
-            <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
-            <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
-            <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
+        <div class="wiz-pane on" id="tgWiz1">
+          <div class="field">
+            <label>توکن ربات <span class="help-tip" data-tip="در تلگرام BotFather را باز کنید، /newbot بزنید، نام بدهید و توکنی شبیه 123456:ABC-DEF را کپی کنید.">!</span></label>
+            <input type="password" id="tgToken" placeholder="123456:AA..." autocomplete="off" />
           </div>
-          <div class="feat-lock-overlay">
-            <div class="lock-ico">🔒</div>
-            <p>پس از ثبت و تست ربات فعال می‌شود</p>
+          <button type="button" class="btn btn-primary" style="width:100%" id="btnTgStep1">ادامه</button>
+        </div>
+        <div class="wiz-pane" id="tgWiz2">
+          <div class="field">
+            <label>Chat ID ادمین <span class="help-tip" data-tip="اختیاری. اگر خالی بگذارید، اولین نفری که به ربات /start بزند به‌عنوان ادمین ثبت می‌شود.">!</span></label>
+            <input type="text" id="tgChatId" placeholder="خالی = اولین /start" autocomplete="off" />
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button type="button" class="btn" id="btnTgStep2Back">قبلی</button>
+            <button type="button" class="btn btn-primary" id="btnTgStep2">ادامه</button>
+          </div>
+        </div>
+        <div class="wiz-pane" id="tgWiz3">
+          <div class="field">
+            <label>توکن Cloudflare (ورکر ربات) <span class="help-tip" data-tip="از داشبورد Cloudflare یک API Token جدا بسازید (نه توکن نود مادر). Account ID به‌صورت خودکار تشخیص داده می‌شود. ورکر ربات روی همین اکانت دیپلوی می‌شود تا مادر بلاک نشود.">!</span></label>
+            <input type="password" id="tgCfToken" placeholder="CF API Token جدا از مادر" autocomplete="off" />
+          </div>
+          <div class="field"><label>Account ID (خودکار)</label><input type="text" id="tgCfAccount" placeholder="پس از بررسی توکن پر می‌شود" readonly /></div>
+          <p id="tgCfHint" style="font-size:12px;color:var(--text-muted);margin:6px 0 10px"></p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button type="button" class="btn" id="btnTgStep3Back">قبلی</button>
+            <button type="button" class="btn btn-primary" id="btnTgActivate">فعال‌سازی ربات</button>
+          </div>
+        </div>
+        <p id="tgStatus" style="font-size:12px;color:var(--text-muted);margin-top:12px"></p>
+        <button type="button" class="btn btn-danger-soft" style="width:100%;margin-top:8px;display:none" id="btnTgDelete">حذف ربات</button>
+      </div>
+
+      <div class="feat-lock-wrap is-locked" data-feature="telegram_bot" id="tgAfterLock">
+        <div class="feat-lock-content">
+          <div class="grid-2">
+            <div class="setting-block">
+              <h4>وضعیت ورکر ربات</h4>
+              <div class="tg-stats-grid">
+                <div class="tg-stat"><div class="k">آدرس ورکر</div><div class="v" id="tgWorkerUrl" style="font-size:12px;word-break:break-all">—</div></div>
+                <div class="tg-stat"><div class="k">ریکوست امروز</div><div class="v" id="tgReqStat">—</div></div>
+                <div class="tg-stat"><div class="k">Account</div><div class="v" id="tgAccStat" style="font-size:12px">—</div></div>
+                <div class="tg-stat"><div class="k">وضعیت</div><div class="v" id="tgHealthStat">—</div></div>
+              </div>
+              <button type="button" class="btn" style="width:100%;margin-top:12px" id="btnTgTest">ارسال پیام تست</button>
+            </div>
+            <div class="setting-block">
+              <h4>گزارش‌های اعلان</h4>
+              <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
+              <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
+              <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
+              <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
+              <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
+            </div>
+          </div>
+        </div>
+        <div class="feat-lock-overlay">
+          <div class="lock-ico">🔒</div>
+          <p>پس از تکمیل ۳ مرحله، آمار و گزارش‌ها باز می‌شوند</p>
         </div>
       </div>
     </section>
@@ -942,6 +1014,52 @@ table tbody tr{height:auto}
     toast(msg||"این بخش قفل است — ابتدا ربات تلگرام را فعال کنید","err");
     return false;
   }
+  /** قفل UI روی هر المان — برای مودال ساخت کاربر/نود و کارت‌ها */
+  function applyLockOverlay(el, opts){
+    if(!el)return;
+    opts=opts||{};
+    el.classList.add("feat-lock-wrap","is-locked");
+    let content=el.querySelector(":scope > .feat-lock-content");
+    if(!content){
+      content=document.createElement("div");
+      content.className="feat-lock-content";
+      while(el.firstChild) content.appendChild(el.firstChild);
+      el.appendChild(content);
+    }
+    let ov=el.querySelector(":scope > .feat-lock-overlay");
+    if(!ov){
+      ov=document.createElement("div");
+      ov.className="feat-lock-overlay";
+      el.appendChild(ov);
+    }
+    ov.innerHTML='<div class="lock-ico">🔒</div><p>'+esc(opts.message||"این بخش قفل است")+'</p>'+(opts.btnHtml||"");
+  }
+  function clearLockOverlay(el){
+    if(!el)return;
+    el.classList.remove("is-locked");
+  }
+  let PANEL_RULES={};
+  async function refreshRulesLocal(){
+    try{const r=await api("/api/rules");if(r&&r.ok)PANEL_RULES=r.rules||r;}catch{}
+  }
+  function canCreateUserUi(){
+    if(PANEL_RULES.lock_create_user) return {ok:false,msg:PANEL_RULES.message||"ساخت کاربر توسط لایسنس قفل شده"};
+    if(PANEL_RULES.max_users>0){
+      const n=Number(document.getElementById("navUsersCount")?.textContent?.replace(/[^0-9]/g,"")||usersCache?.length||0);
+      // better count from cache
+      const cnt=(typeof usersCache!=="undefined"&&usersCache)?usersCache.length:n;
+      if(cnt>=PANEL_RULES.max_users) return {ok:false,msg:"سقف تعداد کاربر ("+PANEL_RULES.max_users+") پر شده"};
+    }
+    return {ok:true};
+  }
+  function canCreateNodeUi(){
+    if(PANEL_RULES.lock_create_node) return {ok:false,msg:PANEL_RULES.message||"ساخت نود توسط لایسنس قفل شده"};
+    if(PANEL_RULES.max_nodes>0){
+      const cnt=(typeof nodesCache!=="undefined"&&nodesCache)?nodesCache.length:0;
+      if(cnt>=PANEL_RULES.max_nodes) return {ok:false,msg:"سقف تعداد نود ("+PANEL_RULES.max_nodes+") پر شده"};
+    }
+    return {ok:true};
+  }
   async function refreshFeatureGates(){
     try{
       const r=await api("/api/features");
@@ -952,6 +1070,27 @@ table tbody tr{height:auto}
   }
 
   let usersCache=[], nodesCache={managed:[],alive:[]}, mapChart=null, dashTimer=null, lastDashAt=0;
+  const PAGE_SIZE=15;
+  let usersPage=1, nodesPage=1, logsPage=1;
+  function paginate(list, page, size){
+    const total=list.length;
+    const pages=Math.max(1, Math.ceil(total/Math.max(1,size)));
+    const p=Math.min(Math.max(1, Number(page)||1), pages);
+    const start=(p-1)*size;
+    return {page:p, pages, total, slice:list.slice(start, start+size), start:total?start+1:0, end:Math.min(start+size, total)};
+  }
+  function renderPager(elId, info, onPage){
+    const el=document.getElementById(elId);
+    if(!el)return;
+    if(!info || info.total<=PAGE_SIZE){el.style.display="none";el.innerHTML="";return;}
+    el.style.display="flex";
+    el.innerHTML=`<button type="button" class="btn" data-pg="prev" ${info.page<=1?"disabled":""}>‹</button>
+      <span class="pager-info">${faNum(info.start)}–${faNum(info.end)} از ${faNum(info.total)} · صفحه ${faNum(info.page)}/${faNum(info.pages)}</span>
+      <button type="button" class="btn" data-pg="next" ${info.page>=info.pages?"disabled":""}>›</button>`;
+    el.querySelector('[data-pg="prev"]')?.addEventListener("click",()=>onPage(info.page-1));
+    el.querySelector('[data-pg="next"]')?.addEventListener("click",()=>onPage(info.page+1));
+  }
+
   const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',telegram:'ربات تلگرام',settings:'تنظیمات'};
   const topActions={
     dash:{label:'+ کاربر جدید',action:'user'}, users:{label:'+ کاربر جدید',action:'user'},
@@ -1427,9 +1566,13 @@ function openMapProvince(provinceName){
     updateYlogBadge();
     if(!list.length){
       tbody.innerHTML='<tr><td colspan="6" class="empty-msg">موردی با این فیلتر پیدا نشد</td></tr>';
+      renderPager("logsPager",{total:0,page:1,pages:1,start:0,end:0},()=>{});
       return;
     }
-    tbody.innerHTML=list.map(a=>{
+    const info=paginate(list, logsPage, PAGE_SIZE);
+    logsPage=info.page;
+    renderPager("logsPager", info, (p)=>{logsPage=p;applyLogsFilter();});
+    tbody.innerHTML=info.slice.map(a=>{
       const[lab,cls]=activityLabel(a.type);
       const msg=a.message||"";
       const shortMsg=msg.length>60?msg.slice(0,60)+"…":msg;
@@ -1463,6 +1606,7 @@ function openMapProvince(provinceName){
         ch.classList.add("on");
         const inp=document.getElementById("logTypeFilter");
         if(inp) inp.value=ch.dataset.type||"";
+        logsPage=1;
         applyLogsFilter();
       });
     });
@@ -1493,6 +1637,7 @@ function openMapProvince(provinceName){
     ch.addEventListener("click",()=>{
       document.getElementById("ylogTimeChips").querySelectorAll(".ylog-chip").forEach(c=>c.classList.remove("on"));
       ch.classList.add("on");
+      logsPage=1;
       ylogRange=ch.dataset.range||"";
       const extra=document.getElementById("ylogExtra");
       if(extra) extra.style.display = (ylogRange==="custom") ? "" : (extra.querySelector("#logUserFilter") ? "" : "none");
@@ -1508,13 +1653,21 @@ function openMapProvince(provinceName){
     });
   });
 
-  function renderUsers(list){
+  function renderUsers(list, page){
     const q=(document.getElementById("userSearch").value||"").trim().toLowerCase();
     let filtered=list||[];
     if(q)filtered=filtered.filter(u=>(u.name||"").toLowerCase().includes(q)||(u.id||"").toLowerCase().includes(q)||(u.uuid||"").toLowerCase().includes(q));
+    if(page!=null) usersPage=page;
     const tbody=document.getElementById("usersBody");
-    if(!filtered.length){tbody.innerHTML='<tr><td colspan="6" class="empty-msg">کاربری یافت نشد</td></tr>';return;}
-    tbody.innerHTML=filtered.map(u=>{
+    if(!filtered.length){
+      tbody.innerHTML='<tr><td colspan="6" class="empty-msg">کاربری یافت نشد</td></tr>';
+      renderPager("usersPager",{total:0,page:1,pages:1,start:0,end:0},()=>{});
+      return;
+    }
+    const info=paginate(filtered, usersPage, PAGE_SIZE);
+    usersPage=info.page;
+    renderPager("usersPager", info, (p)=>renderUsers(usersCache, p));
+    tbody.innerHTML=info.slice.map(u=>{
       const used=u.usage?.total||0,quota=u.quotaBytes||0,pct=quota>0?Math.min(100,Math.round((used/quota)*100)):0;
       const usedGB=(used/GB).toFixed(1),quotaGB=quota>0?(quota/GB).toFixed(0):"∞";
       const barColor=(u.status==="daily-quota-exceeded"||u.status==="quota-exceeded")?"var(--warning)":"var(--accent)";
@@ -1537,7 +1690,7 @@ function openMapProvince(provinceName){
     tbody.querySelectorAll("[data-act]").forEach(btn=>btn.addEventListener("click",()=>onUserAction(btn.dataset.act,btn.dataset.id)));
   }
   async function loadUsers(){try{const data=await api("/api/users");usersCache=data.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);renderUsers(usersCache);}catch(e){toast("خطا کاربران: "+e.message,"err");}}
-  document.getElementById("userSearch").addEventListener("input",()=>renderUsers(usersCache));
+  document.getElementById("userSearch").addEventListener("input",()=>{usersPage=1;renderUsers(usersCache,1);});
   let selectedUserId=null;
   function closeUserDetail(){document.getElementById("userDetailOverlay").classList.remove("open");selectedUserId=null;}
   async function openUserDetail(id){
@@ -1706,6 +1859,14 @@ function openMapProvince(provinceName){
     populateCSelect(root, opts, cur);
   }
   function openUserModal(user){
+    if(!user){
+      const gate=canCreateUserUi();
+      if(!gate.ok){toast(gate.msg,"err");
+        const ov=document.getElementById("userOverlay");
+        if(ov){applyLockOverlay(ov.querySelector(".modal")||ov,{message:gate.msg});setTimeout(()=>clearLockOverlay(ov.querySelector(".modal")||ov),1);}
+        return;
+      }
+    }
     document.getElementById("editUserId").value=user?user.id:"";
     document.getElementById("userModalTitle").textContent=user?"ویرایش کاربر":"افزودن کاربر جدید";
     document.getElementById("fName").value=user?(user.name||""):"";
@@ -1768,9 +1929,22 @@ function openMapProvince(provinceName){
     try{
       const data=await api("/api/nodes");nodesCache={managed:data.managed||[],alive:data.alive||[]};
       document.getElementById("navNodesCount").textContent=faNum(nodesCache.managed.length);
-      const tbody=document.getElementById("nodesBody"),list=nodesCache.managed;
-      if(!list.length){tbody.innerHTML='<tr><td colspan="7" class="empty-msg">نودی ثبت نشده — با «+ افزودن نود» بسازید</td></tr>';return;}
-      tbody.innerHTML=list.map(n=>{
+      renderNodes(1);
+    }catch(e){toast("خطا نودها: "+e.message,"err");}
+  }
+  function renderNodes(page){
+    if(page!=null) nodesPage=page;
+    const tbody=document.getElementById("nodesBody");
+    const list=nodesCache.managed||[];
+    if(!list.length){
+      tbody.innerHTML='<tr><td colspan="7" class="empty-msg">نودی ثبت نشده — با «+ افزودن نود» بسازید</td></tr>';
+      renderPager("nodesPager",{total:0,page:1,pages:1,start:0,end:0},()=>{});
+      return;
+    }
+    const info=paginate(list, nodesPage, PAGE_SIZE);
+    nodesPage=info.page;
+    renderPager("nodesPager", info, (p)=>renderNodes(p));
+    tbody.innerHTML=info.slice.map(n=>{
         const id=n.id||n.script_name;
         const alive=matchAlive(n);
         const disabled=n.is_disabled===1;
@@ -1807,9 +1981,9 @@ function openMapProvince(provinceName){
             </span>
           </td></tr>`;
       }).join("");
-      tbody.querySelectorAll("[data-nact]").forEach(btn=>btn.addEventListener("click",()=>onNodeAction(btn.dataset.nact,btn.dataset.nid)));
-    }catch(e){toast("خطا نودها: "+e.message,"err");}
+    tbody.querySelectorAll("[data-nact]").forEach(btn=>btn.addEventListener("click",()=>onNodeAction(btn.dataset.nact,btn.dataset.nid)));
   }
+
   function closeNodeDetail(){document.getElementById("nodeDetailOverlay").classList.remove("open");selectedNodeId=null;}
   document.getElementById("nodeDetailClose").addEventListener("click",closeNodeDetail);
   document.getElementById("nodeDetailClose2").addEventListener("click",closeNodeDetail);
@@ -1936,7 +2110,12 @@ function openMapProvince(provinceName){
     if(act==="toggle"){try{await api("/api/nodes/"+encodeURIComponent(id)+"/toggle",{method:"POST"});toast("تغییر کرد","ok");loadNodes();}catch(e){toast(e.message,"err");}return;}
     if(act==="del"){if(!confirm("حذف نود از پنل؟"))return;try{await api("/api/nodes/"+encodeURIComponent(id),{method:"DELETE"});toast("حذف شد","ok");loadNodes();}catch(e){toast(e.message,"err");}}
   }
-  function openNodeModal(){document.getElementById("fCfToken").value="";document.getElementById("nodeOverlay").classList.add("open");}
+  function openNodeModal(){
+    const gate=canCreateNodeUi();
+    if(!gate.ok){toast(gate.msg,"err");return;}
+    document.getElementById("fCfToken").value="";
+    document.getElementById("nodeOverlay").classList.add("open");
+  }
   function closeNodeModal(){document.getElementById("nodeOverlay").classList.remove("open");}
   document.getElementById("nodeModalClose").addEventListener("click",closeNodeModal);
   document.getElementById("nodeModalCancel").addEventListener("click",closeNodeModal);
@@ -2039,33 +2218,109 @@ function openMapProvince(provinceName){
   });
 
 
+  
+  let tgWizStep = 1;
+  function setTgWiz(step){
+    tgWizStep = step;
+    document.querySelectorAll(".wiz-step-dot").forEach(d=>{
+      const n=Number(d.getAttribute("data-wiz"));
+      d.classList.toggle("on", n===step);
+      d.classList.toggle("done", n<step);
+    });
+    document.querySelectorAll(".wiz-pane").forEach(p=>p.classList.remove("on"));
+    document.getElementById("tgWiz"+step)?.classList.add("on");
+  }
   async function loadTelegram(){
     try{
+      await refreshRulesLocal();
       const r=await api("/api/telegram/config");
       if(!r||!r.ok)return;
       document.getElementById("tgChatId").value=r.chat_id||"";
-      document.getElementById("tgStatus").textContent=r.has_token?(r.bot_username?"@"+r.bot_username+" · آماده":"توکن ثبت شده"):"ربات ثبت نشده";
+      const ready=!!r.has_token && !!(r.bot_worker_url||r.chat_id||r.has_token);
+      document.getElementById("tgStatus").textContent = r.has_token
+        ? ((r.bot_username?"@"+r.bot_username+" · ":"")+(r.bot_worker_url?"ورکر فعال":"توکن ثبت شده — مرحله ۳ را کامل کنید"))
+        : "ربات ثبت نشده — از مرحله ۱ شروع کنید";
+      document.getElementById("btnTgDelete").style.display = r.has_token ? "" : "none";
+      if(r.bot_worker_url) document.getElementById("tgWorkerUrl").textContent=r.bot_worker_url;
+      if(r.cf_account_id) document.getElementById("tgAccStat").textContent=r.cf_account_id.slice(0,12)+"…";
       if(r.reports){
         setSw("tgRepPanel",!!r.reports.panel_open);
         setSw("tgRepSub",!!r.reports.sub_view);
         setSw("tgRepAuth",!!r.reports.auth_fail);
         setSw("tgRepNode",!!r.reports.node_off);
       }
+      // آمار ورکر
+      try{
+        const st=await api("/api/telegram/stats");
+        if(st&&st.ok){
+          document.getElementById("tgReqStat").textContent = st.requests!=null ? (faNum(st.requests)+" / "+faNum(st.limit||100000)) : "—";
+          document.getElementById("tgHealthStat").textContent = st.healthy ? "سالم" : (st.err||"—");
+          if(st.worker_url) document.getElementById("tgWorkerUrl").textContent=st.worker_url;
+        }
+      }catch{}
+      if(r.has_token && r.bot_worker_url) setTgWiz(3);
     }catch(e){}
   }
-  document.getElementById("btnTgSave")?.addEventListener("click",async()=>{
+  document.getElementById("btnTgStep1")?.addEventListener("click",async()=>{
+    const token=document.getElementById("tgToken").value.trim();
+    if(!token || token.length<20){toast("توکن ربات را وارد کنید","err");return;}
     try{
-      const body={
-        token:document.getElementById("tgToken").value.trim(),
-        chat_id:document.getElementById("tgChatId").value.trim(),
-        cf_token:document.getElementById("tgCfToken").value.trim(),
-        cf_account_id:document.getElementById("tgCfAccount").value.trim(),
-      };
-      const r=await api("/api/telegram/config",{method:"POST",body:JSON.stringify(body)});
+      const r=await api("/api/telegram/config",{method:"POST",body:JSON.stringify({token})});
       if(!r||!r.ok)throw new Error((r&&r.err)||"خطا");
-      toast("ذخیره شد","ok");
-      document.getElementById("tgToken").value="";
-      await refreshFeatureGates();loadTelegram();
+      // validate via test without chat
+      const t=await api("/api/telegram/test",{method:"POST",body:"{}"});
+      if(t&&t.bot&&t.bot.username){
+        document.getElementById("tgStatus").textContent="@"+t.bot.username+" تأیید شد";
+      }
+      toast("توکن تأیید شد","ok");
+      setTgWiz(2);
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnTgStep2Back")?.addEventListener("click",()=>setTgWiz(1));
+  document.getElementById("btnTgStep2")?.addEventListener("click",async()=>{
+    const chat=document.getElementById("tgChatId").value.trim();
+    try{
+      await api("/api/telegram/config",{method:"POST",body:JSON.stringify({chat_id:chat})});
+      toast(chat?"Chat ID ذخیره شد":"Chat ID خالی — اولین /start ادمین می‌شود","ok");
+      setTgWiz(3);
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnTgStep3Back")?.addEventListener("click",()=>setTgWiz(2));
+  // resolve account id as user types CF token
+  let cfTokTimer=null;
+  document.getElementById("tgCfToken")?.addEventListener("input",()=>{
+    clearTimeout(cfTokTimer);
+    cfTokTimer=setTimeout(async()=>{
+      const tok=document.getElementById("tgCfToken").value.trim();
+      if(tok.length<20)return;
+      document.getElementById("tgCfHint").textContent="در حال تشخیص Account ID…";
+      try{
+        const r=await api("/api/telegram/resolve-cf",{method:"POST",body:JSON.stringify({token:tok})});
+        if(!r||!r.ok)throw new Error((r&&r.err)||"توکن نامعتبر");
+        document.getElementById("tgCfAccount").value=r.account_id||"";
+        document.getElementById("tgCfHint").textContent="Account: "+(r.account_name||r.account_id||"");
+      }catch(e){
+        document.getElementById("tgCfAccount").value="";
+        document.getElementById("tgCfHint").textContent=e.message||"خطا";
+      }
+    },600);
+  });
+  document.getElementById("btnTgActivate")?.addEventListener("click",async()=>{
+    const cfTok=document.getElementById("tgCfToken").value.trim();
+    const acc=document.getElementById("tgCfAccount").value.trim();
+    if(!cfTok){toast("توکن Cloudflare لازم است","err");return;}
+    if(!acc){toast("Account ID تشخیص داده نشد","err");return;}
+    try{
+      toast("در حال دیپلوی ورکر ربات…","ok");
+      const r=await api("/api/telegram/activate",{method:"POST",body:JSON.stringify({
+        cf_token:cfTok, cf_account_id:acc,
+        chat_id:document.getElementById("tgChatId").value.trim(),
+      })});
+      if(!r||!r.ok)throw new Error((r&&r.err)||"فعال‌سازی ناموفق");
+      toast("ربات فعال شد","ok");
+      document.getElementById("tgCfToken").value="";
+      await refreshFeatureGates();
+      await loadTelegram();
     }catch(e){toast(e.message,"err");}
   });
   document.getElementById("btnTgTest")?.addEventListener("click",async()=>{
@@ -2073,12 +2328,11 @@ function openMapProvince(provinceName){
       const r=await api("/api/telegram/test",{method:"POST",body:"{}"});
       if(!r||!r.ok)throw new Error((r&&r.err)||"تست ناموفق");
       toast("تست موفق"+(r.bot&&r.bot.username?" · @"+r.bot.username:""),"ok");
-      await refreshFeatureGates();
     }catch(e){toast(e.message,"err");}
   });
   document.getElementById("btnTgDelete")?.addEventListener("click",async()=>{
     if(!confirm("حذف تنظیمات ربات؟"))return;
-    try{await api("/api/telegram/delete",{method:"POST",body:"{}"});toast("حذف شد","ok");await refreshFeatureGates();loadTelegram();}catch(e){toast(e.message,"err");}
+    try{await api("/api/telegram/delete",{method:"POST",body:"{}"});toast("حذف شد","ok");await refreshFeatureGates();setTgWiz(1);loadTelegram();}catch(e){toast(e.message,"err");}
   });
   document.getElementById("btnTgRepSave")?.addEventListener("click",async()=>{
     if(!requireFeature("telegram_bot"))return;
@@ -2092,20 +2346,7 @@ function openMapProvince(provinceName){
       toast("گزارش‌ها ذخیره شد","ok");
     }catch(e){toast(e.message,"err");}
   });
-  document.getElementById("swShopEnable")?.addEventListener("click",async()=>{
-    const on=!document.getElementById("swShopEnable").classList.contains("on");
-    try{
-      const r=await api("/api/shop/enable",{method:"POST",body:JSON.stringify({enabled:on})});
-      if(!r||!r.ok)throw new Error((r&&r.err)||"فعال‌سازی ممکن نیست");
-      setSw("swShopEnable",!!r.enabled);
-      setFeatureGate("shop", !!r.enabled);
-      toast(r.enabled?"فروشگاه فعال شد":"فروشگاه غیرفعال شد","ok");
-    }catch(e){toast(e.message,"err");}
-  });
-  document.addEventListener("click",e=>{
-    const b=e.target.closest?.("[data-go-sec]");
-    if(b){const sec=b.getAttribute("data-go-sec");if(sec){try{showSection(sec);}catch{try{document.querySelector('[data-sec="'+sec+'"]')?.click();}catch{}}}}
-  });
+  // remove old swShopEnable handler if any - replaced by feature gate only
 
   function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="telegram")loadTelegram();else if(sec==="settings")loadRules();}
   function boot(){
