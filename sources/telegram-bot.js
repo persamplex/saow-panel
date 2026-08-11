@@ -4,7 +4,7 @@
  * فروش + اطلاع‌رسانی + پروکسی ساب تست
  * Bindings: BOT_TOKEN, MOTHER_URL, MOTHER_SECRET, ADMIN_CHAT_ID (optional)
  */
-const VERSION = "1.2.1-tg";
+const VERSION = "1.2.2-tg";
 
 async function tg(token, method, body, isForm) {
   const opts = { method: "POST" };
@@ -332,17 +332,53 @@ async function sendServiceLink(token, chatId, env, panelUserId, isTest, botOrigi
 }
 
 async function createTestAccount(token, chatId, env, userId, username, botOrigin) {
-  // create short trial user via mother
+  const settings = await getSettings(env);
+  const key = "tg_test_user_" + String(userId);
+  let existingId = settings[key] || "";
+  let uuid = "";
+  let panelId = existingId;
+
+  // اگر قبلاً برای این Chat ID ساخته شده، همان را برگردان
+  if (existingId) {
+    const u = await motherApi(env, "/api/users/" + encodeURIComponent(existingId));
+    const user = u?.user || u;
+    if (user && (user.uuid || user.id)) {
+      uuid = user.uuid || "";
+      panelId = user.id || existingId;
+      // اگر منقضی شده، تمدید کوتاه
+      const exp = user.expiry ? Date.parse(user.expiry) : 0;
+      if (!exp || exp < Date.now()) {
+        await motherApi(env, "/api/users/" + encodeURIComponent(panelId), {
+          method: "PATCH",
+          body: JSON.stringify({
+            expiry: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),
+            enabled: true,
+            quotaBytes: 512 * 1024 * 1024,
+          }),
+        }).catch(() => {});
+      }
+      const link = botOrigin
+        ? `${botOrigin}/sub-proxy?token=${encodeURIComponent(uuid)}`
+        : `${String(env.MOTHER_URL || "").replace(/\/$/, "")}/pull?token=${encodeURIComponent(uuid)}`;
+      return send(
+        token,
+        chatId,
+        `🎁 <b>اکانت تست شما</b>\n\nقبلاً برای شما ساخته شده (هر چت فقط یک تست).\n\n🔗 لینک ساب:\n<code>${esc(link)}</code>`,
+        [[{ text: "🔙 منو", callback_data: "user_home" }]]
+      );
+    }
+  }
+
   const r = await motherApi(env, "/api/users", {
     method: "POST",
     body: JSON.stringify({
       name: `test-${userId}`,
-      quotaBytes: 512 * 1024 * 1024, // 512MB
+      quotaBytes: 512 * 1024 * 1024,
       dailyQuotaBytes: 0,
       ipLimit: 1,
-      expiry: new Date(Date.now() + 3 * 3600 * 1000).toISOString(), // 3 hours
+      expiry: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),
       enabled: true,
-      notes: "telegram-test",
+      notes: "telegram-test:" + userId,
     }),
   });
   if (!r.ok && !r.user && !r.id) {
@@ -350,28 +386,20 @@ async function createTestAccount(token, chatId, env, userId, username, botOrigin
       [{ text: "🔙", callback_data: "user_home" }],
     ]);
   }
-  const panelId = r.user?.id || r.id || r.user_id;
-  const uuid = r.user?.uuid || r.uuid;
-  // record as approved test order
-  await motherApi(env, "/api/shop/orders", {
+  panelId = r.user?.id || r.id || r.user_id;
+  uuid = r.user?.uuid || r.uuid;
+  await motherApi(env, "/api/shop/settings", {
     method: "POST",
-    body: JSON.stringify({
-      plan_id: "test",
-      plan_name: "اکانت تست",
-      user_id: userId,
-      username: username || "",
-      is_test: true,
-      note: "auto-test",
-    }),
+    body: JSON.stringify({ [key]: String(panelId || "") }),
   }).catch(() => {});
-  // try approve path won't work for fake plan — just send link
+
   const link = botOrigin
     ? `${botOrigin}/sub-proxy?token=${encodeURIComponent(uuid || "")}`
     : `${String(env.MOTHER_URL || "").replace(/\/$/, "")}/pull?token=${encodeURIComponent(uuid || "")}`;
   return send(
     token,
     chatId,
-    `🎁 <b>اکانت تست آماده است</b>\n\n⏱ اعتبار حدود ۳ ساعت · حجم ۵۱۲MB\n\n🔗 لینک ساب (پروکسی‌شده):\n<code>${esc(link)}</code>`,
+    `🎁 <b>اکانت تست آماده است</b>\n\n⏱ اعتبار حدود ۳ ساعت · حجم ۵۱۲MB\nهر چت فقط <b>یک</b> اکانت تست.\n\n🔗 لینک ساب (پروکسی‌شده):\n<code>${esc(link)}</code>`,
     [[{ text: "🔙 منو", callback_data: "user_home" }]]
   );
 }
