@@ -540,28 +540,47 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     }
 
     async function testIp(ip, timeoutMs) {
+      // پینگ واقعی: فقط پاسخ موفق شبکه (نه خطای فوری) و latency معقول
+      const timeout = Math.max(200, Math.min(timeoutMs || 1200, 2000));
       const start = performance.now();
-      async function probe(url, ms) {
-        const controller = new AbortController();
-        const tid = setTimeout(function () { controller.abort(); }, ms);
-        try {
-          await fetch(url, { signal: controller.signal, mode: "no-cors", cache: "no-store", redirect: "manual" });
-          clearTimeout(tid);
-          return true;
-        } catch (e) {
-          clearTimeout(tid);
-          // AbortError = timeout = fail; other errors can mean TLS reached host
-          return !!(e && e.name && e.name !== "AbortError");
-        }
+      const controller = new AbortController();
+      const tid = setTimeout(function () { controller.abort(); }, timeout);
+      let ok = false;
+      try {
+        // no-cors: وقتی به CF برسیم opaque response می‌آید؛ unreachable سریع reject می‌شود
+        await fetch("https://" + ip + "/cdn-cgi/trace", {
+          method: "GET",
+          mode: "no-cors",
+          cache: "no-store",
+          redirect: "manual",
+          signal: controller.signal
+        });
+        ok = true;
+      } catch (e) {
+        // AbortError = timeout؛ TypeError/failed = unreachable
+        ok = false;
       }
-      // دو پروب: پورت 443 استاندارد CF و 2096
-      const t1 = Math.min(timeoutMs, 1200);
-      const a = await probe("https://" + ip + "/cdn-cgi/trace", t1);
-      if (!a) return { ip: ip, ok: false, latency: Math.round(performance.now() - start) };
-      const b = await probe("https://" + ip + ":2096/__down", Math.min(timeoutMs, 900));
+      clearTimeout(tid);
       const latency = Math.round(performance.now() - start);
-      // فقط اگر هر دو در زمان معقول جواب دادند
-      return { ip: ip, ok: !!(a && b), latency: latency };
+      // زیر ۱۵ms معمولاً fail فوری مرورگر است، نه پینگ واقعی CF
+      if (!ok || latency < 15) {
+        return { ip: ip, ok: false, latency: latency };
+      }
+      // پروب دوم اختیاری روی 443 با Image برای تأیید
+      const start2 = performance.now();
+      const ok2 = await new Promise(function (resolve) {
+        const img = new Image();
+        const t = setTimeout(function () { try { img.src = ""; } catch (_) {} resolve(false); }, Math.min(800, timeout));
+        img.onload = img.onerror = function () {
+          clearTimeout(t);
+          const ms = performance.now() - start2;
+          // onerror/onload هر دو بعد از تلاش شبکه می‌آیند
+          resolve(ms >= 10);
+        };
+        img.src = "https://" + ip + "/favicon.ico?" + Date.now();
+      });
+      const finalLat = Math.round(performance.now() - start);
+      return { ip: ip, ok: ok2, latency: Math.max(latency, finalLat > latency ? latency : finalLat) };
     }
 
     function setScanUi(text, pct) {
@@ -667,7 +686,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
           const results = await Promise.all(batch.map(function (ip) { return testIp(ip, timeout); }));
           tried += batch.length;
           const ok = results
-            .filter(function (r) { return r.ok && r.latency <= limit && !usedIps[r.ip]; })
+            .filter(function (r) { return r.ok && r.latency >= 15 && r.latency <= limit && !usedIps[r.ip]; })
             .sort(function (a, b) { return a.latency - b.latency; });
           if (ok.length) {
             got = { ip: ok[0].ip, latency: ok[0].latency, limit: limit, ok: true };
