@@ -848,7 +848,7 @@ table tbody tr{height:auto}
           <div class="feat-lock-content">
             <h4>ارسال بکاپ خودکار</h4>
             <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">ارسال دوره‌ای بکاپ به تلگرام</p>
-            <div class="field"><label>بازه (دقیقه)</label><input type="number" id="autoBackupMin" value="60" min="15" disabled /></div>
+            <div class="field"><label>بازه (دقیقه)</label><input type="number" id="autoBackupMin" value="60" min="15" /></div>
             <div class="row"><span>فعال</span><div class="switch" id="swAutoBackup"></div></div>
           </div>
           <div class="feat-lock-overlay">
@@ -1107,6 +1107,28 @@ table tbody tr{height:auto}
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<div class="overlay" id="planOverlay">
+  <div class="modal">
+    <div class="modal-h"><h3 id="planModalTitle">پلن جدید</h3><button class="icon-btn" type="button" id="planModalX">✕</button></div>
+    <div class="modal-b">
+      <input type="hidden" id="planId" value="" />
+      <div class="field"><label>نام پلن</label><input type="text" id="planName" placeholder="مثلاً یک‌ماهه ۲۰ گیگ" /></div>
+      <div class="field"><label>دسته‌بندی</label><input type="text" id="planCat" placeholder="مثلاً ارزان · پرحجم · ویژه" list="planCatList" /></div>
+      <datalist id="planCatList"></datalist>
+      <div class="field-grid">
+        <div class="field"><label>روز</label><input type="number" id="planDays" value="30" min="0" /></div>
+        <div class="field"><label>حجم کل (GB)</label><input type="number" id="planQuota" value="30" min="0" step="0.1" /></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>حجم روزانه (GB)</label><input type="number" id="planDaily" value="0" min="0" step="0.1" /></div>
+        <div class="field"><label>محدودیت IP</label><input type="number" id="planIp" value="1" min="1" /></div>
+      </div>
+      <div class="field-grid">
+        <div class="field"><label>قیمت</label><input type="number" id="planPrice" value="0" min="0" /></div>
+        <div class="field" style="display:flex;align-items:center;justify-content:space-between;padding-top:18px"><label style="margin:0">فعال</label><div class="switch on" id="planEnabled"></div></div>
+      </div>
+
 <script>
 
 (function(){
@@ -1123,7 +1145,16 @@ table tbody tr{height:auto}
   function setFeatureGate(key, unlocked){
     FEATURE_GATES[key]=!!unlocked;
     document.querySelectorAll('[data-feature="'+key+'"]').forEach(el=>{
-      el.classList.toggle('is-locked', !unlocked);
+      el.classList.toggle("is-locked", !unlocked);
+      el.querySelectorAll("input,textarea,select,button.btn").forEach(inp=>{
+        if(inp.getAttribute("data-lock-ignore")!=null) return;
+        if(unlocked){
+          if(inp.id==="autoBackupMin" || inp.tagName==="INPUT" || inp.tagName==="TEXTAREA")
+            inp.removeAttribute("disabled");
+        } else if(inp.id==="autoBackupMin"){
+          inp.setAttribute("disabled","disabled");
+        }
+      });
     });
   }
   function requireFeature(key, msg){
@@ -1201,16 +1232,55 @@ table tbody tr{height:auto}
   function canCreateNodeUi(){
     if(PANEL_RULES.lock_create_node) return {ok:false,msg:PANEL_RULES.message||"ساخت نود توسط لایسنس قفل شده"};
     if(PANEL_RULES.max_nodes>0){
-      const cnt=(typeof nodesCache!=="undefined"&&nodesCache)?nodesCache.length:0;
+      const cnt=(nodesCache&&nodesCache.managed)?nodesCache.managed.length:0;
       if(cnt>=PANEL_RULES.max_nodes) return {ok:false,msg:"سقف تعداد نود ("+PANEL_RULES.max_nodes+") پر شده"};
     }
     return {ok:true};
   }
+
+  async function loadAutoBackupSettings(){
+    try{
+      const r=await api("/api/shop/settings");
+      const st=(r&&(r.settings||r))||{};
+      const mins=Number(st.auto_backup_minutes||st.auto_backup_min||60)||60;
+      const on=String(st.auto_backup_enabled||"0")==="1";
+      const inp=document.getElementById("autoBackupMin");
+      if(inp) inp.value=mins;
+      const sw=document.getElementById("swAutoBackup");
+      if(sw){ if(on) sw.classList.add("on"); else sw.classList.remove("on"); }
+    }catch(e){}
+  }
+  async function saveAutoBackupSettings(){
+    if(!FEATURE_GATES.auto_backup){toast("ابتدا ربات تلگرام را فعال کنید","err");return;}
+    const mins=Math.max(15, Number(document.getElementById("autoBackupMin")&&document.getElementById("autoBackupMin").value)||60);
+    const on=!!(document.getElementById("swAutoBackup")&&document.getElementById("swAutoBackup").classList.contains("on"));
+    try{
+      await api("/api/shop/settings",{method:"POST",body:JSON.stringify({
+        auto_backup_minutes:String(mins),
+        auto_backup_enabled:on?"1":"0"
+      })});
+      toast("بکاپ خودکار ذخیره شد","ok");
+    }catch(e){toast(e.message||"خطا","err");}
+  }
+  document.getElementById("swAutoBackup")&&document.getElementById("swAutoBackup").addEventListener("click",function(){
+    if(!FEATURE_GATES.auto_backup){toast("ابتدا ربات تلگرام را فعال کنید","err");return;}
+    this.classList.toggle("on");
+    saveAutoBackupSettings();
+  });
+  document.getElementById("autoBackupMin")&&document.getElementById("autoBackupMin").addEventListener("change",function(){
+    if(!FEATURE_GATES.auto_backup)return;
+    saveAutoBackupSettings();
+  });
   async function refreshFeatureGates(){
     try{
       const r=await api("/api/features");
       if(r&&r.ok&&r.features){
-        Object.keys(r.features).forEach(k=>setFeatureGate(k, !!r.features[k]));
+        Object.keys(r.features).forEach(k=>{
+          let on=!!r.features[k];
+          // لایسنس فروشگاه از rules اولویت دارد
+          if(k==="shop" && PANEL_RULES && PANEL_RULES.lock_shop) on=false;
+          setFeatureGate(k, on);
+        });
       }
     }catch{}
   }
@@ -2385,8 +2455,11 @@ function openMapProvince(provinceName){
     document.getElementById("planOverlay").classList.add("open");
   }
   function closePlanModal(){document.getElementById("planOverlay").classList.remove("open");}
-  document.getElementById("btnAddPlan")?.addEventListener("click",()=>openPlanModal(null));
-  document.getElementById("planModalX")?.addEventListener("click",closePlanModal);
+  document.getElementById("btnAddPlan")?.addEventListener("click",()=>{
+    if(!FEATURE_GATES.shop){toast("فروشگاه قفل است — ربات تلگرام را فعال کنید","err");return;}
+    openPlanModal(null);
+  });
+document.getElementById("planModalX")?.addEventListener("click",closePlanModal);
   document.getElementById("planModalCancel")?.addEventListener("click",closePlanModal);
   document.getElementById("planEnabled")?.addEventListener("click",function(){this.classList.toggle("on");});
   document.getElementById("planModalSave")?.addEventListener("click",async()=>{
@@ -2639,37 +2712,25 @@ function openMapProvince(provinceName){
   function boot(){
     let sec="dash";
     try{sec=localStorage.getItem("saow_panel_sec")||"dash";}catch{}
-    if(sec&&sec!=="dash"&&document.getElementById(sec)){
-      goSection(sec,true);
-    } else {
-      loadDashboard(true);
-    }
-    startDashPoll();api("/api/users").then(d=>{usersCache=d.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);}).catch(()=>{});api("/api/nodes").then(d=>{document.getElementById("navNodesCount").textContent=faNum((d.managed||[]).length);}).catch(()=>{});api("/version").then(d=>{if(d&&(d.v||d.version)){const v=d.v||d.version;document.getElementById("sidebarFoot").textContent="v"+v+" · Push Mode";document.getElementById("sysVersion").textContent=v;}}).catch(()=>{});}
+    // ابتدا وضعیت ربات/قفل‌ها را از سرور بگیر (بدون نیاز به باز کردن صفحه تلگرام)
+    Promise.all([refreshFeatureGates(), refreshRulesLocal(), loadAutoBackupSettings()]).finally(()=>{
+      if(sec&&sec!=="dash"&&document.getElementById(sec)){
+        goSection(sec,true);
+      } else {
+        loadDashboard(true);
+      }
+    });
+    startDashPoll();
+    api("/api/users").then(d=>{usersCache=d.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);}).catch(()=>{});
+    api("/api/nodes").then(d=>{nodesCache={managed:d.managed||[],alive:d.alive||[]};document.getElementById("navNodesCount").textContent=faNum((d.managed||[]).length);}).catch(()=>{});
+    api("/version").then(d=>{if(d&&(d.v||d.version)){const v=d.v||d.version;document.getElementById("sidebarFoot").textContent="v"+v+" · Push Mode";document.getElementById("sysVersion").textContent=v;}}).catch(()=>{});
+  }
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&currentSec==="dash")loadDashboard(false);});
 })();
 </script>
 
 
-<div class="overlay" id="planOverlay">
-  <div class="modal">
-    <div class="modal-h"><h3 id="planModalTitle">پلن جدید</h3><button class="icon-btn" type="button" id="planModalX">✕</button></div>
-    <div class="modal-b">
-      <input type="hidden" id="planId" value="" />
-      <div class="field"><label>نام پلن</label><input type="text" id="planName" placeholder="مثلاً یک‌ماهه ۲۰ گیگ" /></div>
-      <div class="field"><label>دسته‌بندی</label><input type="text" id="planCat" placeholder="مثلاً ارزان · پرحجم · ویژه" list="planCatList" /></div>
-      <datalist id="planCatList"></datalist>
-      <div class="field-grid">
-        <div class="field"><label>روز</label><input type="number" id="planDays" value="30" min="0" /></div>
-        <div class="field"><label>حجم کل (GB)</label><input type="number" id="planQuota" value="30" min="0" step="0.1" /></div>
-      </div>
-      <div class="field-grid">
-        <div class="field"><label>حجم روزانه (GB)</label><input type="number" id="planDaily" value="0" min="0" step="0.1" /></div>
-        <div class="field"><label>محدودیت IP</label><input type="number" id="planIp" value="1" min="1" /></div>
-      </div>
-      <div class="field-grid">
-        <div class="field"><label>قیمت</label><input type="number" id="planPrice" value="0" min="0" /></div>
-        <div class="field" style="display:flex;align-items:center;justify-content:space-between;padding-top:18px"><label style="margin:0">فعال</label><div class="switch on" id="planEnabled"></div></div>
-      </div>
+
     </div>
     <div class="modal-f">
       <button class="btn" type="button" id="planModalCancel">انصراف</button>
