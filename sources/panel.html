@@ -354,6 +354,48 @@ td.row-actions::before{display:none}
   }
 }
 
+
+/* map province popup */
+.map-wrap{position:relative}
+.map-pop{
+  display:none;position:absolute;z-index:40;min-width:200px;max-width:min(320px,92vw);
+  background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 18px 50px rgba(0,0,0,.55);padding:0;overflow:hidden;
+  animation:fade .18s ease;
+}
+.map-pop.open{display:block}
+.map-pop-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);
+}
+.map-pop-head h4{font-size:14px;font-weight:600;margin:0}
+.map-pop-head span{font-size:12px;color:var(--text-muted)}
+.map-pop-close{
+  width:28px;height:28px;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--text-muted);cursor:pointer;font-size:16px;line-height:1;
+}
+.map-pop-close:hover{color:var(--text);border-color:var(--border-hover)}
+.map-pop-body{padding:10px 12px 12px;max-height:min(240px,40vh);overflow-y:auto}
+.map-pop-user{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:8px 10px;border-radius:10px;background:var(--bg);border:1px solid rgba(255,255,255,.04);
+  margin-bottom:6px;font-size:13px;
+}
+.map-pop-user:last-child{margin-bottom:0}
+.map-pop-user strong{font-weight:500}
+.map-pop-user small{color:var(--text-muted);font-size:11px;direction:ltr}
+.map-pop-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:13px}
+@media(max-width:768px){
+  .map-pop{
+    position:fixed;left:12px;right:12px;bottom:16px;top:auto;max-width:none;width:auto;
+    border-radius:16px;z-index:120;transform:none!important;
+  }
+  .map-pop-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:110;
+  }
+  .map-pop-backdrop.open{display:block}
+}
+
 </style>
 </head>
 <body>
@@ -398,7 +440,20 @@ td.row-actions::before{display:none}
     <section class="section active" id="dash">
       <div class="map-card">
         <div class="map-head"><h2><span class="live-indicator"></span> نقشه کاربران متصل — ایران</h2><div class="map-hint">نقاط = مراکز استان با کاربران آنلاین</div></div>
-        <div class="map-body"><div id="iranMapContainer"></div></div>
+        <div class="map-body map-wrap">
+          <div id="iranMapContainer"></div>
+          <div class="map-pop-backdrop" id="mapPopBackdrop"></div>
+          <div class="map-pop" id="mapPop" role="dialog" aria-modal="true">
+            <div class="map-pop-head">
+              <div>
+                <h4 id="mapPopTitle">—</h4>
+                <span id="mapPopSub"></span>
+              </div>
+              <button type="button" class="map-pop-close" id="mapPopClose" aria-label="بستن">×</button>
+            </div>
+            <div class="map-pop-body" id="mapPopBody"></div>
+          </div>
+        </div>
       </div>
       <div class="stats">
         <div class="stat" id="stOnlineCard">
@@ -737,7 +792,45 @@ td.row-actions::before{display:none}
   document.getElementById("burger").addEventListener("click",()=>toggleSidebar());
   document.getElementById("sidebarBackdrop").addEventListener("click",()=>toggleSidebar(true));
 
-  function renderMap(provinces){
+  let mapDevicesCache=[];
+  function closeMapPop(){
+    document.getElementById("mapPop")?.classList.remove("open");
+    document.getElementById("mapPopBackdrop")?.classList.remove("open");
+  }
+  function openMapProvince(provinceName){
+    const pop=document.getElementById("mapPop");
+    const body=document.getElementById("mapPopBody");
+    const title=document.getElementById("mapPopTitle");
+    const sub=document.getElementById("mapPopSub");
+    if(!pop||!body)return;
+    const list=(mapDevicesCache||[]).filter(d=>d.province===provinceName);
+    const byUser=new Map();
+    for(const d of list){
+      const key=String(d.user_id||d.ip||Math.random());
+      if(!byUser.has(key)) byUser.set(key,{name:d.user_name||d.user_id||"—",ip:d.ip,city:d.geo?.city,last_seen:d.last_seen});
+    }
+    const users=[...byUser.values()];
+    title.textContent=provinceName||"—";
+    sub.textContent=users.length?(faNum(users.length)+" کاربر آنلاین"):"بدون کاربر آنلاین";
+    if(!users.length){
+      body.innerHTML='<div class="map-pop-empty">کاربری در این استان آنلاین نیست</div>';
+    } else {
+      body.innerHTML=users.map(u=>`<div class="map-pop-user"><div><strong>${esc(u.name)}</strong>${u.city?`<br><small style="direction:rtl;color:var(--text-muted)">${esc(u.city)}</small>`:""}</div><small>${esc(u.ip||"")}</small></div>`).join("");
+    }
+    pop.classList.add("open");
+    if(window.matchMedia("(max-width:768px)").matches){
+      document.getElementById("mapPopBackdrop")?.classList.add("open");
+      pop.style.left="";pop.style.right="";pop.style.top="";pop.style.bottom="";pop.style.transform="";
+    } else {
+      pop.style.left="50%";
+      pop.style.top="18%";
+      pop.style.transform="translateX(-50%)";
+      pop.style.right="auto";
+      pop.style.bottom="auto";
+    }
+  }
+  function renderMap(provinces, devices){
+    if(Array.isArray(devices)) mapDevicesCache=devices;
     const data=(provinces||[]).map(p=>({lat:p.lat,long:p.lon,name:p.name,users:Number(p.users)||0,value:Number(p.users)||0}));
     const online=data.filter(m=>m.users>0);
     const offline=data.filter(m=>m.users===0);
@@ -747,13 +840,22 @@ td.row-actions::before{display:none}
     const sIdle=map.marker(offline);sIdle.name("بدون کاربر").type("circle").size(4).fill("rgba(255,255,255,0.22)").stroke("none").labels(false).selectionMode("none");
     const sActive=map.marker(online.filter(m=>m.users<3));sActive.name("آنلاین").type("circle").size(8).fill("#7dd3fc").stroke("1.5 #0ea5e9").labels(false).selectionMode("none");
     const sHot=map.marker(online.filter(m=>m.users>=3));sHot.name("پرترافیک").type("circle").size(10).fill("#f472b6").stroke("1.5 #db2777").labels(false).selectionMode("none");
-    [sIdle,sActive,sHot].forEach(s=>{s.tooltip().useHtml(true).fontFamily("Vazirmatn,Tahoma,sans-serif").fontSize(13)
-      .titleFormat(function(){return'<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:14px;font-weight:600">'+this.getData("name")+"</span>";})
-      .format(function(){
-        const u=this.getData("users");
-        const txt=u>0?(u+" کاربر آنلاین"):"بدون کاربر آنلاین";
-        return '<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:13px">'+txt+"</span>";
-      });});
+    [sIdle,sActive,sHot].forEach(s=>{
+      s.tooltip().useHtml(true).fontFamily("Vazirmatn,Tahoma,sans-serif").fontSize(13)
+        .titleFormat(function(){return'<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:14px;font-weight:600">'+this.getData("name")+"</span>";})
+        .format(function(){
+          const u=this.getData("users");
+          const txt=u>0?(u+" کاربر آنلاین — کلیک برای جزئیات"):"بدون کاربر آنلاین";
+          return '<span style="font-family:Vazirmatn,Tahoma,sans-serif;font-size:13px">'+txt+"</span>";
+        });
+      s.listen("pointClick", function(e){
+        let pName=null;
+        try{pName=e.point.get("name");}catch{}
+        if(!pName){try{pName=e.iterator.get("name");}catch{}}
+        if(!pName){try{pName=this.getData("name");}catch{}}
+        if(pName) openMapProvince(pName);
+      });
+    });
     map.legend().enabled(true).position("bottom").align("center").padding(8).fontColor("#a1a1aa").fontSize(12).fontFamily("Vazirmatn,Tahoma,sans-serif").itemsLayout("horizontal");
     map.container("iranMapContainer");map.draw();mapChart=map;
   }
@@ -802,11 +904,15 @@ td.row-actions::before{display:none}
         setPctBar("stD1WriteBar",0);
       }
       if(data.version){document.getElementById("sidebarFoot").textContent="v"+data.version+" · Push Mode";document.getElementById("sysVersion").textContent=data.version;}
-      if(data.map&&data.map.provinces)renderMap(data.map.provinces);
+      if(data.map&&data.map.provinces)renderMap(data.map.provinces, data.map.online_devices||[]);
       const act=data.activity||[],tbody=document.getElementById("activityBody");
       renderActivityRows(tbody, act, 5);
     }catch(e){console.warn("dashboard",e);}
   }
+  
+  document.getElementById("mapPopClose")?.addEventListener("click", closeMapPop);
+  document.getElementById("mapPopBackdrop")?.addEventListener("click", closeMapPop);
+
   function startDashPoll(){stopDashPoll();dashTimer=setInterval(()=>{if(currentSec==="dash"&&document.visibilityState==="visible")loadDashboard(false);},DASH_POLL_MS);}
 
   function stopDashPoll(){if(dashTimer)clearInterval(dashTimer);dashTimer=null;}
@@ -1270,11 +1376,12 @@ td.row-actions::before{display:none}
         const lastSeen=lastSeenTs?relTime(lastSeenTs):"—";
         const ver=alive?.version||n.version||"—";
         const reqPct=n.requests_pct!=null?Number(n.requests_pct):null;
-        const reqUsed=n.requests_today!=null?n.requests_today:null;
+        const reqUsed=n.requests_today!=null?Number(n.requests_today):null;
         const reqLim=n.requests_limit||100000;
-        const reqHtml=reqPct!=null
-          ?`<span class="req-pill" title="${reqUsed} / ${reqLim}"><span class="mini-bar"><i style="width:${Math.min(100,reqPct)}%"></i></span>${faNum(reqPct)}%</span>`
-          :"—";
+        const reqOk=n.requests_ok!==false || (reqUsed!=null && reqUsed>0);
+        const reqHtml=(reqPct!=null && reqOk)
+          ?`<span class="req-pill" title="${reqUsed??0} / ${reqLim} درخواست امروز"><span class="mini-bar"><i style="width:${Math.min(100,Math.max(reqPct>0?reqPct:0, reqUsed>0?2:0))}%"></i></span>${faNum(reqPct)}% <small style="opacity:.7">${faNum(reqUsed??0)}</small></span>`
+          :(n.requests_err?`<span title="${esc(String(n.requests_err))}" style="color:var(--text-muted);font-size:12px">—</span>`:"—");
         return`<tr>
           <td data-label="نام"><code style="font-size:13px">${esc(n.script_name||id)}</code>${n.url?`<br><small style="color:var(--text-muted);font-size:11px">${esc(String(n.url).replace(/^https?:\/\//,"").slice(0,36))}</small>`:""}</td>
           <td data-label="وضعیت">${statusHtml}</td>
