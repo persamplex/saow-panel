@@ -255,6 +255,7 @@ td.row-actions::before{display:none}
       <div class="nav-section">عملیات</div>
       <div class="nav-item" data-sec="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>فروشگاه</div>
       <div class="nav-item" data-sec="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>بکاپ</div>
+      <div class="nav-item" data-sec="logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>لاگ‌ها</div>
       <div class="nav-item" data-sec="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>تنظیمات</div>
     </nav>
     <div class="sidebar-foot" id="sidebarFoot">— · Push Mode</div>
@@ -300,9 +301,10 @@ td.row-actions::before{display:none}
           <div class="stat-meta" id="stNodesMeta">—</div>
         </div>
       </div>
-      <div class="card"><div class="card-head"><h3>آخرین فعالیت‌ها</h3></div>
-        <div class="table-scroll"><table><thead><tr><th>کاربر</th><th>رویداد</th><th>نود</th><th>زمان</th></tr></thead>
-        <tbody id="activityBody"><tr><td colspan="4" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
+            <div class="card"><div class="card-head"><h3>آخرین فعالیت‌ها <span style="font-size:12px;font-weight:400;color:var(--text-muted)">· ۵ دقیقه اخیر</span></h3></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>کاربر</th><th>رویداد</th><th>نود</th><th>زمان</th><th></th></tr></thead>
+        <tbody id="activityBody"><tr><td colspan="5" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
       </div>
     </section>
     <section class="section" id="users">
@@ -359,7 +361,20 @@ td.row-actions::before{display:none}
         </div>
       </div>
     </section>
-    <section class="section" id="settings">
+    
+    <section class="section" id="logs">
+      <div class="card">
+        <div class="card-head">
+          <h3>لاگ‌های سیستم</h3>
+          <button class="btn btn-sm" type="button" id="btnRefreshLogs">بروزرسانی</button>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>کاربر</th><th>رویداد</th><th>پیام</th><th>نود</th><th>زمان</th><th></th></tr></thead>
+          <tbody id="logsBody"><tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr></tbody>
+        </table></div>
+      </div>
+    </section>
+<section class="section" id="settings">
       <div class="grid-2">
         <div class="setting-block"><h4>قفل‌های پنل</h4>
           <div class="row"><span>قفل پنل کامل</span><div class="switch" id="swLockPanel"></div></div>
@@ -433,6 +448,14 @@ td.row-actions::before{display:none}
 </div>
 
 
+
+<div class="overlay" id="logDetailOverlay">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-h"><h3>جزئیات لاگ</h3><button class="icon-btn" type="button" id="logDetailClose">✕</button></div>
+    <div class="modal-b" id="logDetailBody"></div>
+    <div class="modal-actions"><button class="btn" type="button" id="logDetailClose2">بستن</button></div>
+  </div>
+</div>
 <div class="overlay" id="userDetailOverlay">
   <div class="modal" style="max-width:520px">
     <div class="modal-h"><h3 id="userDetailTitle">اطلاعات کاربر</h3><button class="icon-btn" type="button" id="userDetailClose">✕</button></div>
@@ -471,18 +494,18 @@ td.row-actions::before{display:none}
   const DASH_POLL_MS=90*1000, GB=1073741824;
   let API_BASE="", API_SECRET="", currentSec="dash";
   let usersCache=[], nodesCache={managed:[],alive:[]}, mapChart=null, dashTimer=null, lastDashAt=0;
-  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',settings:'تنظیمات'};
+  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',settings:'تنظیمات'};
   const topActions={
     dash:{label:'+ کاربر جدید',action:'user'}, users:{label:'+ کاربر جدید',action:'user'},
     nodes:{label:'+ افزودن نود',action:'node'}, shop:{label:'بروزرسانی',action:'shop'},
-    backup:{label:'دانلود بکاپ',action:'backup'}, settings:{label:'',action:'none'}
+    backup:{label:'دانلود بکاپ',action:'backup'}, logs:{label:'بروزرسانی',action:'logs'}, settings:{label:'',action:'none'}
   };
   function faNum(n){if(n==null||n==="")return"—";return String(n).replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);}
   function toast(msg,type){const el=document.getElementById("toast");el.textContent=msg;el.className="toast show"+(type==="err"?" err":type==="ok"?" ok":"");clearTimeout(el._t);el._t=setTimeout(()=>{el.className="toast";},2800);}
   function daysRemaining(expiry){if(!expiry)return"∞";const ms=Date.parse(expiry)-Date.now();if(!Number.isFinite(ms)||ms<=0)return faNum(0);return faNum(Math.ceil(ms/86400000));}
   function statusBadge(status){const map={active:["فعال","badge-ok"],disabled:["غیرفعال","badge-off"],expired:["منقضی","badge-off"],"quota-exceeded":["حجم تمام","badge-warn"],"daily-quota-exceeded":["روزانه تمام","badge-warn"]};const[t,c]=map[status]||[status||"—","badge-info"];return`<span class="badge ${c}">${t}</span>`;}
   function relTime(ts){if(!ts)return"—";const sec=Math.floor((Date.now()-Number(ts))/1000);if(sec<60)return faNum(sec)+" ثانیه پیش";if(sec<3600)return faNum(Math.floor(sec/60))+" دقیقه پیش";if(sec<86400)return faNum(Math.floor(sec/3600))+" ساعت پیش";return faNum(Math.floor(sec/86400))+" روز پیش";}
-  function activityLabel(type){const m={connect:["اتصال","badge-ok"],disconnect:["قطع","badge-off"],quota:["سهمیه","badge-warn"],sync:["همگام‌سازی","badge-info"],create:["ایجاد","badge-info"],delete:["حذف","badge-off"],node_off:["نود آفلاین","badge-warn"],info:["اطلاع","badge-info"]};return m[type]||[type||"رویداد","badge-info"];}
+  function activityLabel(type){const m={connect:["اتصال","badge-ok"],disconnect:["قطع","badge-off"],quota:["سهمیه","badge-warn"],sync:["همگام‌سازی","badge-info"],create:["ایجاد","badge-info"],delete:["حذف","badge-off"],node_off:["نود آفلاین","badge-warn"],info:["اطلاع","badge-info"],panel_open:["پنل ادمین","badge-info"],edit:["ویرایش","badge-info"],reset:["ریست","badge-warn"],clear_ips:["پاک IP","badge-warn"]};return m[type]||[type||"رویداد","badge-info"];}
   function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");}
   async function api(path,opts={}){
     const url=(API_BASE||"").replace(/\/$/,"")+path;
@@ -493,7 +516,8 @@ td.row-actions::before{display:none}
     if(!res.ok&&data&&data.ok===false)throw new Error(data.err||data.message||("HTTP "+res.status));
     return data;
   }
-  function showApp(){document.getElementById("authGate").style.display="none";document.getElementById("appRoot").style.display="";document.getElementById("sysBase").textContent=API_BASE||location.origin;boot();}
+  function showApp(){document.getElementById("authGate").style.display="none";document.getElementById("appRoot").style.display="";document.getElementById("sysBase").textContent=API_BASE||location.origin;boot();
+    try{api("/api/activity",{method:"POST",body:JSON.stringify({type:"panel_open",message:"باز شدن پنل ادمین"})}).catch(()=>{});}catch{}}
   function logout(){localStorage.removeItem(LS_SECRET);location.reload();}
   document.getElementById("authBtn").addEventListener("click",async()=>{
     const base=document.getElementById("cfgBase").value.trim().replace(/\/$/,"");
@@ -506,7 +530,7 @@ td.row-actions::before{display:none}
   (function tryRestore(){const b=localStorage.getItem(LS_BASE),s=localStorage.getItem(LS_SECRET);if(s){API_BASE=(b||location.origin).replace(/\/$/,"");API_SECRET=s;document.getElementById("cfgBase").value=b||"";document.getElementById("cfgSecret").value=s;api("/api/ping").then(r=>{if(r&&r.ok)showApp();}).catch(()=>{});}})();
 
   function updateTopAction(sec){currentSec=sec;const btn=document.getElementById("topActionBtn");const cfg=topActions[sec]||topActions.dash;if(!cfg.label){btn.style.display="none";return;}btn.style.display="";btn.textContent=cfg.label;}
-  function handleTopAction(){const cfg=topActions[currentSec]||topActions.dash;if(cfg.action==="user")openUserModal();else if(cfg.action==="node")openNodeModal();else if(cfg.action==="shop")loadShop();else if(cfg.action==="backup")downloadBackup();}
+  function handleTopAction(){const cfg=topActions[currentSec]||topActions.dash;if(cfg.action==="user")openUserModal();else if(cfg.action==="node")openNodeModal();else if(cfg.action==="shop")loadShop();else if(cfg.action==="backup")downloadBackup();else if(cfg.action==="logs")loadLogs();}
   document.getElementById("topActionBtn").addEventListener("click",handleTopAction);
   document.querySelectorAll(".nav-item").forEach(el=>{el.addEventListener("click",()=>{document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("active"));el.classList.add("active");const sec=el.dataset.sec;document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById(sec).classList.add("active");document.getElementById("title").innerHTML=titles[sec]||sec;updateTopAction(sec);document.getElementById("sidebar").classList.remove("open");document.getElementById("sidebarBackdrop").classList.remove("show");onSectionEnter(sec);});});
   updateTopAction("dash");
@@ -587,12 +611,97 @@ td.row-actions::before{display:none}
       if(data.version){document.getElementById("sidebarFoot").textContent="v"+data.version+" · Push Mode";document.getElementById("sysVersion").textContent=data.version;}
       if(data.map&&data.map.provinces)renderMap(data.map.provinces);
       const act=data.activity||[],tbody=document.getElementById("activityBody");
-      if(!act.length)tbody.innerHTML='<tr><td colspan="4" class="empty-msg">هنوز رویدادی ثبت نشده</td></tr>';
-      else tbody.innerHTML=act.map(a=>{const[lab,cls]=activityLabel(a.type);return`<tr><td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td><td data-label="رویداد"><span class="badge ${cls}">${lab}</span></td><td data-label="نود" style="color:var(--text-secondary)">${esc(a.node_id||"—")}</td><td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td></tr>`;}).join("");
+      renderActivityRows(tbody, act, 5);
     }catch(e){console.warn("dashboard",e);}
   }
   function startDashPoll(){stopDashPoll();dashTimer=setInterval(()=>{if(currentSec==="dash"&&document.visibilityState==="visible")loadDashboard(false);},DASH_POLL_MS);}
+
   function stopDashPoll(){if(dashTimer)clearInterval(dashTimer);dashTimer=null;}
+  let activityCache=[];
+  function renderActivityRows(tbody, act, cols){
+    if(!tbody)return;
+    if(!act||!act.length){
+      tbody.innerHTML=`<tr><td colspan="${cols||5}" class="empty-msg">رویدادی در این بازه نیست</td></tr>`;
+      return;
+    }
+    activityCache=act;
+    tbody.innerHTML=act.map(a=>{
+      const[lab,cls]=activityLabel(a.type);
+      const msg=a.message||"";
+      const shortMsg=msg.length>48?msg.slice(0,48)+"…":msg;
+      return `<tr>
+        <td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td>
+        <td data-label="رویداد"><span class="badge ${cls}">${lab}</span>${shortMsg?` <span style="color:var(--text-muted);font-size:12px">${esc(shortMsg)}</span>`:""}</td>
+        <td data-label="نود" style="color:var(--text-secondary)">${esc(a.node_id||"—")}</td>
+        <td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td>
+        <td class="row-actions"><button type="button" class="icon-btn" title="جزئیات" data-logid="${a.id}">!</button></td>
+      </tr>`;
+    }).join("");
+    tbody.querySelectorAll("[data-logid]").forEach(btn=>{
+      btn.addEventListener("click",()=>openLogDetail(Number(btn.dataset.logid)));
+    });
+  }
+  function openLogDetail(id){
+    const a=activityCache.find(x=>Number(x.id)===Number(id));
+    if(!a){toast("لاگ پیدا نشد","err");return;}
+    const[lab,cls]=activityLabel(a.type);
+    const meta=a.meta||{};
+    const rows=[
+      ["نوع",lab],
+      ["پیام",a.message||"—"],
+      ["کاربر",a.user_name||a.user_id||"—"],
+      ["شناسه کاربر",a.user_id||"—"],
+      ["نود",a.node_id||"—"],
+      ["زمان",a.ts?new Date(a.ts).toLocaleString("fa-IR"):"—"],
+      ["IP",meta.ip||"—"],
+      ["شهر",meta.city||"—"],
+      ["کشور",meta.country||"—"],
+      ["User-Agent",meta.ua||"—"],
+    ];
+    // سایر meta
+    for(const[k,v] of Object.entries(meta)){
+      if(["ip","city","country","ua"].includes(k))continue;
+      rows.push([k, typeof v==="object"?JSON.stringify(v):String(v)]);
+    }
+    document.getElementById("logDetailBody").innerHTML=rows.map(([k,v])=>
+      `<div class="row"><span style="color:var(--text-muted)">${esc(k)}</span><span style="text-align:left;max-width:65%;word-break:break-all;font-size:12.5px">${esc(String(v))}</span></div>`
+    ).join("");
+    document.getElementById("logDetailOverlay").classList.add("open");
+  }
+  function closeLogDetail(){document.getElementById("logDetailOverlay").classList.remove("open");}
+  document.getElementById("logDetailClose")?.addEventListener("click",closeLogDetail);
+  document.getElementById("logDetailClose2")?.addEventListener("click",closeLogDetail);
+  document.getElementById("logDetailOverlay")?.addEventListener("click",e=>{if(e.target===e.currentTarget)closeLogDetail();});
+
+  async function loadLogs(){
+    const tbody=document.getElementById("logsBody");
+    if(tbody)tbody.innerHTML='<tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr>';
+    try{
+      const data=await api("/api/activity?limit=200");
+      const act=data.activity||[];
+      activityCache=act;
+      if(!tbody)return;
+      if(!act.length){tbody.innerHTML='<tr><td colspan="6" class="empty-msg">لاگی ثبت نشده</td></tr>';return;}
+      tbody.innerHTML=act.map(a=>{
+        const[lab,cls]=activityLabel(a.type);
+        const msg=a.message||"";
+        const shortMsg=msg.length>60?msg.slice(0,60)+"…":msg;
+        return `<tr>
+          <td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td>
+          <td data-label="رویداد"><span class="badge ${cls}">${lab}</span></td>
+          <td data-label="پیام" style="color:var(--text-secondary);font-size:12.5px">${esc(shortMsg||"—")}</td>
+          <td data-label="نود">${esc(a.node_id||"—")}</td>
+          <td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td>
+          <td class="row-actions"><button type="button" class="icon-btn" title="جزئیات" data-logid="${a.id}">!</button></td>
+        </tr>`;
+      }).join("");
+      tbody.querySelectorAll("[data-logid]").forEach(btn=>{
+        btn.addEventListener("click",()=>openLogDetail(Number(btn.dataset.logid)));
+      });
+    }catch(e){if(tbody)tbody.innerHTML=`<tr><td colspan="6" class="empty-msg">${esc(e.message)}</td></tr>`;}
+  }
+  document.getElementById("btnRefreshLogs")?.addEventListener("click",()=>loadLogs());
+
 
   function renderUsers(list){
     const q=(document.getElementById("userSearch").value||"").trim().toLowerCase();
@@ -1061,7 +1170,7 @@ td.row-actions::before{display:none}
 
   document.getElementById("syncBtn").addEventListener("click",async function(){const btn=this;btn.textContent="در حال همگام‌سازی...";btn.disabled=true;try{await api("/api/nodes/sync",{method:"POST"});toast("همگام‌سازی شروع شد","ok");try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"sync",message:"همگام‌سازی دستی"})});}catch{}if(currentSec==="dash")await loadDashboard(true);if(currentSec==="nodes")await loadNodes();}catch(e){toast(e.message,"err");}finally{btn.textContent="همگام‌سازی";btn.disabled=false;}});
 
-  function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="settings")loadRules();}
+  function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="settings")loadRules();}
   function boot(){loadDashboard(true);startDashPoll();api("/api/users").then(d=>{usersCache=d.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);}).catch(()=>{});api("/api/nodes").then(d=>{document.getElementById("navNodesCount").textContent=faNum((d.managed||[]).length);}).catch(()=>{});api("/version").then(d=>{if(d&&(d.v||d.version)){const v=d.v||d.version;document.getElementById("sidebarFoot").textContent="v"+v+" · Push Mode";document.getElementById("sysVersion").textContent=v;}}).catch(()=>{});}
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&currentSec==="dash")loadDashboard(false);});
 })();
