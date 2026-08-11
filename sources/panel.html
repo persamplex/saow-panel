@@ -563,16 +563,51 @@ table tbody tr{height:auto}
 
 
 
-/* Wizard steps */
-.wiz-steps{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+/* Wizard — فقط سه نقطه */
+.wiz-steps{display:flex;gap:10px;margin:4px 0 14px;justify-content:center;align-items:center}
 .wiz-step-dot{
-  flex:1;min-width:70px;text-align:center;padding:8px 6px;border-radius:10px;
-  background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:11px;color:var(--text-muted);
+  width:8px;height:8px;border-radius:50%;padding:0;min-width:0;flex:0;
+  background:rgba(255,255,255,.18);border:none;
+  transition:transform .25s ease, background .25s ease, box-shadow .25s ease;
+  font-size:0;color:transparent;overflow:hidden;
 }
-.wiz-step-dot.on{border-color:rgba(56,189,248,.45);color:var(--accent);background:rgba(56,189,248,.08)}
-.wiz-step-dot.done{border-color:rgba(74,222,128,.35);color:var(--success)}
+.wiz-step-dot.on{
+  background:var(--accent);transform:scale(1.35);
+  box-shadow:0 0 0 4px rgba(56,189,248,.18);
+}
+.wiz-step-dot.done{background:var(--success)}
 .wiz-pane{display:none}
-.wiz-pane.on{display:block;animation:fade .25s ease}
+.wiz-pane.on{display:block;animation:fade .22s ease}
+.tg-setup .field{margin-bottom:10px}
+.tg-setup .field input{padding:9px 12px;font-size:13px}
+.tg-setup .field label{font-size:12px;margin-bottom:4px}
+.tg-done-card{display:none}
+.tg-done-card.show{display:block}
+#tgWizardBox.hide{display:none}
+
+/* dashboard limit tip */
+.stat-warn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;margin-right:4px;
+  border:1px solid rgba(251,191,36,.4);color:var(--warning);
+  font-size:10px;cursor:help;position:relative;vertical-align:middle;
+}
+.stat-warn:hover{background:rgba(251,191,36,.12)}
+.stat-warn[data-tip]:hover::after{
+  content:attr(data-tip);position:absolute;z-index:30;
+  bottom:calc(100% + 8px);right:50%;transform:translateX(50%);
+  width:min(240px,70vw);padding:10px 12px;border-radius:10px;
+  font-size:12px;line-height:1.55;font-weight:400;color:var(--text);
+  background:var(--bg-elevated);border:1px solid var(--border);
+  box-shadow:0 12px 36px rgba(0,0,0,.5);text-align:right;white-space:normal;
+  pointer-events:none;
+}
+@media(max-width:600px){
+  .stat-warn[data-tip]:hover::after,
+  .stat-warn[data-tip]:focus::after{
+    right:0;transform:none;width:min(220px,85vw);
+  }
+}
 .help-tip{
   display:inline-flex;align-items:center;justify-content:center;
   width:18px;height:18px;border-radius:50%;border:1px solid var(--border);
@@ -675,13 +710,13 @@ table tbody tr{height:auto}
           <div class="stat-pct-bar"><i id="stNodesBar" style="width:0%"></i></div>
         </div>
         <div class="stat" id="stReqCard">
-          <div class="stat-label">ریکوست مادر امروز <span class="stat-warn" title="سقف کلودفلر">!</span></div>
+          <div class="stat-label">ریکوست مادر امروز <span class="stat-warn" data-tip="سقف رایگان کلودفلر حدود ۱۰۰٬۰۰۰ درخواست در روز برای هر ورکر است. نزدیک شدن به ۱۰۰٪ ممکن است باعث قطع سرویس شود.">!</span></div>
           <div class="stat-value" id="stReq">—</div>
           <div class="stat-meta" id="stReqMeta">از سقف روزانه</div>
           <div class="stat-pct-bar"><i id="stReqBar" style="width:0%"></i></div>
         </div>
         <div class="stat" id="stD1WriteCard">
-          <div class="stat-label">نوشتن D1 مادر <span class="stat-warn" title="سقف کلودفلر">!</span></div>
+          <div class="stat-label">نوشتن D1 مادر <span class="stat-warn" data-tip="محدودیت ردیف‌های نوشته‌شده در دیتابیس D1 کلودفلر در روز. نوشتن زیاد (لاگ، همگام‌سازی) این عدد را بالا می‌برد.">!</span></div>
           <div class="stat-value" id="stD1Write">—</div>
           <div class="stat-meta" id="stD1WriteMeta">rows written</div>
           <div class="stat-pct-bar"><i id="stD1WriteBar" style="width:0%"></i></div>
@@ -821,25 +856,25 @@ table tbody tr{height:auto}
     </section>
 
     <section class="section" id="telegram">
-      <div class="setting-block" style="margin-bottom:14px">
+      <div class="setting-block tg-setup" id="tgWizardBox" style="margin-bottom:14px">
         <h4>راه‌اندازی ربات تلگرام</h4>
-        <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">مرحله‌به‌مرحله · ورکر ربات روی اکانت جدا از مادر ساخته می‌شود</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">ورکر روی اکانت جدا از مادر</p>
         <div class="wiz-steps">
-          <div class="wiz-step-dot on" data-wiz="1">۱ · توکن ربات</div>
-          <div class="wiz-step-dot" data-wiz="2">۲ · Chat ID</div>
-          <div class="wiz-step-dot" data-wiz="3">۳ · ورکر CF</div>
+          <div class="wiz-step-dot on" data-wiz="1"></div>
+          <div class="wiz-step-dot" data-wiz="2"></div>
+          <div class="wiz-step-dot" data-wiz="3"></div>
         </div>
         <div class="wiz-pane on" id="tgWiz1">
           <div class="field">
-            <label>توکن ربات <span class="help-tip" data-tip="در تلگرام BotFather را باز کنید، /newbot بزنید، نام بدهید و توکنی شبیه 123456:ABC-DEF را کپی کنید.">!</span></label>
+            <label>توکن ربات <span class="help-tip" data-tip="BotFather → /newbot → توکن را کپی کنید">!</span></label>
             <input type="password" id="tgToken" placeholder="123456:AA..." autocomplete="off" />
           </div>
           <button type="button" class="btn btn-primary" style="width:100%" id="btnTgStep1">ادامه</button>
         </div>
         <div class="wiz-pane" id="tgWiz2">
           <div class="field">
-            <label>Chat ID ادمین <span class="help-tip" data-tip="اختیاری. اگر خالی بگذارید، اولین نفری که به ربات /start بزند به‌عنوان ادمین ثبت می‌شود.">!</span></label>
-            <input type="text" id="tgChatId" placeholder="خالی = اولین /start" autocomplete="off" />
+            <label>Chat ID <span class="help-tip" data-tip="اختیاری — خالی بماند تا اولین /start ادمین شود">!</span></label>
+            <input type="text" id="tgChatId" placeholder="اختیاری" autocomplete="off" />
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <button type="button" class="btn" id="btnTgStep2Back">قبلی</button>
@@ -848,51 +883,54 @@ table tbody tr{height:auto}
         </div>
         <div class="wiz-pane" id="tgWiz3">
           <div class="field">
-            <label>توکن Cloudflare (ورکر ربات) <span class="help-tip" data-tip="از داشبورد Cloudflare یک API Token جدا بسازید (نه توکن نود مادر). Account ID به‌صورت خودکار تشخیص داده می‌شود. ورکر ربات روی همین اکانت دیپلوی می‌شود تا مادر بلاک نشود.">!</span></label>
-            <input type="password" id="tgCfToken" placeholder="CF API Token جدا از مادر" autocomplete="off" />
+            <label>توکن Cloudflare <span class="help-tip" data-tip="API Token جدا از مادر — Account خودکار تشخیص داده می‌شود">!</span></label>
+            <input type="password" id="tgCfToken" placeholder="CF API Token" autocomplete="off" />
           </div>
-          <div class="field"><label>Account ID (خودکار)</label><input type="text" id="tgCfAccount" placeholder="پس از بررسی توکن پر می‌شود" readonly /></div>
-          <p id="tgCfHint" style="font-size:12px;color:var(--text-muted);margin:6px 0 10px"></p>
+          <div class="field"><label>Account ID</label><input type="text" id="tgCfAccount" placeholder="خودکار" readonly /></div>
+          <p id="tgCfHint" style="font-size:11px;color:var(--text-muted);margin:0 0 8px"></p>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <button type="button" class="btn" id="btnTgStep3Back">قبلی</button>
-            <button type="button" class="btn btn-primary" id="btnTgActivate">فعال‌سازی ربات</button>
+            <button type="button" class="btn btn-primary" id="btnTgActivate">فعال‌سازی</button>
           </div>
         </div>
-        <p id="tgStatus" style="font-size:12px;color:var(--text-muted);margin-top:12px"></p>
-        <button type="button" class="btn btn-danger-soft" style="width:100%;margin-top:8px;display:none" id="btnTgDelete">حذف ربات</button>
+        <p id="tgStatus" style="font-size:12px;color:var(--text-muted);margin-top:10px"></p>
+      </div>
+
+      <div class="setting-block tg-done-card" id="tgDoneCard" style="margin-bottom:14px">
+        <h4>ربات فعال است</h4>
+        <div class="row"><span>ربات</span><span id="tgDoneName">—</span></div>
+        <div class="row"><span>ورکر</span><span id="tgDoneUrl" style="direction:ltr;font-size:12px;word-break:break-all">—</span></div>
+        <div class="row"><span>وضعیت</span><span id="tgDoneHealth">—</span></div>
+        <div class="tg-stats-grid" style="margin-top:10px">
+          <div class="tg-stat"><div class="k">ریکوست امروز</div><div class="v" id="tgReqStat">—</div></div>
+          <div class="tg-stat"><div class="k">Account</div><div class="v" id="tgAccStat" style="font-size:12px">—</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+          <button type="button" class="btn" id="btnTgTest">تست</button>
+          <button type="button" class="btn btn-danger-soft" id="btnTgDelete">حذف</button>
+        </div>
+        <p id="tgStatus2" style="font-size:12px;color:var(--text-muted);margin-top:8px"></p>
       </div>
 
       <div class="feat-lock-wrap is-locked" data-feature="telegram_bot" id="tgAfterLock">
         <div class="feat-lock-content">
-          <div class="grid-2">
-            <div class="setting-block">
-              <h4>وضعیت ورکر ربات</h4>
-              <div class="tg-stats-grid">
-                <div class="tg-stat"><div class="k">آدرس ورکر</div><div class="v" id="tgWorkerUrl" style="font-size:12px;word-break:break-all">—</div></div>
-                <div class="tg-stat"><div class="k">ریکوست امروز</div><div class="v" id="tgReqStat">—</div></div>
-                <div class="tg-stat"><div class="k">Account</div><div class="v" id="tgAccStat" style="font-size:12px">—</div></div>
-                <div class="tg-stat"><div class="k">وضعیت</div><div class="v" id="tgHealthStat">—</div></div>
-              </div>
-              <button type="button" class="btn" style="width:100%;margin-top:12px" id="btnTgTest">ارسال پیام تست</button>
-            </div>
-            <div class="setting-block">
-              <h4>گزارش‌های اعلان</h4>
-              <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
-              <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
-              <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
-              <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
-              <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
-            </div>
+          <div class="setting-block">
+            <h4>گزارش‌های اعلان</h4>
+            <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
+            <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
+            <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
+            <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
+            <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
           </div>
         </div>
         <div class="feat-lock-overlay">
           <div class="lock-ico">🔒</div>
-          <p>پس از تکمیل ۳ مرحله، آمار و گزارش‌ها باز می‌شوند</p>
+          <p>پس از فعال‌سازی ربات باز می‌شود</p>
         </div>
       </div>
     </section>
 
-    <section class="section" id="settings">
+<section class="section" id="settings">
       <div class="grid-2">
         <div class="setting-block"><h4>قفل‌های پنل</h4><p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">این قفل‌ها توسط سرویس لایسنس اعمال می‌شوند و برای محدودسازی پنل ادمین هستند.</p>
           <div class="row"><span>قفل پنل کامل</span><div class="switch" id="swLockPanel"></div></div>
@@ -1444,6 +1482,15 @@ function openMapProvince(provinceName){
       try{
         const g=await fetch("https://ipapi.co/"+encodeURIComponent(best)+"/json/",{cache:"no-store"}).then(r=>r.json());
         if(g&&!g.error){city=g.city||null;region=g.region||null;country=g.country_code||g.country||null;lat=g.latitude;lon=g.longitude;}
+      }catch{}
+      try{
+        const cacheKey="saow_ip_geo_cache";
+        const cached=JSON.parse(localStorage.getItem(cacheKey)||"null");
+        if(cached && cached.ip===best && Date.now()-cached.at<6*3600*1000){
+          console.log("[SAOW] panel IP consensus (cached)",best);
+          await api("/api/client-ip",{method:"POST",body:JSON.stringify({ip:best,votes:bestN,sources:sources.map(s=>s.src+":"+s.ip),city:cached.city,region:cached.region,country:cached.country,lat:cached.lat,lon:cached.lon})});
+          return {ip:best,votes:bestN,city:cached.city,region:cached.region,country:cached.country,lat:cached.lat,lon:cached.lon};
+        }
       }catch{}
       console.log("[SAOW] panel IP consensus",best,"votes="+bestN,sources);
       await api("/api/client-ip",{method:"POST",body:JSON.stringify({ip:best,votes:bestN,sources:sources.map(s=>s.src+":"+s.ip),city,region,country,lat,lon})});
@@ -2322,30 +2369,43 @@ function openMapProvince(provinceName){
       await refreshRulesLocal();
       const r=await api("/api/telegram/config");
       if(!r||!r.ok)return;
-      document.getElementById("tgChatId").value=r.chat_id||"";
-      const ready=!!r.has_token && !!(r.bot_worker_url||r.chat_id||r.has_token);
-      document.getElementById("tgStatus").textContent = r.has_token
-        ? ((r.bot_username?"@"+r.bot_username+" · ":"")+(r.bot_worker_url?"ورکر فعال":"توکن ثبت شده — مرحله ۳ را کامل کنید"))
-        : "ربات ثبت نشده — از مرحله ۱ شروع کنید";
-      document.getElementById("btnTgDelete").style.display = r.has_token ? "" : "none";
-      if(r.bot_worker_url) document.getElementById("tgWorkerUrl").textContent=r.bot_worker_url;
-      if(r.cf_account_id) document.getElementById("tgAccStat").textContent=r.cf_account_id.slice(0,12)+"…";
+      const configured=!!(r.configured || (r.has_token && r.bot_worker_url));
+      const wiz=document.getElementById("tgWizardBox");
+      const done=document.getElementById("tgDoneCard");
+      if(configured){
+        wiz?.classList.add("hide");
+        done?.classList.add("show");
+        document.getElementById("tgDoneName").textContent=r.bot_username?("@"+r.bot_username):"—";
+        document.getElementById("tgDoneUrl").textContent=r.bot_worker_url||"—";
+        document.getElementById("tgDoneHealth").textContent="فعال";
+        if(r.cf_account_id) document.getElementById("tgAccStat").textContent=String(r.cf_account_id).slice(0,14)+"…";
+        setFeatureGate("telegram_bot", true);
+        setFeatureGate("shop", true);
+        setFeatureGate("auto_backup", true);
+        try{
+          const st=await api("/api/telegram/stats");
+          if(st&&st.ok){
+            document.getElementById("tgReqStat").textContent = st.requests!=null ? (faNum(st.requests)+" / "+faNum(st.limit||100000)) : "—";
+            document.getElementById("tgDoneHealth").textContent = st.healthy ? "سالم" : (st.err||"فعال");
+            if(st.worker_url) document.getElementById("tgDoneUrl").textContent=st.worker_url;
+          }
+        }catch{}
+      } else {
+        wiz?.classList.remove("hide");
+        done?.classList.remove("show");
+        if(r.chat_id) document.getElementById("tgChatId").value=r.chat_id;
+        document.getElementById("tgStatus").textContent = r.has_token
+          ? ((r.bot_username?"@"+r.bot_username+" · ":"")+"مرحله ۳ را کامل کنید")
+          : "از مرحله اول شروع کنید";
+        if(r.has_token) setTgWiz(r.bot_worker_url?3:2);
+        else setTgWiz(1);
+      }
       if(r.reports){
         setSw("tgRepPanel",!!r.reports.panel_open);
         setSw("tgRepSub",!!r.reports.sub_view);
         setSw("tgRepAuth",!!r.reports.auth_fail);
         setSw("tgRepNode",!!r.reports.node_off);
       }
-      // آمار ورکر
-      try{
-        const st=await api("/api/telegram/stats");
-        if(st&&st.ok){
-          document.getElementById("tgReqStat").textContent = st.requests!=null ? (faNum(st.requests)+" / "+faNum(st.limit||100000)) : "—";
-          document.getElementById("tgHealthStat").textContent = st.healthy ? "سالم" : (st.err||"—");
-          if(st.worker_url) document.getElementById("tgWorkerUrl").textContent=st.worker_url;
-        }
-      }catch{}
-      if(r.has_token && r.bot_worker_url) setTgWiz(3);
     }catch(e){}
   }
   document.getElementById("btnTgStep1")?.addEventListener("click",async()=>{
