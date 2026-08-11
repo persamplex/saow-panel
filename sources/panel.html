@@ -407,20 +407,54 @@ td.row-actions::before{display:none}
 .map-pop-user small{color:var(--text-muted);font-size:11px;direction:ltr}
 .map-pop-empty{padding:16px;text-align:center;color:var(--text-muted);font-size:13px}
 @media(max-width:768px){
+  #iranMapContainer{height:280px!important;touch-action:manipulation}
   .map-pop-backdrop{
     position:fixed;inset:0;z-index:110;
   }
-  .map-pop-backdrop.open{background:rgba(0,0,0,.45)}
+  .map-pop-backdrop.open{background:rgba(0,0,0,.5)}
   .map-pop{
-    position:fixed;left:12px;right:12px;top:auto;bottom:20px;
+    position:fixed;left:16px;right:16px;top:auto;bottom:max(16px,env(safe-area-inset-bottom));
     width:auto;max-width:none;
-    transform:translateY(18px) scale(.98);
-    border-radius:16px;z-index:120;
+    transform:translateY(24px) scale(.97);
+    border-radius:18px;z-index:120;
+    max-height:min(52vh,420px);
+    display:flex;flex-direction:column;
   }
   .map-pop.open{
     transform:translateY(0) scale(1);
   }
+  .map-pop-body{
+    max-height:min(36vh,280px);
+    -webkit-overflow-scrolling:touch;
+  }
+  .map-pop-user{min-height:48px;padding:10px 12px}
 }
+
+/* QR sub modal */
+.sub-qr-overlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.55);align-items:center;justify-content:center;
+  padding:16px;box-sizing:border-box;
+}
+.sub-qr-overlay.open{display:flex}
+.sub-qr-box{
+  background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;
+  padding:18px 16px 14px;width:min(340px,100%);text-align:center;
+  animation:fade .22s ease;
+}
+.sub-qr-box h3{font-size:15px;margin:0 0 12px;font-weight:600}
+.sub-qr-box img{
+  width:min(220px,70vw);height:auto;aspect-ratio:1;border-radius:12px;
+  background:#fff;padding:10px;box-sizing:border-box;
+}
+.sub-qr-link{
+  margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--bg);
+  border:1px solid var(--border);font-size:12px;direction:ltr;text-align:left;
+  word-break:break-all;color:var(--text-secondary);max-height:4.5em;overflow-y:auto;
+  user-select:all;
+}
+.sub-qr-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.sub-qr-actions .btn{width:100%}
 
 </style>
 </head>
@@ -860,11 +894,36 @@ td.row-actions::before{display:none}
   document.getElementById("sidebarBackdrop").addEventListener("click",()=>toggleSidebar(true));
 
   let mapDevicesCache=[];
-  function closeMapPop(){
+    function closeMapPop(e){
+    if(Date.now()<mapPopLockUntil){if(e){e.preventDefault();e.stopPropagation();}return;}
     document.getElementById("mapPop")?.classList.remove("open");
     document.getElementById("mapPopBackdrop")?.classList.remove("open");
   }
-  function openMapProvince(provinceName){
+  let mapPopLockUntil=0;
+  
+  function openSubQr(link, title){
+    const ov=document.getElementById("subQrOverlay");
+    if(!ov||!link)return;
+    document.getElementById("subQrTitle").textContent=title||"لینک اشتراک";
+    document.getElementById("subQrLink").textContent=link;
+    document.getElementById("subQrImg").src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&color=0c0c0e&bgcolor=ffffff&margin=8&data="+encodeURIComponent(link);
+    ov.classList.add("open");
+  }
+  function closeSubQr(){document.getElementById("subQrOverlay")?.classList.remove("open");}
+  document.getElementById("subQrClose")?.addEventListener("click", closeSubQr);
+  document.getElementById("subQrOverlay")?.addEventListener("click", function(e){if(e.target.id==="subQrOverlay")closeSubQr();});
+  document.getElementById("subQrCopy")?.addEventListener("click", async()=>{
+    const t=document.getElementById("subQrLink")?.textContent||"";
+    if(!t)return;
+    try{await navigator.clipboard.writeText(t);toast("لینک کپی شد","ok");}catch{toast("کپی نشد","err");}
+  });
+
+function openMapProvince(provinceName){
+    if(!provinceName)return;
+    // جلوگیری از باز/بسته شدن سریع روی تاچ
+    const now=Date.now();
+    if(now<mapPopLockUntil)return;
+    mapPopLockUntil=now+400;
     const pop=document.getElementById("mapPop");
     const body=document.getElementById("mapPopBody");
     const title=document.getElementById("mapPopTitle");
@@ -873,7 +932,8 @@ td.row-actions::before{display:none}
     const list=(mapDevicesCache||[]).filter(d=>d.province===provinceName);
     const byUser=new Map();
     for(const d of list){
-      const key=String(d.user_id||d.ip||Math.random());
+      const key=String(d.user_id||d.ip||"");
+      if(!key)continue;
       if(!byUser.has(key)) byUser.set(key,{name:d.user_name||d.user_id||"—",ip:d.ip,city:d.geo?.city,last_seen:d.last_seen});
     }
     const users=[...byUser.values()];
@@ -885,24 +945,30 @@ td.row-actions::before{display:none}
       body.innerHTML=users.map(u=>`<div class="map-pop-user"><div><strong>${esc(u.name)}</strong>${u.city?`<br><small style="direction:rtl;color:var(--text-muted)">${esc(u.city)}</small>`:""}</div><small>${esc(u.ip||"")}</small></div>`).join("");
     }
     body.scrollTop=0;
-    // فقط class — موقعیت از CSS؛ بدون پرش left/top
     pop.classList.add("open");
     document.getElementById("mapPopBackdrop")?.classList.add("open");
+    // تاچ بعدی روی بک‌دراپ تا ۴۵۰ms نادیده
+    mapPopLockUntil=Date.now()+450;
   }
   function renderMap(provinces, devices){
     if(Array.isArray(devices)) mapDevicesCache=devices;
+    // اگر پاپ‌آپ باز است، نقشه را از نو نکش (جلوگیری از بسته شدن ناگهانی روی موبایل)
+    if(document.getElementById("mapPop")?.classList.contains("open")) return;
     const data=(provinces||[]).map(p=>({lat:p.lat,long:p.lon,name:p.name,users:Number(p.users)||0,value:Number(p.users)||0}));
     const online=data.filter(m=>m.users>0);
     const offline=data.filter(m=>m.users===0);
     if(mapChart){try{mapChart.dispose();}catch{}mapChart=null;}
     const map=anychart.map();map.geoData(anychart.maps.iran);
     map.unboundRegions().enabled(true).fill("#1a1a1e").stroke("1.2 #2a2a30");map.background().fill("transparent");map.padding(0);
-    const sIdle=map.marker(offline);sIdle.name("بدون کاربر").type("circle").size(4).fill("rgba(255,255,255,0.22)").stroke("none").labels(false).selectionMode("none");
-    const sActive=map.marker(online.filter(m=>m.users<3));sActive.name("آنلاین").type("circle").size(8).fill("#7dd3fc").stroke("1.5 #0ea5e9").labels(false).selectionMode("none");
-    const sHot=map.marker(online.filter(m=>m.users>=3));sHot.name("پرترافیک").type("circle").size(10).fill("#f472b6").stroke("1.5 #db2777").labels(false).selectionMode("none");
+    const isMob=window.matchMedia&&window.matchMedia("(max-width:768px)").matches;
+    const szIdle=isMob?7:4, szOn=isMob?12:8, szHot=isMob?15:10;
+    const sIdle=map.marker(offline);sIdle.name("بدون کاربر").type("circle").size(szIdle).fill("rgba(255,255,255,0.28)").stroke(isMob?"1 #3a3a42":"none").labels(false).selectionMode("none");
+    const sActive=map.marker(online.filter(m=>m.users<3));sActive.name("آنلاین").type("circle").size(szOn).fill("#7dd3fc").stroke(isMob?"2 #0ea5e9":"1.5 #0ea5e9").labels(false).selectionMode("none");
+    const sHot=map.marker(online.filter(m=>m.users>=3));sHot.name("پرترافیک").type("circle").size(szHot).fill("#f472b6").stroke(isMob?"2 #db2777":"1.5 #db2777").labels(false).selectionMode("none");
     [sIdle,sActive,sHot].forEach(s=>{
       try{s.tooltip(false);}catch{}
       s.listen("pointClick", function(e){
+        try{if(e&&e.originalEvent){e.originalEvent.preventDefault();e.originalEvent.stopPropagation();}}catch{}
         let pName=null;
         try{pName=e.point.get("name");}catch{}
         if(!pName){try{pName=e.iterator.get("name");}catch{}}
@@ -929,8 +995,8 @@ td.row-actions::before{display:none}
       const tasks=[
         (async()=>{try{const t=await fetch("https://www.cloudflare.com/cdn-cgi/trace",{cache:"no-store"}).then(r=>r.text());const m=t.match(/\bip=([0-9a-fA-F.:]+)/);if(m)add("cf-trace",m[1]);}catch{}})(),
         (async()=>{try{const j=await fetch("https://api.ipify.org?format=json",{cache:"no-store"}).then(r=>r.json());add("ipify",j.ip);}catch{}})(),
-        (async()=>{try{const t=await fetch("https://ipv4.icanhazip.com",{cache:"no-store"}).then(r=>r.text());add("icanhazip",t.trim());}catch{}})(),
-        (async()=>{try{const t=await fetch("https://ifconfig.me/ip",{cache:"no-store"}).then(r=>r.text());add("ifconfig",t.trim());}catch{}})(),
+        (async()=>{try{const t=await fetch("https://ipapi.co/ip/",{cache:"no-store"}).then(r=>r.text());add("ipapi",t.trim());}catch{}})(),
+        (async()=>{try{const j=await fetch("https://api.seeip.org/jsonip",{cache:"no-store"}).then(r=>r.json());add("seeip",j.ip);}catch{}})(),
         new Promise((resolve)=>{
           try{
             const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun.cloudflare.com:3478"}]});
@@ -1297,7 +1363,14 @@ td.row-actions::before{display:none}
   });
   document.getElementById("udSub").addEventListener("click",async()=>{
     if(!selectedUserId)return;
-    try{const data=await api("/api/users/"+encodeURIComponent(selectedUserId)+"/sub");let link=data.sub||"";if(link&&!link.startsWith("http"))link=(API_BASE||location.origin)+link;if(link){await navigator.clipboard.writeText(link);toast("لینک ساب کپی شد","ok");}else toast("لینک نیست","err");}catch(e){toast(e.message,"err");}
+    try{
+      const data=await api("/api/users/"+encodeURIComponent(selectedUserId)+"/sub");
+      let link=data.sub||"";
+      if(link&&!link.startsWith("http"))link=(API_BASE||location.origin)+link;
+      if(!link){toast("لینک نیست","err");return;}
+      const u=usersCache.find(x=>x.id===selectedUserId);
+      openSubQr(link, (u&&u.name)?("ساب · "+u.name):"لینک اشتراک");
+    }catch(e){toast(e.message,"err");}
   });
   document.getElementById("udClearIps").addEventListener("click",async()=>{
     if(!selectedUserId)return;
@@ -1318,7 +1391,7 @@ td.row-actions::before{display:none}
     if(act==="info"){openUserDetail(id);return;}
     if(act==="edit"){const u=usersCache.find(x=>x.id===id);if(u)openUserModal(u);return;}
     if(act==="reset"){if(!confirm("ریست حجم؟"))return;try{await api("/api/users/"+encodeURIComponent(id)+"/reset-usage",{method:"POST"});toast("ریست شد","ok");loadUsers();}catch(e){toast(e.message,"err");}return;}
-    if(act==="sub"){try{const data=await api("/api/users/"+encodeURIComponent(id)+"/sub");let link=data.sub||"";if(link&&!link.startsWith("http"))link=(API_BASE||location.origin)+link;if(link){await navigator.clipboard.writeText(link);toast("لینک ساب کپی شد","ok");}else toast("لینک نیست","err");}catch(e){toast(e.message,"err");}return;}
+    if(act==="sub"){try{const data=await api("/api/users/"+encodeURIComponent(id)+"/sub");let link=data.sub||"";if(link&&!link.startsWith("http"))link=(API_BASE||location.origin)+link;if(!link){toast("لینک نیست","err");return;}const u=usersCache.find(x=>x.id===id);openSubQr(link,(u&&u.name)?("ساب · "+u.name):"لینک اشتراک");}catch(e){toast(e.message,"err");}return;}
     if(act==="del"){if(!confirm("حذف کاربر؟"))return;try{await api("/api/users/"+encodeURIComponent(id),{method:"DELETE"});toast("حذف شد","ok");loadUsers();try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"delete",user_id:id,message:"حذف کاربر"})});}catch{}}catch(e){toast(e.message,"err");}}
   }
   /* ── Custom select (cselect) ── */
@@ -1721,5 +1794,18 @@ function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&currentSec==="dash")loadDashboard(false);});
 })();
 </script>
+
+<div class="sub-qr-overlay" id="subQrOverlay">
+  <div class="sub-qr-box" role="dialog" aria-modal="true">
+    <h3 id="subQrTitle">لینک اشتراک</h3>
+    <img id="subQrImg" alt="QR" width="220" height="220" />
+    <div class="sub-qr-link" id="subQrLink"></div>
+    <div class="sub-qr-actions">
+      <button type="button" class="btn btn-primary" id="subQrCopy">کپی لینک</button>
+      <button type="button" class="btn" id="subQrClose">بستن</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
