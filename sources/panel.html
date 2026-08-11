@@ -63,7 +63,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
   text-align:right;direction:rtl;
 }
 .stat[data-tip]:hover::after{opacity:1;transform:translateY(0)}
-.stat-pct-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:10px;overflow:hidden}
+.stat-pct-bar{overflow:hidden;height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:10px;overflow:hidden}
 .stat-pct-bar>i{display:block;height:100%;border-radius:2px;background:var(--accent)}
 
 .map-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
@@ -300,7 +300,7 @@ td.row-actions .row-actions-inner{display:contents}
   
 
 /* stats bars — smooth fill */
-.stat{position:relative;overflow:hidden}
+.stat{position:relative;overflow:visible}
 .stat-value{transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s ease}
 .stat-value.bump{animation:statBump .45s cubic-bezier(.22,1,.36,1)}
 @keyframes statBump{
@@ -629,12 +629,71 @@ table tbody tr{height:auto}
 
 
 .pager{
-  display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
-  padding:12px 14px;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;
+  padding:14px 12px;border-top:1px solid var(--border);
 }
-.pager .btn{min-width:36px;padding:6px 10px;font-size:12.5px}
-.pager .pager-info{font-size:12.5px;color:var(--text-muted);padding:0 6px}
-.pager .btn:disabled{opacity:.35;pointer-events:none}
+.pager .pager-btn{
+  appearance:none;border:1px solid var(--border);background:rgba(255,255,255,.04);
+  color:var(--text);border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;
+  min-width:72px;line-height:1.2;
+}
+.pager .pager-btn:hover{border-color:rgba(56,189,248,.35);color:var(--accent)}
+.pager .pager-btn:disabled{opacity:.35;pointer-events:none}
+.pager .pager-info{font-size:13px;color:var(--text-secondary);padding:0 4px;min-width:4.5rem;text-align:center}
+
+/* tip روی کارت‌های آمار — overflow visible شده */
+.stat-warn{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;
+  border:1px solid rgba(251,191,36,.45)!important;color:var(--warning)!important;
+  font-size:10px!important;font-weight:700;cursor:help;position:relative;z-index:5;
+  background:transparent;flex-shrink:0;line-height:1;
+}
+.stat-warn[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute;z-index:100;
+  bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(4px);
+  width:min(250px,72vw);padding:10px 12px;border-radius:10px;
+  font-size:12px;font-weight:400;line-height:1.6;color:var(--text);text-align:right;
+  background:var(--bg-elevated);border:1px solid var(--border);
+  box-shadow:0 14px 40px rgba(0,0,0,.55);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .15s ease, transform .15s ease, visibility .15s;
+  white-space:normal;
+}
+.stat-warn[data-tip]:hover::after,
+.stat-warn[data-tip]:focus::after,
+.stat-warn[data-tip].tip-on::after{
+  opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);
+}
+@media(max-width:640px){
+  .stat-warn[data-tip]::after{
+    left:auto;right:0;transform:translateY(4px);
+    width:min(230px,86vw);
+  }
+  .stat-warn[data-tip]:hover::after,
+  .stat-warn[data-tip].tip-on::after{
+    transform:translateY(0);
+  }
+}
+
+
+.wiz-steps{display:flex!important;gap:12px!important;margin:10px 0 16px!important;justify-content:center!important;align-items:center!important}
+.wiz-steps .wiz-step-dot{
+  width:9px!important;height:9px!important;min-width:9px!important;max-width:9px!important;
+  border-radius:50%!important;padding:0!important;margin:0!important;
+  flex:0 0 9px!important;display:block!important;
+  background:rgba(255,255,255,.22)!important;border:none!important;
+  font-size:0!important;line-height:0!important;color:transparent!important;
+  box-shadow:none!important;overflow:hidden!important;
+  transition:transform .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.wiz-steps .wiz-step-dot.on{
+  background:var(--accent)!important;transform:scale(1.4);
+  box-shadow:0 0 0 4px rgba(56,189,248,.2)!important;
+}
+.wiz-steps .wiz-step-dot.done{background:var(--success)!important;transform:none;box-shadow:none!important}
+
 </style>
 </head>
 <body>
@@ -1161,6 +1220,13 @@ table tbody tr{height:auto}
 
   let usersCache=[], nodesCache={managed:[],alive:[]}, mapChart=null, dashTimer=null, lastDashAt=0;
   const PAGE_SIZE=15;
+  // mobile: tap on ! shows tip
+  document.addEventListener("click",e=>{
+    const t=e.target.closest(".stat-warn[data-tip]");
+    document.querySelectorAll(".stat-warn.tip-on").forEach(x=>{if(x!==t)x.classList.remove("tip-on");});
+    if(t){e.preventDefault();t.classList.toggle("tip-on");}
+  });
+
   let usersPage=1, nodesPage=1, logsPage=1;
   function paginate(list, page, size){
     const total=list.length;
@@ -1174,9 +1240,9 @@ table tbody tr{height:auto}
     if(!el)return;
     if(!info || info.total<=PAGE_SIZE){el.style.display="none";el.innerHTML="";return;}
     el.style.display="flex";
-    el.innerHTML=`<button type="button" class="btn" data-pg="prev" ${info.page<=1?"disabled":""}>‹</button>
-      <span class="pager-info">${faNum(info.start)}–${faNum(info.end)} از ${faNum(info.total)} · صفحه ${faNum(info.page)}/${faNum(info.pages)}</span>
-      <button type="button" class="btn" data-pg="next" ${info.page>=info.pages?"disabled":""}>›</button>`;
+    el.innerHTML=`<button type="button" class="pager-btn" data-pg="prev" ${info.page<=1?"disabled":""}>قبلی</button>
+      <span class="pager-info">صفحه ${faNum(info.page)} از ${faNum(info.pages)}</span>
+      <button type="button" class="pager-btn" data-pg="next" ${info.page>=info.pages?"disabled":""}>بعدی</button>`;
     el.querySelector('[data-pg="prev"]')?.addEventListener("click",()=>onPage(info.page-1));
     el.querySelector('[data-pg="next"]')?.addEventListener("click",()=>onPage(info.page+1));
   }
