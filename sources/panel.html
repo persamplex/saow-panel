@@ -1108,9 +1108,11 @@ table tbody tr{height:auto}
 </div>
 <div class="toast" id="toast"></div>
 
+
+
 <div class="overlay" id="planOverlay">
-  <div class="modal">
-    <div class="modal-h"><h3 id="planModalTitle">پلن جدید</h3><button class="icon-btn" type="button" id="planModalX">✕</button></div>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-h"><h3 id="planModalTitle">پلن جدید</h3><button class="icon-btn" type="button" id="planModalX" aria-label="بستن">✕</button></div>
     <div class="modal-b">
       <input type="hidden" id="planId" value="" />
       <div class="field"><label>نام پلن</label><input type="text" id="planName" placeholder="مثلاً یک‌ماهه ۲۰ گیگ" /></div>
@@ -1128,6 +1130,13 @@ table tbody tr{height:auto}
         <div class="field"><label>قیمت</label><input type="number" id="planPrice" value="0" min="0" /></div>
         <div class="field" style="display:flex;align-items:center;justify-content:space-between;padding-top:18px"><label style="margin:0">فعال</label><div class="switch on" id="planEnabled"></div></div>
       </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" type="button" id="planModalCancel">انصراف</button>
+      <button class="btn btn-primary" type="button" id="planModalSave">ذخیره</button>
+    </div>
+  </div>
+</div>
 
 <script>
 
@@ -2459,27 +2468,44 @@ function openMapProvince(provinceName){
     if(!FEATURE_GATES.shop){toast("فروشگاه قفل است — ربات تلگرام را فعال کنید","err");return;}
     openPlanModal(null);
   });
-document.getElementById("planModalX")?.addEventListener("click",closePlanModal);
-  document.getElementById("planModalCancel")?.addEventListener("click",closePlanModal);
-  document.getElementById("planEnabled")?.addEventListener("click",function(){this.classList.toggle("on");});
-  document.getElementById("planModalSave")?.addEventListener("click",async()=>{
-    const name=document.getElementById("planName").value.trim();
-    if(!name){toast("نام پلن لازم است","err");return;}
-    const body={
-      id:document.getElementById("planId").value||undefined,
-      name,
-      category:document.getElementById("planCat").value.trim(),
-      days:Number(document.getElementById("planDays").value)||0,
-      quota_gb:Number(document.getElementById("planQuota").value)||0,
-      daily_gb:Number(document.getElementById("planDaily").value)||0,
-      ip_limit:Number(document.getElementById("planIp").value)||1,
-      price:Number(document.getElementById("planPrice").value)||0,
-      enabled:document.getElementById("planEnabled").classList.contains("on"),
-    };
-    try{
-      await api("/api/shop/plans",{method:"POST",body:JSON.stringify(body)});
-      toast("پلن ذخیره شد","ok");closePlanModal();loadShop();
-    }catch(e){toast(e.message,"err");}
+  // Event delegation — مطمئن برای ذخیره/بستن پلن
+  document.addEventListener("click", async (ev) => {
+    const t = ev.target;
+    if (!t || !t.id) return;
+    if (t.id === "planModalX" || t.id === "planModalCancel") {
+      closePlanModal();
+      return;
+    }
+    if (t.id === "planEnabled" || (t.closest && t.closest("#planEnabled"))) {
+      const sw = document.getElementById("planEnabled");
+      if (sw && (t === sw || sw.contains(t))) sw.classList.toggle("on");
+      return;
+    }
+    if (t.id === "planModalSave") {
+      ev.preventDefault();
+      const name = (document.getElementById("planName")?.value || "").trim();
+      if (!name) { toast("نام پلن لازم است", "err"); return; }
+      const body = {
+        id: document.getElementById("planId")?.value || undefined,
+        name,
+        category: (document.getElementById("planCat")?.value || "").trim(),
+        days: Number(document.getElementById("planDays")?.value) || 0,
+        quota_gb: Number(document.getElementById("planQuota")?.value) || 0,
+        daily_gb: Number(document.getElementById("planDaily")?.value) || 0,
+        ip_limit: Number(document.getElementById("planIp")?.value) || 1,
+        price: Number(document.getElementById("planPrice")?.value) || 0,
+        enabled: !!document.getElementById("planEnabled")?.classList.contains("on"),
+      };
+      try {
+        const r = await api("/api/shop/plans", { method: "POST", body: JSON.stringify(body) });
+        if (r && r.ok === false) throw new Error(r.err || "خطا");
+        toast("پلن ذخیره شد", "ok");
+        closePlanModal();
+        loadShop();
+      } catch (e) {
+        toast(e.message || "خطا در ذخیره", "err");
+      }
+    }
   });
   document.getElementById("btnReloadShop").addEventListener("click",()=>loadShop());
 
@@ -2727,19 +2753,7 @@ document.getElementById("planModalX")?.addEventListener("click",closePlanModal);
   }
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&currentSec==="dash")loadDashboard(false);});
 })();
-</script>
-
-
-
-    </div>
-    <div class="modal-f">
-      <button class="btn" type="button" id="planModalCancel">انصراف</button>
-      <button class="btn btn-primary" type="button" id="planModalSave">ذخیره</button>
-    </div>
-  </div>
-</div>
-
-<div class="sub-qr-overlay" id="subQrOverlay">
+</script><div class="sub-qr-overlay" id="subQrOverlay">
   <div class="sub-qr-box" role="dialog" aria-modal="true">
     <h3 id="subQrTitle">لینک اشتراک</h3>
     <img id="subQrImg" alt="QR" width="220" height="220" />
