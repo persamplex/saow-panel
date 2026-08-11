@@ -88,6 +88,10 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .table-scroll::-webkit-scrollbar,
 .table-wrap::-webkit-scrollbar{display:none!important;height:0!important;width:0!important;background:transparent}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
+table td,table th{vertical-align:middle}
+table tbody td{height:52px}
+table tbody td.user-cell{height:auto;min-height:52px}
+table tbody td.row-actions{height:52px}
 /* ستون عملیات بدون نوار اضافه */
 td.row-actions{
   white-space:nowrap;vertical-align:middle;
@@ -461,6 +465,30 @@ td.row-actions .icon-btn{flex-shrink:0}
   }
   .map-pop-user{min-height:48px;padding:10px 12px}
 }
+
+
+/* مخفی کردن تبلیغ AnyChart Trial */
+.anychart-credits,.anychart-credits-logo,.anychart-credits-text{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important}
+#iranMapContainer .anychart-credits{display:none!important}
+
+/* تراز عمودی ردیف جدول کاربران/نودها */
+table tbody td{
+  vertical-align:middle!important;
+}
+table tbody tr td.row-actions{
+  vertical-align:middle!important;
+  height:100%;
+}
+table tbody tr{
+  height:auto;
+}
+table tbody td .badge,
+table tbody td .bar,
+table tbody td .icon-btn{
+  vertical-align:middle;
+}
+.user-cell{vertical-align:middle!important}
+.user-cell .uid{margin-top:2px}
 
 /* QR sub modal */
 .sub-qr-overlay{
@@ -859,8 +887,29 @@ td.row-actions .icon-btn{flex-shrink:0}
     if(!res.ok&&data&&data.ok===false)throw new Error(data.err||data.message||("HTTP "+res.status));
     return data;
   }
-  function showApp(){document.getElementById("authGate").style.display="none";document.getElementById("appRoot").style.display="";try{reportClientIpConsensus();}catch(e){}document.getElementById("sysBase").textContent=API_BASE||location.origin;boot();
-    try{api("/api/activity",{method:"POST",body:JSON.stringify({type:"panel_open",message:"باز شدن پنل ادمین"})}).catch(()=>{});}catch{}}
+  async function showApp(){
+    document.getElementById("authGate").style.display="none";
+    document.getElementById("appRoot").style.display="";
+    document.getElementById("sysBase").textContent=API_BASE||location.origin;
+    boot();
+    // اول IP واقعی از مرورگر، بعد لاگ پنل با همان IP
+    let geo={};
+    try{geo=await reportClientIpConsensus()||{};}catch(e){geo={};}
+    try{
+      await api("/api/activity",{method:"POST",body:JSON.stringify({
+        type:"panel_open",
+        message:"باز شدن پنل ادمین",
+        meta:{
+          ip:geo.ip||"",
+          city:geo.city||"",
+          region:geo.region||"",
+          country:geo.country||"",
+          ip_source:"client-consensus",
+          votes:geo.votes||0
+        }
+      })});
+    }catch{}
+  }
   function logout(){
     try{api("/api/auth/logout",{method:"POST"}).catch(()=>{});}catch{}
     localStorage.removeItem(LS_SECRET);localStorage.removeItem("saow_panel_user");location.reload();
@@ -1008,8 +1057,27 @@ function openMapProvince(provinceName){
         if(pName) openMapProvince(pName);
       });
     });
-    map.legend().enabled(true).position("bottom").align("center").padding(8).fontColor("#a1a1aa").fontSize(12).fontFamily("Vazirmatn,Tahoma,sans-serif").itemsLayout("horizontal");
+    try{map.credits().enabled(false);}catch(e){}
+    try{
+      const leg=map.legend();
+      leg.enabled(true).position("bottom").align("center")
+        .padding([4,8,18,8])
+        .fontColor("#a1a1aa").fontSize(11)
+        .fontFamily("Vazirmatn,Tahoma,sans-serif")
+        .itemsLayout("horizontal")
+        .itemsSpacing(16);
+    }catch(e){}
+    map.padding(0,0,28,0);
     map.container("iranMapContainer");map.draw();mapChart=map;
+    // حذف واترمارک trial اگر در DOM ماند
+    try{
+      setTimeout(function(){
+        document.querySelectorAll("#iranMapContainer .anychart-credits, #iranMapContainer a[href*='anychart']").forEach(function(el){el.remove();});
+      },50);
+      setTimeout(function(){
+        document.querySelectorAll("#iranMapContainer .anychart-credits, #iranMapContainer a[href*='anychart']").forEach(function(el){el.remove();});
+      },400);
+    }catch(e){}
   }
 
   async function reportClientIpConsensus(){
@@ -1044,11 +1112,13 @@ function openMapProvince(provinceName){
         })
       ];
       await Promise.all(tasks);
+      // وزن: cf-trace/webrtc/seeip قابل‌اعتمادتر از ipify/ipapi (گاهی IP لبه CF می‌دهند)
+      const weight=s=>({ "cf-trace":3,"webrtc":2,"seeip":2,"ipify":1,"ipapi":1,"ifconfig":1,"icanhazip":1}[s]||1);
       const counts={};
-      for(const s of sources) counts[s.ip]=(counts[s.ip]||0)+1;
+      for(const s of sources) counts[s.ip]=(counts[s.ip]||0)+weight(s.src);
       let best=null,bestN=0;
       for(const [ip,n] of Object.entries(counts)){if(n>bestN){best=ip;bestN=n;}}
-      if(!best||bestN<1)return;
+      if(!best||bestN<1)return null;
       let city=null,region=null,country=null,lat=null,lon=null;
       try{
         const g=await fetch("https://ipapi.co/"+encodeURIComponent(best)+"/json/",{cache:"no-store"}).then(r=>r.json());
@@ -1056,7 +1126,8 @@ function openMapProvince(provinceName){
       }catch{}
       console.log("[SAOW] panel IP consensus",best,"votes="+bestN,sources);
       await api("/api/client-ip",{method:"POST",body:JSON.stringify({ip:best,votes:bestN,sources:sources.map(s=>s.src+":"+s.ip),city,region,country,lat,lon})});
-    }catch(e){console.warn("client-ip",e);}
+      return {ip:best,votes:bestN,city,region,country,lat,lon};
+    }catch(e){console.warn("client-ip",e);return {};}
   }
   async function loadDashboard(force){
     if(!force&&Date.now()-lastDashAt<15000)return;
