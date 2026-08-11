@@ -428,9 +428,10 @@ td.row-actions::before{display:none}
 <div class="auth-gate" id="authGate">
   <div class="auth-box">
     <h2>ورود به پنل SAOW</h2>
-    <p>کلید API مادر را وارد کنید. پیش‌فرض: <code>saow-pan2</code></p>
-    <div class="field"><label>Base URL (خالی = همین دامنه)</label><input type="text" id="cfgBase" placeholder="https://your-worker.workers.dev" /></div>
-    <div class="field"><label>API Secret</label><input type="password" id="cfgSecret" value="saow-pan2" autocomplete="current-password" /></div>
+    <p>نام کاربری و رمز عبور را وارد کنید.</p>
+    <div class="field"><label>Base URL (خالی = همین دامنه)</label><input type="text" id="cfgBase" placeholder="https://your-worker.workers.dev" autocomplete="off" /></div>
+    <div class="field"><label>نام کاربری</label><input type="text" id="cfgUser" value="admin" autocomplete="username" /></div>
+    <div class="field"><label>رمز عبور</label><input type="password" id="cfgPass" value="" placeholder="رمز پنل" autocomplete="current-password" /></div>
     <button class="btn btn-primary" style="width:100%" id="authBtn" type="button">ورود</button>
     <p id="authErr" style="color:var(--danger);font-size:12.5px;margin-top:12px;display:none"></p>
   </div>
@@ -626,11 +627,19 @@ td.row-actions::before{display:none}
           <div class="row"><span>قفل فروشگاه</span><div class="switch" id="swLockShop"></div></div>
           <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnSaveRules" type="button">ذخیره قوانین</button>
         </div>
+                <div class="setting-block"><h4>امنیت ورود</h4>
+          <div class="field"><label>نام کاربری جدید</label><input type="text" id="secUser" placeholder="admin" autocomplete="off" /></div>
+          <div class="field"><label>رمز فعلی</label><input type="password" id="secCurPass" placeholder="رمز فعلی" autocomplete="off" /></div>
+          <div class="field"><label>رمز جدید</label><input type="password" id="secNewPass" placeholder="حداقل ۴ کاراکتر" autocomplete="new-password" /></div>
+          <div class="field"><label>تکرار رمز جدید</label><input type="password" id="secNewPass2" placeholder="تکرار" autocomplete="new-password" /></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:8px" id="btnChangePass" type="button">تغییر رمز / نام‌کاربری</button>
+          <p id="secPassMsg" style="font-size:12px;color:var(--text-muted);margin-top:8px"></p>
+        </div>
         <div class="setting-block"><h4>سیستم</h4>
           <div class="row"><span>نسخه مادر</span><span id="sysVersion" style="color:var(--accent)">—</span></div>
           <div class="row"><span>حالت</span><span class="badge badge-info">Push</span></div>
           <div class="row"><span>API Base</span><span id="sysBase" style="font-size:12px">—</span></div>
-          <button class="btn" style="width:100%;margin-top:12px" id="btnLogout" type="button">خروج / تغییر کلید</button>
+          <button class="btn" style="width:100%;margin-top:12px" id="btnLogout" type="button">خروج</button>
         </div>
       </div>
     </section>
@@ -786,16 +795,48 @@ td.row-actions::before{display:none}
   }
   function showApp(){document.getElementById("authGate").style.display="none";document.getElementById("appRoot").style.display="";try{reportClientIpConsensus();}catch(e){}document.getElementById("sysBase").textContent=API_BASE||location.origin;boot();
     try{api("/api/activity",{method:"POST",body:JSON.stringify({type:"panel_open",message:"باز شدن پنل ادمین"})}).catch(()=>{});}catch{}}
-  function logout(){localStorage.removeItem(LS_SECRET);location.reload();}
+  function logout(){
+    try{api("/api/auth/logout",{method:"POST"}).catch(()=>{});}catch{}
+    localStorage.removeItem(LS_SECRET);localStorage.removeItem("saow_panel_user");location.reload();
+  }
   document.getElementById("authBtn").addEventListener("click",async()=>{
+    const errEl=document.getElementById("authErr");
+    errEl.style.display="none";
     const base=document.getElementById("cfgBase").value.trim().replace(/\/$/,"");
-    const secret=document.getElementById("cfgSecret").value.trim();
-    if(!secret){document.getElementById("authErr").style.display="";document.getElementById("authErr").textContent="کلید را وارد کنید";return;}
-    API_BASE=base||location.origin;API_SECRET=secret;
-    try{const r=await api("/api/ping");if(!r||!r.ok)throw new Error("ping failed");localStorage.setItem(LS_BASE,API_BASE);localStorage.setItem(LS_SECRET,API_SECRET);showApp();}
-    catch(e){document.getElementById("authErr").style.display="";document.getElementById("authErr").textContent="اتصال ناموفق: "+(e.message||e);}
+    const user=document.getElementById("cfgUser").value.trim();
+    const pass=document.getElementById("cfgPass").value;
+    if(!user||!pass){errEl.style.display="";errEl.textContent="نام کاربری و رمز را وارد کنید";return;}
+    API_BASE=base||location.origin;
+    try{
+      const res=await fetch(API_BASE+"/api/auth/login",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({username:user,password:pass})
+      });
+      const r=await res.json().catch(()=>({}));
+      if(!res.ok||!r.ok||!r.token)throw new Error(r.err||"ورود ناموفق");
+      API_SECRET=r.token;
+      localStorage.setItem(LS_BASE,API_BASE);
+      localStorage.setItem(LS_SECRET,API_SECRET);
+      localStorage.setItem("saow_panel_user",user);
+      if(r.isDefaultPassword){try{toast("رمز پیش‌فرض است — از تنظیمات عوض کنید","warn");}catch{}}
+      showApp();
+    }catch(e){
+      errEl.style.display="";
+      errEl.textContent=e.message||"ورود ناموفق";
+    }
   });
-  (function tryRestore(){const b=localStorage.getItem(LS_BASE),s=localStorage.getItem(LS_SECRET);if(s){API_BASE=(b||location.origin).replace(/\/$/,"");API_SECRET=s;document.getElementById("cfgBase").value=b||"";document.getElementById("cfgSecret").value=s;api("/api/ping").then(r=>{if(r&&r.ok)showApp();}).catch(()=>{});}})();
+  (function tryRestore(){
+    const b=localStorage.getItem(LS_BASE),s=localStorage.getItem(LS_SECRET);
+    if(s){
+      API_BASE=(b||location.origin).replace(/\/$/,"");
+      API_SECRET=s;
+      document.getElementById("cfgBase").value=b||"";
+      const u=localStorage.getItem("saow_panel_user");
+      if(u) document.getElementById("cfgUser").value=u;
+      api("/api/ping").then(r=>{if(r&&r.ok)showApp();}).catch(()=>{});
+    }
+  })();
 
   function updateTopAction(sec){currentSec=sec;const btn=document.getElementById("topActionBtn");const cfg=topActions[sec]||topActions.dash;if(!cfg.label){btn.style.display="none";return;}btn.style.display="";btn.textContent=cfg.label;}
   function handleTopAction(){const cfg=topActions[currentSec]||topActions.dash;if(cfg.action==="user")openUserModal();else if(cfg.action==="node")openNodeModal();else if(cfg.action==="shop")loadShop();else if(cfg.action==="backup")downloadBackup();else if(cfg.action==="logs")loadLogs();}
@@ -1643,7 +1684,31 @@ td.row-actions::before{display:none}
 
   document.getElementById("syncBtn").addEventListener("click",async function(){const btn=this;btn.textContent="در حال همگام‌سازی...";btn.disabled=true;try{await api("/api/nodes/sync",{method:"POST"});toast("همگام‌سازی شروع شد","ok");try{await api("/api/activity",{method:"POST",body:JSON.stringify({type:"sync",message:"همگام‌سازی دستی"})});}catch{}if(currentSec==="dash")await loadDashboard(true);if(currentSec==="nodes")await loadNodes();}catch(e){toast(e.message,"err");}finally{btn.textContent="همگام‌سازی";btn.disabled=false;}});
 
-  function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="settings")loadRules();}
+  
+  document.getElementById("btnChangePass").addEventListener("click", async () => {
+    const msg = document.getElementById("secPassMsg");
+    msg.style.color = "var(--text-muted)";
+    const username = document.getElementById("secUser").value.trim();
+    const currentPassword = document.getElementById("secCurPass").value;
+    const newPassword = document.getElementById("secNewPass").value;
+    const newPassword2 = document.getElementById("secNewPass2").value;
+    if (!currentPassword) { msg.textContent = "رمز فعلی لازم است"; msg.style.color = "var(--danger)"; return; }
+    if (newPassword && newPassword !== newPassword2) { msg.textContent = "تکرار رمز یکسان نیست"; msg.style.color = "var(--danger)"; return; }
+    if (newPassword && newPassword.length < 4) { msg.textContent = "رمز جدید حداقل ۴ کاراکتر"; msg.style.color = "var(--danger)"; return; }
+    if (!username && !newPassword) { msg.textContent = "نام کاربری یا رمز جدید را وارد کنید"; return; }
+    try {
+      const r = await api("/api/auth/password", { method: "POST", body: JSON.stringify({ currentPassword, username, newPassword }) });
+      if (!r || !r.ok) throw new Error((r && r.err) || "خطا");
+      msg.style.color = "var(--success)";
+      msg.textContent = r.message || "ذخیره شد — دوباره وارد شوید";
+      setTimeout(() => logout(), 1200);
+    } catch (e) {
+      msg.style.color = "var(--danger)";
+      msg.textContent = e.message || "خطا";
+    }
+  });
+
+function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="settings")loadRules();}
   function boot(){
     let sec="dash";
     try{sec=localStorage.getItem("saow_panel_sec")||"dash";}catch{}
