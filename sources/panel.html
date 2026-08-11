@@ -368,6 +368,18 @@ td.row-actions::before{display:none}
           <h3>لاگ‌های سیستم</h3>
           <button class="btn btn-sm" type="button" id="btnRefreshLogs">بروزرسانی</button>
         </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;padding:0 16px 12px;align-items:center">
+          <input type="search" id="logSearch" placeholder="جستجو در همه فیلدها..." style="flex:1;min-width:180px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13.5px;font-family:inherit;outline:none">
+          <div class="cselect" id="cselectLogType" data-input="logTypeFilter" style="width:min(220px,100%)">
+            <input type="hidden" id="logTypeFilter" value="" />
+            <button type="button" class="cselect-trigger" aria-haspopup="listbox">
+              <span class="cselect-label">همه انواع</span>
+              <span class="cselect-chevron"><svg viewBox="0 0 12 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1.5L6 6.5L11 1.5"/></svg></span>
+            </button>
+            <div class="cselect-backdrop"></div>
+            <div class="cselect-panel" role="listbox"></div>
+          </div>
+        </div>
         <div class="table-wrap"><table>
           <thead><tr><th>کاربر</th><th>رویداد</th><th>پیام</th><th>نود</th><th>زمان</th><th></th></tr></thead>
           <tbody id="logsBody"><tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr></tbody>
@@ -505,7 +517,7 @@ td.row-actions::before{display:none}
   function daysRemaining(expiry){if(!expiry)return"∞";const ms=Date.parse(expiry)-Date.now();if(!Number.isFinite(ms)||ms<=0)return faNum(0);return faNum(Math.ceil(ms/86400000));}
   function statusBadge(status){const map={active:["فعال","badge-ok"],disabled:["غیرفعال","badge-off"],expired:["منقضی","badge-off"],"quota-exceeded":["حجم تمام","badge-warn"],"daily-quota-exceeded":["روزانه تمام","badge-warn"]};const[t,c]=map[status]||[status||"—","badge-info"];return`<span class="badge ${c}">${t}</span>`;}
   function relTime(ts){if(!ts)return"—";const sec=Math.floor((Date.now()-Number(ts))/1000);if(sec<60)return faNum(sec)+" ثانیه پیش";if(sec<3600)return faNum(Math.floor(sec/60))+" دقیقه پیش";if(sec<86400)return faNum(Math.floor(sec/3600))+" ساعت پیش";return faNum(Math.floor(sec/86400))+" روز پیش";}
-  function activityLabel(type){const m={connect:["اتصال","badge-ok"],disconnect:["قطع","badge-off"],quota:["سهمیه","badge-warn"],sync:["همگام‌سازی","badge-info"],create:["ایجاد","badge-info"],delete:["حذف","badge-off"],node_off:["نود آفلاین","badge-warn"],info:["اطلاع","badge-info"],panel_open:["پنل ادمین","badge-info"],edit:["ویرایش","badge-info"],reset:["ریست","badge-warn"],clear_ips:["پاک IP","badge-warn"]};return m[type]||[type||"رویداد","badge-info"];}
+  function activityLabel(type){const m={connect:["اتصال","badge-ok"],disconnect:["قطع","badge-off"],quota:["سهمیه","badge-warn"],sync:["همگام‌سازی","badge-info"],create:["ایجاد","badge-info"],delete:["حذف","badge-off"],node_off:["نود آفلاین","badge-warn"],info:["اطلاع","badge-info"],panel_open:["پنل ادمین","badge-info"],sub_update:["آپدیت ساب","badge-ok"],sub_view:["بازدید ساب","badge-info"],edit:["ویرایش","badge-info"],reset:["ریست","badge-warn"],clear_ips:["پاک IP","badge-warn"]};return m[type]||[type||"رویداد","badge-info"];}
   function esc(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");}
   async function api(path,opts={}){
     const url=(API_BASE||"").replace(/\/$/,"")+path;
@@ -618,14 +630,20 @@ td.row-actions::before{display:none}
 
   function stopDashPoll(){if(dashTimer)clearInterval(dashTimer);dashTimer=null;}
   let activityCache=[];
+  function filterRecentActivity(act, minutes){
+    const cut=Date.now()-(minutes||5)*60*1000;
+    return (act||[]).filter(a=>Number(a.ts)>=cut);
+  }
   function renderActivityRows(tbody, act, cols){
     if(!tbody)return;
-    if(!act||!act.length){
-      tbody.innerHTML=`<tr><td colspan="${cols||5}" class="empty-msg">رویدادی در این بازه نیست</td></tr>`;
+    // داشبورد: فقط ۵ دقیقه اخیر (حتی اگر API قدیمی باشد)
+    const filtered=filterRecentActivity(act, 5);
+    if(!filtered.length){
+      tbody.innerHTML=`<tr><td colspan="${cols||5}" class="empty-msg">رویدادی در ۵ دقیقه اخیر نیست</td></tr>`;
       return;
     }
-    activityCache=act;
-    tbody.innerHTML=act.map(a=>{
+    activityCache=filtered;
+    tbody.innerHTML=filtered.map(a=>{
       const[lab,cls]=activityLabel(a.type);
       const msg=a.message||"";
       const shortMsg=msg.length>48?msg.slice(0,48)+"…":msg;
@@ -673,34 +691,68 @@ td.row-actions::before{display:none}
   document.getElementById("logDetailClose2")?.addEventListener("click",closeLogDetail);
   document.getElementById("logDetailOverlay")?.addEventListener("click",e=>{if(e.target===e.currentTarget)closeLogDetail();});
 
+  let logsAllCache=[];
+  function logSearchBlob(a){
+    const meta=a.meta||{};
+    return [a.type,a.message,a.user_id,a.user_name,a.node_id,meta.ip,meta.city,meta.country,meta.ua,meta.format,JSON.stringify(meta)].join(" ").toLowerCase();
+  }
+  function applyLogsFilter(){
+    const tbody=document.getElementById("logsBody");
+    if(!tbody)return;
+    const q=(document.getElementById("logSearch")?.value||"").trim().toLowerCase();
+    const type=(document.getElementById("logTypeFilter")?.value||"").trim();
+    let list=logsAllCache.slice();
+    if(type) list=list.filter(a=>String(a.type)===type);
+    if(q) list=list.filter(a=>logSearchBlob(a).includes(q));
+    activityCache=list;
+    if(!list.length){
+      tbody.innerHTML='<tr><td colspan="6" class="empty-msg">موردی با این فیلتر پیدا نشد</td></tr>';
+      return;
+    }
+    tbody.innerHTML=list.map(a=>{
+      const[lab,cls]=activityLabel(a.type);
+      const msg=a.message||"";
+      const shortMsg=msg.length>60?msg.slice(0,60)+"…":msg;
+      return `<tr>
+        <td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td>
+        <td data-label="رویداد"><span class="badge ${cls}">${lab}</span></td>
+        <td data-label="پیام" style="color:var(--text-secondary);font-size:12.5px">${esc(shortMsg||"—")}</td>
+        <td data-label="نود">${esc(a.node_id||"—")}</td>
+        <td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td>
+        <td class="row-actions"><button type="button" class="icon-btn" title="جزئیات" data-logid="${a.id}">!</button></td>
+      </tr>`;
+    }).join("");
+    tbody.querySelectorAll("[data-logid]").forEach(btn=>{
+      btn.addEventListener("click",()=>openLogDetail(Number(btn.dataset.logid)));
+    });
+  }
   async function loadLogs(){
     const tbody=document.getElementById("logsBody");
     if(tbody)tbody.innerHTML='<tr><td colspan="6" class="empty-msg">در حال بارگذاری...</td></tr>';
     try{
-      const data=await api("/api/activity?limit=200");
-      const act=data.activity||[];
-      activityCache=act;
-      if(!tbody)return;
-      if(!act.length){tbody.innerHTML='<tr><td colspan="6" class="empty-msg">لاگی ثبت نشده</td></tr>';return;}
-      tbody.innerHTML=act.map(a=>{
-        const[lab,cls]=activityLabel(a.type);
-        const msg=a.message||"";
-        const shortMsg=msg.length>60?msg.slice(0,60)+"…":msg;
-        return `<tr>
-          <td data-label="کاربر">${esc(a.user_name||a.user_id||"—")}</td>
-          <td data-label="رویداد"><span class="badge ${cls}">${lab}</span></td>
-          <td data-label="پیام" style="color:var(--text-secondary);font-size:12.5px">${esc(shortMsg||"—")}</td>
-          <td data-label="نود">${esc(a.node_id||"—")}</td>
-          <td data-label="زمان" style="color:var(--text-muted)">${relTime(a.ts)}</td>
-          <td class="row-actions"><button type="button" class="icon-btn" title="جزئیات" data-logid="${a.id}">!</button></td>
-        </tr>`;
-      }).join("");
-      tbody.querySelectorAll("[data-logid]").forEach(btn=>{
-        btn.addEventListener("click",()=>openLogDetail(Number(btn.dataset.logid)));
-      });
+      const data=await api("/api/activity?limit=300");
+      logsAllCache=data.activity||[];
+      // پر کردن فیلتر نوع
+      const types=Array.from(new Set(logsAllCache.map(a=>a.type).filter(Boolean))).sort();
+      const typeOpts=[["","همه انواع"],...types.map(t=>{
+        const[lab]=activityLabel(t);
+        return [t, lab+" ("+t+")"];
+      })];
+      const root=document.getElementById("cselectLogType");
+      if(root){
+        bindCSelect(root);
+        const cur=document.getElementById("logTypeFilter")?.value||"";
+        populateCSelect(root, typeOpts, cur);
+        // وقتی نوع عوض شد فیلتر کن
+        root.querySelectorAll(".cselect-option").forEach(opt=>{
+          opt.addEventListener("click",()=>setTimeout(applyLogsFilter,0));
+        });
+      }
+      applyLogsFilter();
     }catch(e){if(tbody)tbody.innerHTML=`<tr><td colspan="6" class="empty-msg">${esc(e.message)}</td></tr>`;}
   }
   document.getElementById("btnRefreshLogs")?.addEventListener("click",()=>loadLogs());
+  document.getElementById("logSearch")?.addEventListener("input",()=>applyLogsFilter());
 
 
   function renderUsers(list){
