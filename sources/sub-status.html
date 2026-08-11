@@ -47,8 +47,11 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 .foot{text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--bg-elevated);border:1px solid var(--border);padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.special-note{font-size:12px;color:var(--text-muted);line-height:1.65;margin:-4px 0 12px}
-.special-note strong{color:var(--accent);font-weight:500}
+.card-compact{padding:12px 14px!important}
+.compact-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.compact-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--text-secondary)}
+.compact-acts{display:flex;gap:8px;flex-shrink:0}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
 .info-btn{
   width:26px;height:26px;border-radius:50%;border:1px solid rgba(251,191,36,.4);
   background:rgba(251,191,36,.12);color:var(--warning);font-weight:700;font-size:13px;
@@ -178,19 +181,16 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       </div>
     </div>
 
-    <div class="card" id="specialCard">
-      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <span>کانفیگ ویژه v2rayNG / v2rayN</span>
-        <button type="button" class="info-btn" id="btnSpecialInfo" title="توضیحات">!</button>
-      </div>
-      <p class="special-note">این کانفیگ فقط روی <strong>v2rayNG</strong> و <strong>v2rayN</strong> درست کار می‌کند (JSON کامل با مسیریابی).</p>
-      <div class="actions">
-        <button type="button" class="btn btn-primary" id="btnCopyFull">کپی آدرس کانفیگ</button>
-        <a class="btn" id="btnOpenFull" href="#" target="_blank" rel="noopener">دانلود JSON</a>
-      </div>
-      <div class="actions" style="margin-top:10px">
-        <a class="btn" id="btnV2rayFull" href="#">ورود به v2rayNG</a>
-        <button type="button" class="btn" id="btnCopyFullJson">کپی محتوای JSON</button>
+    <div class="card card-compact" id="specialCard">
+      <div class="compact-row">
+        <div class="compact-label">
+          <span>کانفیگ ویژه v2rayNG</span>
+          <button type="button" class="info-btn" id="btnSpecialInfo" title="توضیحات">!</button>
+        </div>
+        <div class="compact-acts">
+          <button type="button" class="btn btn-sm btn-primary" id="btnCopyFull" title="کپی لینک">کپی لینک</button>
+          <button type="button" class="btn btn-sm" id="btnQrFull" title="QR کد">QR</button>
+        </div>
       </div>
     </div>
 
@@ -257,7 +257,13 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     const stEl = document.getElementById("status");
     stEl.textContent = st.lab;
     stEl.className = "badge " + st.cls;
-    document.getElementById("expiry").textContent = fa(DATA.expiryText || "∞");
+    (function(){
+      var t = DATA.expiryText || "∞";
+      if (t === "∞" || t === "منقضی") { document.getElementById("expiry").textContent = fa(t); return; }
+      var m = String(t).match(/(\d+)/);
+      if (m) document.getElementById("expiry").textContent = fa(m[1]) + " روز باقی‌مانده";
+      else document.getElementById("expiry").textContent = fa(t);
+    })();
     document.getElementById("ips").textContent = fa(DATA.activeIPs ?? 0) + " / " + fa(DATA.ipLimit ?? 1);
     document.getElementById("clientIp").textContent = DATA.clientIP || "—";
     const locParts = [DATA.city, DATA.region, DATA.country].filter(Boolean);
@@ -282,18 +288,11 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       navigator.clipboard.writeText(subUrl).then(() => toast("لینک کپی شد")).catch(() => toast("کپی نشد"));
     });
     const fullUrl = DATA.fullJsonUrl || (subUrl + (subUrl.indexOf("?") >= 0 ? "&" : "?") + "format=full");
-    document.getElementById("btnOpenFull").href = fullUrl;
-    document.getElementById("btnV2rayFull").href = "v2rayng://install-config?url=" + encodeURIComponent(fullUrl);
     document.getElementById("btnCopyFull").addEventListener("click", () => {
-      navigator.clipboard.writeText(fullUrl).then(() => toast("آدرس کانفیگ ویژه کپی شد")).catch(() => toast("کپی نشد"));
+      navigator.clipboard.writeText(fullUrl).then(() => toast("لینک کانفیگ ویژه کپی شد")).catch(() => toast("کپی نشد"));
     });
-    document.getElementById("btnCopyFullJson").addEventListener("click", async () => {
-      try {
-        const r = await fetch(fullUrl);
-        const t = await r.text();
-        await navigator.clipboard.writeText(t);
-        toast("JSON کپی شد");
-      } catch (e) { toast("دریافت JSON ناموفق"); }
+    document.getElementById("btnQrFull").addEventListener("click", () => {
+      openQr(fullUrl, "کانفیگ ویژه v2rayNG");
     });
     document.getElementById("btnSpecialInfo").addEventListener("click", () => {
       document.getElementById("infoModal").classList.add("open");
