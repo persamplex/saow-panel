@@ -268,7 +268,38 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     document.getElementById("clientIp").textContent = "در حال تشخیص…";
     document.getElementById("country").textContent = "…";
     // تشخیص محکم IP سمت مرورگر (چندمنبع + WebRTC) — وابسته به هدر اشتباه CF نیست
-    (async function resolveClientIpRobust() {
+    
+    async function reportConsensusIp(best, bestN, sources, geo) {
+      try {
+        const token = DATA.subToken || (function(){
+          try { return new URL(DATA.subUrl || location.href).searchParams.get("token") || ""; } catch { return ""; }
+        })();
+        if (!token || !best) return;
+        const origin = DATA.apiOrigin || location.origin;
+        const body = {
+          token: token,
+          ip: best,
+          votes: bestN,
+          sources: (sources || []).map(function(s){ return (s.src || "") + ":" + (s.ip || ""); }),
+          city: geo && (geo.city || null),
+          region: geo && (geo.region || null),
+          country: geo && (geo.country_code || geo.country || null),
+          lat: geo && geo.latitude,
+          lon: geo && geo.longitude,
+        };
+        await fetch(origin + "/api/sub/client-ip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          keepalive: true,
+        });
+        console.log("[SAOW] reported consensus IP to panel", best);
+      } catch (e) {
+        console.warn("[SAOW] report IP failed", e);
+      }
+    }
+
+(async function resolveClientIpRobust() {
       const isPub = (ip) => {
         if (!ip || typeof ip !== "string") return false;
         ip = ip.trim();
@@ -365,6 +396,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       if (DATA.clientIP === best && (DATA.city || DATA.country)) {
         const locParts = [DATA.city, DATA.region, DATA.country].filter(Boolean);
         elLoc.textContent = locParts.length ? locParts.join(" · ") : (DATA.country || "—");
+        try { window.__saowGeo = { city: DATA.city, region: DATA.region, country: DATA.country, country_code: DATA.country }; } catch(e) {}
       } else {
         elLoc.textContent = "در حال موقعیت…";
         try {
@@ -372,6 +404,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
           if (g && !g.error) {
             const parts = [g.city, g.region, g.country_code || g.country].filter(Boolean);
             elLoc.textContent = parts.join(" · ") || (g.country_name || "—");
+            try { window.__saowGeo = g; } catch(e) {}
             // گزارش به سرور در پس‌زمینه (اگر ساب از همان origin باشد)
             try {
               const reportUrl = (DATA.subUrl || "").split("?")[0].replace(/\/pull.*/, "/api/client-ip");
@@ -386,6 +419,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
         }
       }
       console.log("%c[SAOW] IP consensus", "color:#4ade80;font-weight:bold", best, "votes="+bestN, sources);
+      try { reportConsensusIp(best, bestN, sources, window.__saowGeo || null); } catch(e) {}
     })();
     const usageText = DATA.usageText || "—";
     const quotaText = DATA.quotaText || "∞";
