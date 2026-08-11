@@ -329,18 +329,18 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
           add("ipify", j.ip);
         } catch {}
       })());
-      // 3) icanhazip
+      // 3) ipapi (CORS ok)
       tasks.push((async () => {
         try {
-          const t = await fetch("https://ipv4.icanhazip.com", { cache: "no-store" }).then(r => r.text());
-          add("icanhazip", t.trim());
+          const t = await fetch("https://ipapi.co/ip/", { cache: "no-store" }).then(r => r.text());
+          add("ipapi", t.trim());
         } catch {}
       })());
-      // 4) ifconfig.me
+      // 4) seeip
       tasks.push((async () => {
         try {
-          const t = await fetch("https://ifconfig.me/ip", { cache: "no-store" }).then(r => r.text());
-          add("ifconfig", t.trim());
+          const j = await fetch("https://api.seeip.org/jsonip", { cache: "no-store" }).then(r => r.json());
+          add("seeip", j.ip);
         } catch {}
       })());
       // 5) WebRTC STUN
