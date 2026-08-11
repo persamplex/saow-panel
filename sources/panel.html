@@ -733,6 +733,18 @@ table tbody tr{height:auto}
 @media(max-width:800px){
   .tg-active-row{grid-template-columns:1fr!important}
 }
+
+.tg-conn-grid{
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) minmax(280px,2fr);
+  gap:14px;
+  align-items:stretch;
+}
+@media(max-width:900px){
+  .tg-conn-grid{grid-template-columns:1fr!important}
+}
+.tg-conn-wrap{width:100%}
+
 </style>
 </head>
 <body>
@@ -978,7 +990,7 @@ table tbody tr{height:auto}
       </div>
     </section>
 
-    <section class="section" id="telegram">
+        <section class="section" id="telegram">
       <div class="setting-block tg-setup" id="tgWizardBox" style="margin-bottom:14px">
         <h4>راه‌اندازی ربات تلگرام</h4>
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">ورکر روی اکانت جدا از مادر</p>
@@ -1019,54 +1031,58 @@ table tbody tr{height:auto}
         <p id="tgStatus" style="font-size:12px;color:var(--text-muted);margin-top:10px"></p>
       </div>
 
-      <div class="feat-lock-wrap is-locked" data-feature="telegram_bot" id="tgAfterLock">
-        <div class="feat-lock-content">
-          <div class="tg-active-row" id="tgDoneCard" style="display:none;margin-bottom:14px">
-            <div class="setting-block tg-done-card" style="margin:0">
-              <h4>ربات فعال است</h4>
-              <div class="row"><span>ربات</span><span id="tgDoneName">—</span></div>
-              <div class="row"><span>وضعیت</span><span id="tgDoneHealth">—</span></div>
-              <div class="row"><span>ریکوست</span><span id="tgReqStat">—</span></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">
-                <button type="button" class="btn" id="btnTgTest">تست</button>
-                <button type="button" class="btn btn-danger-soft" id="btnTgDelete">حذف</button>
-              </div>
-              <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgUpdateBot">آپدیت از GitHub</button>
-              <p id="tgStatus2" style="font-size:11px;color:var(--text-muted);margin-top:6px;word-break:break-all"></p>
-              <div id="tgDoneUrl" style="display:none"></div>
-              <div id="tgAccStat" style="display:none"></div>
+      <!-- وضعیت اتصال — همیشه بعد از فعال‌سازی دیده می‌شود -->
+      <div id="tgConnectedBox" class="tg-conn-wrap" style="display:none;margin-bottom:14px">
+        <div class="tg-conn-grid">
+          <div class="setting-block tg-done-card" style="margin:0">
+            <h4>ربات فعال است</h4>
+            <div class="row"><span>ربات</span><span id="tgDoneName">—</span></div>
+            <div class="row"><span>وضعیت</span><span id="tgDoneHealth">—</span></div>
+            <div class="row"><span>ریکوست</span><span id="tgReqStat">—</span></div>
+            <div class="row" style="align-items:flex-start"><span>ورکر</span><span id="tgDoneUrl" style="direction:ltr;font-size:11px;word-break:break-all;text-align:left;max-width:60%">—</span></div>
+            <div id="tgAccStat" style="display:none"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">
+              <button type="button" class="btn" id="btnTgTest">تست</button>
+              <button type="button" class="btn btn-danger-soft" id="btnTgDelete">حذف</button>
             </div>
-            <div class="setting-block" style="margin:0">
-              <h4>گزارش‌های اعلان</h4>
-              <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
-              <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
-              <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
-              <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
-              <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
-            </div>
+            <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgUpdateBot">آپدیت ربات از GitHub</button>
+            <p id="tgStatus2" style="font-size:11px;color:var(--text-muted);margin-top:6px"></p>
           </div>
-          <div class="grid-2" style="margin-bottom:14px">
-            <div class="setting-block" style="margin:0">
-              <h4>کانال اسپانسر</h4>
-              <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">اگر پر باشد، کاربر باید عضو باشد تا ربات جواب دهد.</p>
-              <div class="field"><label>کانال</label>
-                <input type="text" id="shopSponsor" placeholder="@channel یا t.me/..." style="direction:ltr;text-align:left" />
-              </div>
-              <button type="button" class="btn btn-primary" id="btnSaveTgSponsor" style="width:100%;margin-top:8px">ذخیره کانال</button>
-            </div>
-            <div class="setting-block" style="margin:0">
-              <h4>پیام‌های ربات</h4>
-              <div class="field"><label>خوش‌آمدگویی</label><textarea id="tgMsgWelcome" rows="2" placeholder="متن /start"></textarea></div>
-              <div class="field"><label>پشتیبانی</label><textarea id="tgMsgSupport" rows="2"></textarea></div>
-              <div class="field"><label>عضویت کانال</label><textarea id="tgMsgJoin" rows="2"></textarea></div>
-              <div class="field"><label>فروش خاموش</label><textarea id="tgMsgSalesOff" rows="2"></textarea></div>
-              <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgMsgSave">ذخیره پیام‌ها</button>
-            </div>
+          <div class="setting-block" style="margin:0">
+            <h4>پیام‌های ربات</h4>
+            <div class="field"><label>خوش‌آمدگویی</label><textarea id="tgMsgWelcome" rows="2" placeholder="متن /start"></textarea></div>
+            <div class="field"><label>پشتیبانی</label><textarea id="tgMsgSupport" rows="2"></textarea></div>
+            <div class="field"><label>عضویت کانال</label><textarea id="tgMsgJoin" rows="2"></textarea></div>
+            <div class="field"><label>فروش خاموش</label><textarea id="tgMsgSalesOff" rows="2"></textarea></div>
+            <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgMsgSave">ذخیره پیام‌ها</button>
           </div>
         </div>
+        <div class="tg-conn-grid" style="margin-top:14px">
+          <div class="setting-block" style="margin:0">
+            <h4>گزارش‌های اعلان</h4>
+            <div class="row"><span>ورود به پنل</span><div class="switch" id="tgRepPanel"></div></div>
+            <div class="row"><span>بازدید / آپدیت ساب</span><div class="switch" id="tgRepSub"></div></div>
+            <div class="row"><span>رمز اشتباه</span><div class="switch" id="tgRepAuth"></div></div>
+            <div class="row"><span>نود آفلاین</span><div class="switch" id="tgRepNode"></div></div>
+            <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btnTgRepSave">ذخیره گزارش‌ها</button>
+          </div>
+          <div class="setting-block" style="margin:0">
+            <h4>کانال اسپانسر</h4>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">اگر پر باشد، کاربر باید عضو باشد تا ربات جواب دهد.</p>
+            <div class="field"><label>کانال</label>
+              <input type="text" id="shopSponsor" placeholder="@channel یا t.me/..." style="direction:ltr;text-align:left" />
+            </div>
+            <button type="button" class="btn btn-primary" id="btnSaveTgSponsor" style="width:100%;margin-top:8px">ذخیره کانال</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- قفل فقط وقتی ربات هنوز وصل نیست روی تنظیمات بالا اثر ندارد؛ ویزارد جداست -->
+      <div class="feat-lock-wrap is-locked" data-feature="telegram_bot" id="tgAfterLock" style="display:none">
+        <div class="feat-lock-content" style="min-height:40px"></div>
         <div class="feat-lock-overlay">
           <div class="lock-ico">🔒</div>
-          <p>پس از فعال‌سازی ربات باز می‌شود</p>
+          <p>پس از فعال‌سازی ربات، تنظیمات اینجا باز می‌شود</p>
         </div>
       </div>
     </section>
@@ -3020,28 +3036,35 @@ function openMapProvince(provinceName){
       if(!r||!r.ok)return;
       const configured=!!(r.configured || (r.has_token && r.bot_worker_url));
       const wiz=document.getElementById("tgWizardBox");
-      const done=document.getElementById("tgDoneCard");
+      const conn=document.getElementById("tgConnectedBox");
       if(configured){
-        wiz?.classList.add("hide");
-        if(done){done.style.display="grid";done.classList.add("show");}
+        if(wiz){ wiz.classList.add("hide"); wiz.style.display="none"; }
+        if(conn){ conn.style.display="block"; }
         document.getElementById("tgDoneName").textContent=r.bot_username?("@"+r.bot_username):"—";
-        document.getElementById("tgDoneUrl").textContent=r.bot_worker_url||"—";
+        const urlEl=document.getElementById("tgDoneUrl");
+        if(urlEl) urlEl.textContent=r.bot_worker_url||"—";
         document.getElementById("tgDoneHealth").textContent="فعال";
-        if(r.cf_account_id) document.getElementById("tgAccStat").textContent=String(r.cf_account_id).slice(0,14)+"…";
+        if(r.cf_account_id){
+          const a=document.getElementById("tgAccStat");
+          if(a) a.textContent=String(r.cf_account_id).slice(0,14)+"…";
+        }
         setFeatureGate("telegram_bot", true);
         setFeatureGate("shop", true);
         setFeatureGate("auto_backup", true);
+        const _c=document.getElementById("tgConnectedBox"); if(_c)_c.style.display="block";
+        const _w=document.getElementById("tgWizardBox"); if(_w){_w.classList.add("hide");_w.style.display="none";}
         try{
           const st=await api("/api/telegram/stats");
           if(st&&st.ok){
-            document.getElementById("tgReqStat").textContent = st.requests!=null ? (faNum(st.requests)+" / "+faNum(st.limit||100000)) : "—";
+            const rs=document.getElementById("tgReqStat");
+            if(rs) rs.textContent = st.requests!=null ? (faNum(st.requests)+" / "+faNum(st.limit||100000)) : "—";
             document.getElementById("tgDoneHealth").textContent = st.healthy ? "سالم" : (st.err||"فعال");
-            if(st.worker_url) document.getElementById("tgDoneUrl").textContent=st.worker_url;
+            if(st.worker_url && urlEl) urlEl.textContent=st.worker_url;
           }
         }catch{}
       } else {
-        wiz?.classList.remove("hide");
-        if(done){done.style.display="none";done.classList.remove("show");}
+        if(wiz){ wiz.classList.remove("hide"); wiz.style.display=""; }
+        if(conn){ conn.style.display="none"; }
         if(r.chat_id) document.getElementById("tgChatId").value=r.chat_id;
         document.getElementById("tgStatus").textContent = r.has_token
           ? ((r.bot_username?"@"+r.bot_username+" · ":"")+"مرحله ۳ را کامل کنید")
