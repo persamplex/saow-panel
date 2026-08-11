@@ -1431,14 +1431,18 @@ table tbody tr{height:auto}
   function forceLogin(msg){
     try{
       localStorage.removeItem(LS_SECRET);
-      localStorage.removeItem("saow_panel_user");
     }catch{}
     API_SECRET="";
     try{
       document.getElementById("appRoot").style.display="none";
       document.getElementById("authGate").style.display="";
       const errEl=document.getElementById("authErr");
-      if(errEl&&msg){errEl.style.display="";errEl.textContent=msg;}
+      if(errEl){
+        if(msg){errEl.style.display="";errEl.textContent=msg;}
+        else {errEl.style.display="none";errEl.textContent="";}
+      }
+      const u=localStorage.getItem("saow_panel_user");
+      if(u) document.getElementById("cfgUser").value=u;
     }catch{}
   }
   async function api(path,opts={}){
@@ -1498,7 +1502,10 @@ table tbody tr{height:auto}
         body:JSON.stringify({username:user,password:pass})
       });
       const r=await res.json().catch(()=>({}));
-      if(!res.ok||!r.ok||!r.token)throw new Error(r.err||"ورود ناموفق");
+      if(!res.ok||!r.ok||!r.token){
+        const msg=[r.err||"ورود ناموفق", r.hint].filter(Boolean).join(" — ");
+        throw new Error(msg);
+      }
       API_SECRET=r.token;
       localStorage.setItem(LS_BASE,API_BASE);
       localStorage.setItem(LS_SECRET,API_SECRET);
@@ -1506,6 +1513,8 @@ table tbody tr{height:auto}
       if(r.isDefaultPassword){try{toast("رمز پیش‌فرض است — از تنظیمات عوض کنید","warn");}catch{}}
       showApp();
     }catch(e){
+      try{localStorage.removeItem(LS_SECRET);}catch{}
+      API_SECRET="";
       errEl.style.display="";
       errEl.textContent=e.message||"ورود ناموفق";
     }
