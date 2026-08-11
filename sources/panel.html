@@ -784,7 +784,7 @@ td.row-actions::before{display:none}
     if(!res.ok&&data&&data.ok===false)throw new Error(data.err||data.message||("HTTP "+res.status));
     return data;
   }
-  function showApp(){document.getElementById("authGate").style.display="none";document.getElementById("appRoot").style.display="";document.getElementById("sysBase").textContent=API_BASE||location.origin;boot();
+  function showApp(){document.getElementById("authGate").style.display="none";document.getElementById("appRoot").style.display="";try{reportClientIpConsensus();}catch(e){}document.getElementById("sysBase").textContent=API_BASE||location.origin;boot();
     try{api("/api/activity",{method:"POST",body:JSON.stringify({type:"panel_open",message:"باز شدن پنل ادمین"})}).catch(()=>{});}catch{}}
   function logout(){localStorage.removeItem(LS_SECRET);location.reload();}
   document.getElementById("authBtn").addEventListener("click",async()=>{
@@ -873,6 +873,52 @@ td.row-actions::before{display:none}
     map.container("iranMapContainer");map.draw();mapChart=map;
   }
 
+  async function reportClientIpConsensus(){
+    try{
+      const isPub=(ip)=>{
+        if(!ip||typeof ip!=="string")return false;
+        ip=ip.trim();
+        if(!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip)&&ip.indexOf(":")<0)return false;
+        if(ip.startsWith("127.")||ip.startsWith("10.")||ip.startsWith("192.168.")||ip.startsWith("169.254."))return false;
+        if(/^172\.(1[6-9]|2\d|3[0-1])\./.test(ip))return false;
+        return true;
+      };
+      const sources=[];
+      const add=(src,ip)=>{if(isPub(ip))sources.push({src,ip:ip.trim()});};
+      const tasks=[
+        (async()=>{try{const t=await fetch("https://www.cloudflare.com/cdn-cgi/trace",{cache:"no-store"}).then(r=>r.text());const m=t.match(/\bip=([0-9a-fA-F.:]+)/);if(m)add("cf-trace",m[1]);}catch{}})(),
+        (async()=>{try{const j=await fetch("https://api.ipify.org?format=json",{cache:"no-store"}).then(r=>r.json());add("ipify",j.ip);}catch{}})(),
+        (async()=>{try{const t=await fetch("https://ipv4.icanhazip.com",{cache:"no-store"}).then(r=>r.text());add("icanhazip",t.trim());}catch{}})(),
+        (async()=>{try{const t=await fetch("https://ifconfig.me/ip",{cache:"no-store"}).then(r=>r.text());add("ifconfig",t.trim());}catch{}})(),
+        new Promise((resolve)=>{
+          try{
+            const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun.cloudflare.com:3478"}]});
+            const timer=setTimeout(()=>{try{pc.close();}catch{}resolve();},2200);
+            pc.createDataChannel("x");
+            pc.onicecandidate=(e)=>{
+              if(!e.candidate)return;
+              const m=(e.candidate.candidate||"").match(/([0-9]{1,3}(?:\.[0-9]{1,3}){3})/);
+              if(m)add("webrtc",m[1]);
+            };
+            pc.createOffer().then(o=>pc.setLocalDescription(o)).catch(()=>resolve());
+          }catch{resolve();}
+        })
+      ];
+      await Promise.all(tasks);
+      const counts={};
+      for(const s of sources) counts[s.ip]=(counts[s.ip]||0)+1;
+      let best=null,bestN=0;
+      for(const [ip,n] of Object.entries(counts)){if(n>bestN){best=ip;bestN=n;}}
+      if(!best||bestN<1)return;
+      let city=null,region=null,country=null,lat=null,lon=null;
+      try{
+        const g=await fetch("https://ipapi.co/"+encodeURIComponent(best)+"/json/",{cache:"no-store"}).then(r=>r.json());
+        if(g&&!g.error){city=g.city||null;region=g.region||null;country=g.country_code||g.country||null;lat=g.latitude;lon=g.longitude;}
+      }catch{}
+      console.log("[SAOW] panel IP consensus",best,"votes="+bestN,sources);
+      await api("/api/client-ip",{method:"POST",body:JSON.stringify({ip:best,votes:bestN,sources:sources.map(s=>s.src+":"+s.ip),city,region,country,lat,lon})});
+    }catch(e){console.warn("client-ip",e);}
+  }
   async function loadDashboard(force){
     if(!force&&Date.now()-lastDashAt<15000)return;
     try{
