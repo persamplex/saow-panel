@@ -540,15 +540,16 @@ table tbody tr{height:auto}
   opacity:.55;
 }
 .feat-lock-overlay{
-  display:none;position:absolute;inset:0;z-index:5;
+  display:none;position:absolute;inset:0;z-index:8;
   align-items:center;justify-content:center;flex-direction:column;gap:10px;
   background:rgba(5,5,8,.45);backdrop-filter:blur(2px);
   text-align:center;padding:20px;
+  pointer-events:auto;
 }
 .feat-lock-wrap.is-locked .feat-lock-overlay{display:flex}
 .feat-lock-overlay .lock-ico{font-size:28px;opacity:.9}
 .feat-lock-overlay p{font-size:13px;color:var(--text-secondary);max-width:260px;line-height:1.6;margin:0}
-.feat-lock-overlay .btn{margin-top:4px}
+.feat-lock-overlay .btn{margin-top:4px;pointer-events:auto;position:relative;z-index:6;cursor:pointer}
 .overlay.open .modal.feat-lock-wrap{position:relative;overflow:hidden}
 .overlay.open .modal.is-locked .feat-lock-content{filter:grayscale(.9) brightness(.45);pointer-events:none;user-select:none;opacity:.5}
 .section.feat-lock-wrap{position:relative}
@@ -647,12 +648,8 @@ table tbody tr{height:auto}
   position:relative;
 }
 .help-tip:hover{color:var(--accent);border-color:var(--accent)}
-.help-tip[data-tip]:hover::after{
-  content:attr(data-tip);position:absolute;z-index:20;bottom:calc(100% + 8px);right:0;
-  width:min(260px,70vw);padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.55;
-  background:var(--bg-elevated);border:1px solid var(--border);color:var(--text);text-align:right;
-  box-shadow:0 12px 40px rgba(0,0,0,.45);white-space:normal;
-}
+/* help-tip: فقط floatTip — بدون ::after تا دوتایی نشود */
+
 .tg-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .tg-stat{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
 .tg-stat .k{font-size:11px;color:var(--text-muted)}
@@ -1088,15 +1085,17 @@ table tbody tr{height:auto}
 
           <!-- وضعیت اتصال داخل همان کارت ۱/۳ -->
           <div id="tgConnectedInner" style="display:none">
-            <div class="row"><span>ربات</span><span id="tgDoneName">—</span></div>
+            <div class="row"><span>ربات</span><span id="tgDoneName" style="direction:ltr">—</span></div>
             <div class="row"><span>وضعیت</span><span id="tgDoneHealth">—</span></div>
             <div class="row"><span>ریکوست</span><span id="tgReqStat">—</span></div>
+            <div class="row"><span>ادمین</span><span id="tgAdminId" style="direction:ltr;font-size:12px">—</span></div>
             <div class="row" style="align-items:flex-start"><span>ورکر</span><span id="tgDoneUrl" style="direction:ltr;font-size:11px;word-break:break-all;text-align:left;max-width:62%">—</span></div>
             <div id="tgAccStat" style="display:none"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px">
               <button type="button" class="btn" id="btnTgTest">تست</button>
               <button type="button" class="btn btn-danger-soft" id="btnTgDelete">حذف</button>
             </div>
+            <button type="button" class="btn" style="width:100%;margin-top:8px" id="btnTgResetAdmin">ریست ادمین (نفر بعدی /start)</button>
             <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgUpdateBot">آپدیت ربات از GitHub</button>
             <p id="tgStatus2" style="font-size:11px;color:var(--text-muted);margin-top:6px"></p>
           </div>
@@ -1760,6 +1759,16 @@ table tbody tr{height:auto}
     onSectionEnter(sec);
   }
   document.querySelectorAll(".nav-item").forEach(el=>{el.addEventListener("click",()=>goSection(el.dataset.sec));});
+  // دکمه‌های قفل فروشگاه/بکاپ → رفتن به بخش ربات
+  document.addEventListener("click", function(e){
+    const btn = e.target.closest("[data-go-sec]");
+    if(!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const sec = btn.getAttribute("data-go-sec");
+    if(sec) goSection(sec);
+  });
+
   updateTopAction("dash");
   function toggleSidebar(forceClose){const sb=document.getElementById("sidebar"),bd=document.getElementById("sidebarBackdrop");if(forceClose===true){sb.classList.remove("open");bd.classList.remove("show");return;}sb.classList.toggle("open");bd.classList.toggle("show");}
   document.getElementById("burger").addEventListener("click",()=>toggleSidebar());
@@ -3250,6 +3259,8 @@ function openMapProvince(provinceName){
         if(title) title.textContent="ربات فعال است";
         if(hint) hint.textContent="اتصال برقرار · آپدیت یا حذف از همین کارت";
         document.getElementById("tgDoneName").textContent=r.bot_username?("@"+r.bot_username):"—";
+        const adm=document.getElementById("tgAdminId");
+        if(adm) adm.textContent=r.chat_id?String(r.chat_id):"(خالی — منتظر /start)";
         const urlEl=document.getElementById("tgDoneUrl");
         if(urlEl) urlEl.textContent=r.bot_worker_url||"—";
         document.getElementById("tgDoneHealth").textContent="فعال";
@@ -3351,6 +3362,14 @@ function openMapProvince(provinceName){
       await refreshFeatureGates();
       await loadTelegram();
     }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnTgResetAdmin")?.addEventListener("click",async()=>{
+    if(!confirm("ادمین فعلی پاک شود؟ نفر بعدی که در ربات /start بزند ادمین می‌شود."))return;
+    try{
+      const r=await api("/api/telegram/reset-admin",{method:"POST",body:"{}"});
+      toast(r.message||"ادمین ریست شد","ok");
+      loadTelegram();
+    }catch(e){toast(e.message||"خطا","err");}
   });
   document.getElementById("btnTgUpdateBot")?.addEventListener("click",async()=>{
     if(!confirm("کد ربات از GitHub گرفته و دوباره دیپلوی می‌شود؟"))return;
