@@ -15,7 +15,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
 .brand-mark{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:grid;place-items:center;font-weight:700;font-size:16px;color:#fff}
 .brand-name{font-size:18px;font-weight:600}
-.brand-sub{font-size:12px;color:var(--text-muted)}
+.brand-sub{font-size:10px;color:var(--text-muted);letter-spacing:.08em;margin-top:2px;opacity:.7}
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 18px 16px;margin-bottom:14px}
 .card-title{font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:14px;letter-spacing:.02em}
 .row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13.5px;gap:12px}
@@ -157,7 +157,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 #saowBoot .bar>i{
   display:block;height:100%;width:0%;border-radius:99px;
   background:linear-gradient(90deg,#38bdf8,#818cf8);
-  transition:width .08s linear;
+  transition:width .2s ease-out;
 }
 @keyframes logoBreathe{
   0%,100%{transform:scale(1);opacity:1}
@@ -180,6 +180,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       <div class="brand-mark"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="SAOW" width="40" height="40" /></div>
       <div>
         <div class="brand-name">وضعیت اشتراک</div>
+        <div class="brand-sub">saow</div>
       </div>
     </div>
 
@@ -187,8 +188,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       <div class="card-title">اطلاعات حساب</div>
       <div class="row"><span class="k">نام</span><span class="v" id="name">—</span></div>
       <div class="row"><span class="k">وضعیت</span><span class="v" id="statusWrap"><span class="badge badge-info" id="status">—</span></span></div>
-      <p id="userHint" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);line-height:1.6"></p>
-      <div id="lockBanner" style="display:none;margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.28);color:#fca5a5;font-size:13px;line-height:1.65"></div>
+<div id="lockBanner" style="display:none;margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.28);color:#fca5a5;font-size:13px;line-height:1.65"></div>
       <div class="row"><span class="k">انقضا</span><span class="v" id="expiry">—</span></div>
       <div class="row"><span class="k">IP همزمان</span><span class="v" id="ips">—</span></div>
       <div class="bar-wrap">
@@ -301,16 +301,6 @@ try {
       return { lab, cls };
     }
     document.getElementById("name").textContent = DATA.name || "—";
-    const userHintEl = document.getElementById("userHint");
-    if (userHintEl) {
-      const stLabel = ({ active: "حساب فعال است", disabled: "حساب غیرفعال است", expired: "منقضی شده", "quota-exceeded": "حجم تمام شده", locked: "پنل قفل شده" })[DATA.status] || "";
-      const bits = [];
-      if (DATA.name) bits.push("کاربر «" + DATA.name + "»");
-      if (stLabel) bits.push(stLabel);
-      if (DATA.expiryText) bits.push(DATA.expiryText);
-      if (DATA.ipLimit) bits.push("سقف IP: " + DATA.ipLimit);
-      userHintEl.textContent = bits.join(" · ") || "";
-    }
     const lockBanner = document.getElementById("lockBanner");
     if (lockBanner && (DATA.locked || DATA.status === "locked")) {
       lockBanner.style.display = "block";
@@ -800,30 +790,63 @@ try {
       const boot = document.getElementById("saowBoot");
       const fill = document.getElementById("bootBarFill");
       const pctEl = document.getElementById("bootPct");
-      const toFa = (n) => String(Math.max(0, Math.min(100, n|0))).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+      const toFa = (n) => String(Math.max(0, Math.min(100, n | 0))).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
       if (boot) {
-        const minMs = 3000;
-        const t0 = performance.now();
-        let done = false;
-        const apply = (p) => {
+        let p = 0;
+        let target = 12;
+        let finished = false;
+        const apply = () => {
           if (fill) fill.style.width = p + "%";
-          if (pctEl) pctEl.textContent = toFa(p) + "٪";
+          if (pctEl) pctEl.textContent = toFa(Math.round(p)) + "٪";
         };
-        apply(0);
+        apply();
+        // پیشرفت آهسته و غیرخطی تا وقتی صفحه واقعاً آماده شود
         const iv = setInterval(() => {
-          if (done) return;
-          const p = Math.min(100, Math.round(((performance.now() - t0) / minMs) * 100));
-          apply(p);
-          if (p >= 100) {
-            done = true;
-            clearInterval(iv);
-            apply(100);
-            setTimeout(() => {
-              boot.classList.add("hide");
-              setTimeout(() => { try { boot.remove(); } catch (e) {} }, 700);
-            }, 180);
+          if (finished) return;
+          if (p < target) {
+            const gap = target - p;
+            p += Math.max(0.15, gap * 0.08);
+            if (p > target) p = target;
+            apply();
           }
-        }, 40);
+        }, 50);
+        const markReady = () => {
+          target = Math.max(target, 78);
+        };
+        if (document.readyState === "complete") markReady();
+        else window.addEventListener("load", markReady, { once: true });
+        // مراحل طبیعی
+        setTimeout(() => { if (!finished) target = Math.max(target, 35); }, 400);
+        setTimeout(() => { if (!finished) target = Math.max(target, 55); }, 1100);
+        setTimeout(() => { if (!finished) target = Math.max(target, 72); }, 1900);
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          target = 100;
+          const step = () => {
+            if (p < 99.5) {
+              p += (100 - p) * 0.22 + 0.8;
+              if (p > 100) p = 100;
+              apply();
+              requestAnimationFrame(step);
+            } else {
+              p = 100;
+              apply();
+              clearInterval(iv);
+              setTimeout(() => {
+                boot.classList.add("hide");
+                setTimeout(() => { try { boot.remove(); } catch (err) {} }, 650);
+              }, 220);
+            }
+          };
+          requestAnimationFrame(step);
+        };
+        // حداقل ~۲.۴s ماندن + آماده بودن سند
+        const minWait = new Promise((r) => setTimeout(r, 2400));
+        const docReady = (document.readyState === "complete")
+          ? Promise.resolve()
+          : new Promise((r) => window.addEventListener("load", r, { once: true }));
+        Promise.all([minWait, docReady]).then(finish).catch(finish);
       }
     }catch(e){ console.warn("boot loader", e); }
 
