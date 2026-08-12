@@ -140,7 +140,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 #saowBoot.hide{opacity:0;visibility:hidden;pointer-events:none}
 #saowBoot .logo{
   width:72px;height:72px;border-radius:18px;
-  animation:bootPulse 1.4s ease-in-out infinite;
+  animation:bootPulse 1.8s ease-in-out infinite;
   filter:drop-shadow(0 0 24px rgba(125,211,252,.25));
 }
 #saowBoot .logo img{width:100%;height:100%;object-fit:contain}
@@ -150,7 +150,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 #saowBoot .bar>i{
   display:block;height:100%;width:30%;border-radius:99px;
   background:linear-gradient(90deg,#38bdf8,#818cf8);
-  animation:bootBar 1.1s ease-in-out infinite;
+  animation:bootBar 1.4s ease-in-out infinite;
 }
 #saowBoot .txt{font-size:12px;color:#71717a;letter-spacing:.04em}
 @keyframes bootPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.85}}
@@ -763,8 +763,18 @@ try {
     try{
       const boot=document.getElementById("saowBoot");
       if(boot){
-        requestAnimationFrame(()=>setTimeout(()=>boot.classList.add("hide"),280));
-        setTimeout(()=>{ try{ boot.remove(); }catch(e){} }, 900);
+        // حداقل ~1.6s نمایش لودینگ تا حس کامل‌شدن بدهد
+        const minMs = 1600;
+        const t0 = performance.now();
+        const finish = () => {
+          const left = Math.max(0, minMs - (performance.now() - t0));
+          setTimeout(() => {
+            boot.classList.add("hide");
+            setTimeout(() => { try { boot.remove(); } catch(e) {} }, 500);
+          }, left);
+        };
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(finish).catch(finish);
+        else finish();
       }
     }catch(e){}
 
