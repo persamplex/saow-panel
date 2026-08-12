@@ -1320,8 +1320,19 @@ table tbody tr{height:auto}
     shop:false,
     auto_backup:false,
   };
+  // بازیابی فوری از کش تا بعد از رفرش موبایل فروشگاه قفل نماند
+  try{
+    const _fg=JSON.parse(localStorage.getItem("saow_feature_gates")||"null");
+    if(_fg && typeof _fg==="object"){
+      Object.keys(FEATURE_GATES).forEach(k=>{ if(k in _fg) FEATURE_GATES[k]=!!_fg[k]; });
+    }
+  }catch{}
+  function persistFeatureGates(){
+    try{ localStorage.setItem("saow_feature_gates", JSON.stringify(FEATURE_GATES)); }catch{}
+  }
   function setFeatureGate(key, unlocked){
     FEATURE_GATES[key]=!!unlocked;
+    persistFeatureGates();
     document.querySelectorAll('[data-feature="'+key+'"]').forEach(el=>{
       el.classList.toggle("is-locked", !unlocked);
       el.querySelectorAll("input,textarea,select,button.btn").forEach(inp=>{
@@ -1491,6 +1502,7 @@ table tbody tr{height:auto}
     saveAutoBackupSettings();
   });
   async function refreshFeatureGates(){
+    let ok=false;
     try{
       const r=await api("/api/features");
       if(r&&r.ok&&r.features){
@@ -1500,8 +1512,31 @@ table tbody tr{height:auto}
           if(k==="shop" && PANEL_RULES && PANEL_RULES.lock_shop) on=false;
           setFeatureGate(k, on);
         });
+        // اطمینان از هم‌خوانی telegram_bot با shop/auto_backup
+        if(r.features.telegram_bot){
+          setFeatureGate("telegram_bot", true);
+          if(!(PANEL_RULES&&PANEL_RULES.lock_shop)) setFeatureGate("shop", true);
+          setFeatureGate("auto_backup", true);
+        }
+        ok=true;
       }
-    }catch{}
+    }catch(e){ console.warn("[SAOW] features", e); }
+    // fallback: اگر /features شکست خورد یا خالی بود از telegram/config بخوان
+    if(!ok){
+      try{
+        const t=await api("/api/telegram/config");
+        if(t&&t.ok){
+          const configured=!!(t.configured || (t.has_token && t.bot_worker_url));
+          setFeatureGate("telegram_bot", configured);
+          setFeatureGate("auto_backup", configured);
+          if(configured && !(PANEL_RULES&&PANEL_RULES.lock_shop)) setFeatureGate("shop", true);
+          else if(!configured) setFeatureGate("shop", false);
+          ok=true;
+        }
+      }catch(e){ console.warn("[SAOW] telegram/config fallback", e); }
+    }
+    try{ applyPanelLocksFromRules(); }catch{}
+    return ok;
   }
 
   let usersCache=[], nodesCache={managed:[],alive:[]}, mapChart=null, dashTimer=null, lastDashAt=0;
@@ -3372,10 +3407,21 @@ function openMapProvince(provinceName){
     }catch(e){toast(e.message||"خطا","err");}
   });
   document.getElementById("btnTgUpdateBot")?.addEventListener("click",async()=>{
-    if(!confirm("کد ربات از GitHub گرفته و دوباره دیپلوی می‌شود؟"))return;
-    toast("در حال آپدیت ربات…");
-    const r=await api("/api/telegram/update-bot",{method:"POST",body:"{}"});
-    if(r&&r.ok)toast("ربات آپدیت شد");else toast((r&&r.err)||"ناموفق","err");
+    const btn=document.getElementById("btnTgUpdateBot");
+    const prev=btn?btn.textContent:"";
+    if(btn){btn.disabled=true;btn.textContent="در حال آپدیت…";}
+    try{
+      const r=await api("/api/telegram/update-bot",{method:"POST",body:"{}"});
+      if(r.ok){
+        toast("ربات آپدیت شد"+(r.url?(" · "+r.url):""),"ok");
+        if(r.url){const u=document.getElementById("tgDoneUrl"); if(u) u.textContent=r.url;}
+        if(r.healthy===false) toast("ورکر پاسخ سلامت نداد","err");
+      } else {
+        toast(r.err||"آپدیت ناموفق","err");
+      }
+      loadTelegram();
+    }catch(e){toast(e.message||"خطا","err");}
+    finally{if(btn){btn.disabled=false;btn.textContent=prev||"آپدیت ربات از GitHub";}}
   });
   document.getElementById("btnSendBackupNow")?.addEventListener("click",async()=>{
     toast("در حال ارسال بکاپ…");
@@ -3411,23 +3457,39 @@ function openMapProvince(provinceName){
   });
   // remove old swShopEnable handler if any - replaced by feature gate only
 
-  function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="telegram")loadTelegram();else if(sec==="settings"){loadRules();loadProxySettings();}}
+  function onSectionEnter(sec){
+    if(sec==="dash")loadDashboard(true);
+    else if(sec==="users")loadUsers();
+    if(sec==="logs")loadLogs();
+    else if(sec==="nodes")loadNodes();
+    else if(sec==="shop"){
+      // همیشه قبل از فروشگاه وضعیت ربات را تازه کن (موبایل)
+      refreshFeatureGates().finally(()=>loadShop());
+    }
+    else if(sec==="telegram")loadTelegram();
+    else if(sec==="settings"){loadRules();loadProxySettings();}
+  }
   function boot(){
     let sec="dash";
     try{sec=localStorage.getItem("saow_panel_sec")||"dash";}catch{}
-    // اعمال فوری قفل از کش — بدون تأخیر
+    // اعمال فوری از کش rules + feature gates (موبایل بعد از رفرش قفل نماند)
     try{
       const cached=JSON.parse(localStorage.getItem("saow_panel_rules")||"null");
-      if(cached && typeof cached==="object"){ PANEL_RULES=cached; applyPanelLocksFromRules(); }
+      if(cached && typeof cached==="object"){ PANEL_RULES=cached; }
     }catch{}
+    try{ applyPanelLocksFromRules(); }catch{}
+    // اول وضعیت ربات/فروشگاه از سرور — قبل از هر بخش
+    const gatesReady = refreshFeatureGates().then(()=>{
+      try{ applyPanelLocksFromRules(); }catch{}
+    }).catch(()=>{});
     if(sec&&sec!=="dash"&&document.getElementById(sec)) goSection(sec,true);
     else loadDashboard(true);
     startDashPoll();
     refreshRulesLocal().then(()=>{
       try{ localStorage.setItem("saow_panel_rules", JSON.stringify(PANEL_RULES||{})); }catch{}
-      applyPanelLocksFromRules();
+      // بعد از rules، gates را دوباره هم‌تراز کن (race با موبایل)
+      return gatesReady.then(()=>applyPanelLocksFromRules());
     }).catch(()=>{});
-    refreshFeatureGates().then(()=>applyPanelLocksFromRules()).catch(()=>{});
     loadAutoBackupSettings().catch(()=>{});
     api("/api/users").then(d=>{usersCache=d.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);}).catch(()=>{});
     api("/api/nodes").then(d=>{nodesCache={managed:d.managed||[],alive:d.alive||[]};document.getElementById("navNodesCount").textContent=faNum((d.managed||[]).length);}).catch(()=>{});
