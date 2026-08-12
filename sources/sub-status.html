@@ -134,43 +134,59 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 .brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
 #saowBoot{
   position:fixed;inset:0;z-index:9999;background:#050505;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-  transition:opacity .45s ease, visibility .45s ease;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  transition:opacity .55s ease, visibility .55s ease;
 }
 #saowBoot.hide{opacity:0;visibility:hidden;pointer-events:none}
+#saowBoot .logo-wrap{
+  position:relative;width:88px;height:88px;display:grid;place-items:center;
+}
+#saowBoot .logo-ring{
+  position:absolute;inset:0;border-radius:24px;
+  border:1.5px solid transparent;
+  background:linear-gradient(#050505,#050505) padding-box,
+             linear-gradient(135deg,#38bdf8,#818cf8,#c084fc) border-box;
+  animation:bootSpin 2.4s linear infinite;
+  opacity:.85;
+}
 #saowBoot .logo{
-  width:72px;height:72px;border-radius:18px;
-  animation:bootPulse 1.8s ease-in-out infinite;
-  filter:drop-shadow(0 0 24px rgba(125,211,252,.25));
+  position:relative;width:64px;height:64px;border-radius:16px;
+  animation:bootFloat 2.2s ease-in-out infinite;
+  filter:drop-shadow(0 0 20px rgba(125,211,252,.3));
 }
 #saowBoot .logo img{width:100%;height:100%;object-fit:contain}
 #saowBoot .bar{
-  width:120px;height:3px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;
+  width:112px;height:3px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;
 }
 #saowBoot .bar>i{
-  display:block;height:100%;width:30%;border-radius:99px;
-  background:linear-gradient(90deg,#38bdf8,#818cf8);
-  animation:bootBar 1.4s ease-in-out infinite;
+  display:block;height:100%;width:40%;border-radius:99px;
+  background:linear-gradient(90deg,#38bdf8,#818cf8,#c084fc);
+  background-size:200% 100%;
+  animation:bootBar 1.5s ease-in-out infinite;
 }
-#saowBoot .txt{font-size:12px;color:#71717a;letter-spacing:.04em}
-@keyframes bootPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.85}}
-@keyframes bootBar{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+@keyframes bootFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-5px) scale(1.04)}}
+@keyframes bootSpin{to{transform:rotate(360deg)}}
+@keyframes bootBar{
+  0%{transform:translateX(-120%);background-position:0% 50%}
+  100%{transform:translateX(280%);background-position:100% 50%}
+}
 
 </style>
 </head>
 <body>
 <div id="saowBoot" aria-hidden="true">
-  <div class="logo"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="SAOW" width="72" height="72" /></div>
+  <div class="logo-wrap">
+    <div class="logo-ring"></div>
+    <div class="logo"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="" width="72" height="72" /></div>
+  </div>
   <div class="bar"><i></i></div>
-  <div class="txt">SAOW</div>
 </div>
 
   <div class="wrap">
     <div class="brand">
       <div class="brand-mark"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="SAOW" width="40" height="40" /></div>
       <div>
-        <div class="brand-name">SAOW</div>
-        <div class="brand-sub">وضعیت اشتراک</div>
+        <div class="brand-name">وضعیت اشتراک</div>
       </div>
     </div>
 
