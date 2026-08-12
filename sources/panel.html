@@ -889,6 +889,7 @@ table tbody tr{height:auto}
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span style="font-size:12px;color:var(--text-muted)">سالم = همگام‌سازی موفق اخیر</span>
             <button class="btn" type="button" id="btnUpdateAllNodes" style="font-size:12.5px;padding:7px 12px">آپدیت همه نودها</button>
+            <a class="btn" id="btnCfTokenCreate" href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Saow%20Node" target="_blank" rel="noopener" style="font-size:12.5px;padding:7px 12px;text-decoration:none">ساخت توکن کلودفلر</a>
           </div>
         </div>
         <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>نسخه</th><th>کاربران</th><th>ریکوست امروز</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
@@ -1551,7 +1552,42 @@ table tbody tr{height:auto}
     void el.offsetWidth;
     el.classList.add("bump");
   }
-  function toast(msg,type){const el=document.getElementById("toast");el.textContent=msg;el.className="toast show"+(type==="err"?" err":type==="ok"?" ok":"");clearTimeout(el._t);el._t=setTimeout(()=>{el.className="toast";},2800);}
+  function humanizeError(msg){
+    const m=String(msg||"").trim();
+    if(!m) return "خطای ناشناخته";
+    const map=[
+      [/same account as mother/i,"نمی‌توان نود فرزند را با همان اکانت مادر ساخت. از یک اکانت دیگر کلودفلر توکن بگیرید!"],
+      [/node create locked/i,"ساخت نود توسط محدودیت پنل قفل است"],
+      [/accounts failed/i,"خواندن اکانت کلودفلر ناموفق بود — توکن را بررسی کنید"],
+      [/token required/i,"توکن کلودفلر را وارد کنید"],
+      [/max_users/i,"سقف تعداد کاربر پر شده است"],
+      [/max_nodes/i,"سقف تعداد نود پر شده است"],
+      [/lock_create_user/i,"ساخت کاربر جدید قفل است"],
+      [/lock_create_node/i,"ساخت نود جدید قفل است"],
+      [/no_active_node/i,"هیچ نود فعالی ندارید. اول یک نود بسازید"],
+      [/unauthorized/i,"دسترسی مجاز نیست — دوباره وارد شوید"],
+      [/invalid json/i,"داده نامعتبر از سرور"],
+      [/failed to fetch|networkerror|load failed/i,"ارتباط با سرور برقرار نشد"],
+      [/HTTP 403/i,"دسترسی رد شد (۴۰۳)"],
+      [/HTTP 404/i,"مورد پیدا نشد (۴۰۴)"],
+      [/HTTP 500/i,"خطای داخلی سرور (۵۰۰)"],
+      [/upsert failed/i,"ذخیره کاربر ناموفق بود"],
+      [/fetch child code/i,"دانلود کد نود از گیت‌هاب ناموفق بود"],
+      [/no workers\.dev/i,"ساب‌دامین workers.dev فعال نیست"],
+    ];
+    for(const [re,fa] of map){ if(re.test(m)) return fa; }
+    // if already Persian-ish keep
+    if(/[\u0600-\u06FF]/.test(m)) return m;
+    return m;
+  }
+  function toast(msg,type){
+    const el=document.getElementById("toast");
+    const text=type==="err"?humanizeError(msg):String(msg||"");
+    el.textContent=text;
+    el.className="toast show"+(type==="err"?" err":type==="ok"?" ok":"");
+    clearTimeout(el._t);
+    el._t=setTimeout(()=>{el.className="toast";}, type==="err"?4200:2800);
+  }
   function daysRemaining(expiry){if(!expiry)return"∞";const ms=Date.parse(expiry)-Date.now();if(!Number.isFinite(ms)||ms<=0)return faNum(0);return faNum(Math.ceil(ms/86400000));}
   function statusBadge(status){const map={active:["فعال","badge-ok"],disabled:["غیرفعال","badge-off"],expired:["منقضی","badge-off"],"quota-exceeded":["حجم تمام","badge-warn"],"daily-quota-exceeded":["روزانه تمام","badge-warn"]};const[t,c]=map[status]||[status||"—","badge-info"];return`<span class="badge ${c}">${t}</span>`;}
   function relTime(ts){if(!ts)return"—";const sec=Math.floor((Date.now()-Number(ts))/1000);if(sec<60)return faNum(sec)+" ثانیه پیش";if(sec<3600)return faNum(Math.floor(sec/60))+" دقیقه پیش";if(sec<86400)return faNum(Math.floor(sec/3600))+" ساعت پیش";return faNum(Math.floor(sec/86400))+" روز پیش";}
@@ -1586,7 +1622,7 @@ table tbody tr{height:auto}
       }
       throw new Error((data&&data.err)||"unauthorized");
     }
-    if(!res.ok&&data&&data.ok===false)throw new Error(data.err||data.message||("HTTP "+res.status));
+    if(!res.ok&&data&&data.ok===false)throw new Error(humanizeError(data.err||data.message||("HTTP "+res.status)));
     return data;
   }
   async function showApp(){
