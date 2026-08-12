@@ -1134,12 +1134,16 @@ table tbody tr{height:auto}
       <div class="setting-block" style="margin-top:14px">
         <h4>پروکسی خروجی (دور زدن محدودیت CF→CF)</h4>
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">
-          مثل edgetunnel: وقتی کلاینت به نود وصل است، <b>خود ورکر</b> برای دامنه‌های لیست‌شده به‌جای اتصال مستقیم از <b>ProxyIP</b> خارج می‌شود.
-          کلاینت و کانفیگ JSON نیازی به SOCKS ندارند — فقط ذخیره کنید تا روی همه نودها اعمال شود.
+          فقط دامنه‌های لیست زیر از پروکسی می‌روند؛ بقیه (مثل google.com) مستقیم‌اند.
+          برای دور زدن <b>1034</b> باید پروکسی <b>تونل‌دار</b> باشد:
+          <code dir="ltr">socks5://IP:1080</code> یا <code dir="ltr">http://IP:8080</code>.
+          لیست‌های ProxyIP خام (فقط TCP) کافی نیستند و باعث
+          <b>ERR_SSL_VERSION_OR_CIPHER_MISMATCH</b> می‌شوند.
+          <br/><b>ذخیره پروکسی</b> = ذخیره در DB + آپدیت کد/بایندینگ <b>همه نودها</b> + ارسال در همگام‌سازی.
         </p>
         <div class="field">
-          <label>آدرس ProxyIP</label>
-          <input type="text" id="egressProxy" placeholder="مثال: 1.2.3.4:443 یا proxyip.example.com:443" dir="ltr" style="text-align:left" />
+          <label>آدرس پروکسی خروجی</label>
+          <input type="text" id="egressProxy" placeholder="socks5://1.2.3.4:1080  یا  http://1.2.3.4:8080" dir="ltr" style="text-align:left" />
         </div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
           <button type="button" class="btn btn-primary" id="btnTestProxy">تست پروکسی (پینگ)</button>
@@ -3063,8 +3067,14 @@ function openMapProvince(provinceName){
         domains:document.getElementById("egressDomains")?.value?.trim()||""
       })});
       const pu=r&&r.nodes_updated;
-      const msg=pu?("پروکسی ذخیره و روی "+faNum(pu.ok||0)+"/"+faNum(pu.total||0)+" نود اعمال شد"):"پروکسی ذخیره شد";
-      toast(msg,"ok");
+      if(pu&&pu.errors&&pu.errors.length){
+        console.warn("proxy push errors",pu.errors);
+        const detail=pu.errors.slice(0,3).map(e=>(e.node||"?")+": "+(e.err||"")).join(" | ");
+        toast("اعمال روی "+faNum(pu.ok||0)+" از "+faNum(pu.total||0)+" نود. خطا: "+detail,"warn");
+      } else {
+        const msg=pu?("پروکسی ذخیره و روی همهٔ "+faNum(pu.ok||0)+"/"+faNum(pu.total||0)+" نود اعمال شد"):"پروکسی ذخیره شد";
+        toast(msg,"ok");
+      }
     }catch(e){toast(e.message||"خطا","err");}
   });
   
