@@ -4,7 +4,7 @@
  * فروش + اطلاع‌رسانی + پروکسی ساب تست
  * Bindings: BOT_TOKEN, MOTHER_URL, MOTHER_SECRET, ADMIN_CHAT_ID (optional)
  */
-const VERSION = "1.2.2-tg";
+const VERSION = "1.2.3-tg";
 
 async function tg(token, method, body, isForm) {
   const opts = { method: "POST" };
@@ -202,10 +202,15 @@ async function showShop(token, chatId, env, settings, msgId) {
     const kb = [[{ text: "🔙 منو", callback_data: "user_home" }]];
     return msgId ? edit(token, chatId, msgId, t, kb) : send(token, chatId, t, kb);
   }
-  const data = await motherApi(env, "/api/shop/plans?enabled=1");
-  const plans = data.plans || [];
+  // هم enabled=1 و هم بدون فیلتر — بعضی پنل‌ها enabled را درست ست نمی‌کنند
+  let data = await motherApi(env, "/api/shop/plans?enabled=1");
+  let plans = (data.plans || []).filter((p) => p && p.enabled !== 0 && p.enabled !== false);
   if (!plans.length) {
-    const t = "فعلاً پلنی فعال نیست.";
+    data = await motherApi(env, "/api/shop/plans");
+    plans = (data.plans || []).filter((p) => p && p.enabled !== 0 && p.enabled !== false);
+  }
+  if (!plans.length) {
+    const t = "فعلاً پلنی فعال نیست. از پنل وب در بخش فروشگاه پلن بسازید.";
     const kb = [[{ text: "🔙 منو", callback_data: "user_home" }]];
     return msgId ? edit(token, chatId, msgId, t, kb) : send(token, chatId, t, kb);
   }
@@ -216,32 +221,59 @@ async function showShop(token, chatId, env, settings, msgId) {
     cats[c].push(p);
   }
   const catNames = Object.keys(cats);
-  // اگر فقط یک دسته است مستقیم پلن‌ها
   if (catNames.length === 1) {
     return showShopCategory(token, chatId, env, settings, msgId, catNames[0], cats[catNames[0]]);
   }
-  let text = `🛒 <b>فروشگاه</b>\n\nیک <b>دسته‌بندی</b> انتخاب کنید:`;
-  const kb = catNames.map((c) => [
-    { text: `📁 ${c} (${fa(cats[c].length)})`, callback_data: `cat:${encodeURIComponent(c)}` },
+  let text = "🛒 <b>فروشگاه</b>\n\nیک <b>دسته‌بندی</b> انتخاب کنید:";
+  // callback کوتاه با ایندکس — encodeURIComponent نام فارسی را می‌شکست (حد ۶۴ بایت تلگرام)
+  const kb = catNames.map((c, idx) => [
+    { text: `📁 ${c} (${fa(cats[c].length)})`, callback_data: `cat:${idx}` },
   ]);
   kb.push([{ text: "🔙 منو", callback_data: "user_home" }]);
   return msgId ? edit(token, chatId, msgId, text, kb) : send(token, chatId, text, kb);
 }
 
+async function loadPlansGrouped(env) {
+  let data = await motherApi(env, "/api/shop/plans?enabled=1");
+  let plans = (data.plans || []).filter((p) => p && p.enabled !== 0 && p.enabled !== false);
+  if (!plans.length) {
+    data = await motherApi(env, "/api/shop/plans");
+    plans = (data.plans || []).filter((p) => p && p.enabled !== 0 && p.enabled !== false);
+  }
+  const cats = {};
+  for (const p of plans) {
+    const c = (p.category || "عمومی").trim() || "عمومی";
+    if (!cats[c]) cats[c] = [];
+    cats[c].push(p);
+  }
+  return { plans, cats, catNames: Object.keys(cats) };
+}
+
 async function showShopCategory(token, chatId, env, settings, msgId, catName, list) {
   if (!list) {
-    const data = await motherApi(env, "/api/shop/plans?enabled=1");
-    const plans = data.plans || [];
-    list = plans.filter((p) => ((p.category || "عمومی").trim() || "عمومی") === catName);
+    const { cats } = await loadPlansGrouped(env);
+    list = cats[catName] || [];
+    // fallback: اگر نام جور نشد همه پلن‌ها
+    if (!list.length) {
+      const all = Object.values(cats).flat();
+      list = all;
+      catName = catName || "همه";
+    }
+  }
+  if (!list.length) {
+    const t = "در این دسته پلنی نیست.";
+    const kb = [[{ text: "🔙 فروشگاه", callback_data: "user_shop" }]];
+    return msgId ? edit(token, chatId, msgId, t, kb) : send(token, chatId, t, kb);
   }
   let text = `📁 <b>${esc(catName)}</b>\nیک پلن انتخاب کنید:`;
   const kb = [];
   for (const p of list) {
     const price = fa(String(Math.round(Number(p.price) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+    const pid = String(p.id || "");
     kb.push([
       {
-        text: `${p.name} · ${price} تومان · ${fa(p.days || 30)}روز`,
-        callback_data: `buy:${p.id}`,
+        text: `${p.name} · ${price} تومان · ${fa(p.days || 30)}روز`.slice(0, 64),
+        callback_data: `buy:${pid}`.slice(0, 64),
       },
     ]);
   }
@@ -491,8 +523,10 @@ async function handleCallback(env, cq) {
   }
 
   if (data.startsWith("cat:")) {
-    const catName = decodeURIComponent(data.slice(4));
-    return showShopCategory(token, chatId, env, settings, msgId, catName, null);
+    const idx = Number(data.slice(4));
+    const { cats, catNames } = await loadPlansGrouped(env);
+    const catName = catNames[idx] || catNames[0] || "عمومی";
+    return showShopCategory(token, chatId, env, settings, msgId, catName, cats[catName] || null);
   }
   if (data.startsWith("buy:")) {
     return showBuyInfo(token, chatId, env, data.slice(4), settings, msgId, fromId);
