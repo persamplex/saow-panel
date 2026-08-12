@@ -775,6 +775,10 @@ table tbody tr{height:auto}
   }
 }
 
+
+@media (max-width: 900px) {
+  #settings .grid-3 { grid-template-columns: 1fr !important; }
+}
 </style>
 </head>
 <body>
@@ -1114,7 +1118,7 @@ table tbody tr{height:auto}
     </section>
 
 <section class="section" id="settings">
-      <div class="grid-2">
+      <div class="grid-3" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
         <div class="setting-block"><h4>امنیت ورود</h4>
           <div class="field"><label>نام کاربری جدید</label><input type="text" id="secUser" placeholder="admin" autocomplete="off" /></div>
           <div class="field"><label>رمز فعلی</label><input type="password" id="secCurPass" placeholder="رمز فعلی" autocomplete="off" /></div>
@@ -1130,32 +1134,22 @@ table tbody tr{height:auto}
           <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnUpdateMother" type="button">بروزرسانی پنل از GitHub</button>
           <button class="btn" style="width:100%;margin-top:8px" id="btnLogout" type="button">خروج</button>
         </div>
-      </div>
-      <div class="setting-block" style="margin-top:14px">
-        <h4>پروکسی خروجی (دور زدن محدودیت CF→CF)</h4>
-        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">
-          فقط دامنه‌های لیست زیر از پروکسی می‌روند؛ بقیه (مثل google.com) مستقیم‌اند.
-          برای دور زدن <b>1034</b> باید پروکسی <b>تونل‌دار</b> باشد:
-          <code dir="ltr">socks5://IP:1080</code> یا <code dir="ltr">http://IP:8080</code>.
-          لیست‌های ProxyIP خام (فقط TCP) کافی نیستند و باعث
-          <b>ERR_SSL_VERSION_OR_CIPHER_MISMATCH</b> می‌شوند.
-          <br/><b>ذخیره پروکسی</b> = ذخیره در DB + آپدیت کد/بایندینگ <b>همه نودها</b> + ارسال در همگام‌سازی.
-        </p>
-        <div class="field">
-          <label>آدرس پروکسی خروجی</label>
-          <input type="text" id="egressProxy" placeholder="socks5://1.2.3.4:1080  یا  http://1.2.3.4:8080" dir="ltr" style="text-align:left" />
+        <div class="setting-block" style="margin:0">
+          <h4>پروکسی خروجی</h4>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.55">فقط دامنه‌های لیست زیر از پروکسی می‌روند؛ بقیه (مثل google.com) مستقیم‌اند!</p>
+          <div class="field">
+            <label style="display:flex;align-items:center;gap:6px">آدرس پروکسی
+              <button type="button" class="icon-btn" id="btnProxyLockHelp" title="راهنما" style="width:22px;height:22px;font-size:12px;border-radius:50%">?</button>
+            </label>
+            <input type="text" id="egressProxy" value="proxyip.cmliussss.net" readonly disabled dir="ltr" style="text-align:left;opacity:.75;cursor:not-allowed" />
+          </div>
+          <div class="field" style="margin-top:8px">
+            <label>دامنه‌ها (با کاما جدا کنید)</label>
+            <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
+          </div>
+          <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnSaveProxy">ذخیره پروکسی</button>
+          <p id="proxyTestResult" style="font-size:11px;color:var(--text-muted);margin-top:6px;min-height:0"></p>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-          <button type="button" class="btn btn-primary" id="btnTestProxy">تست پروکسی (پینگ)</button>
-          <button type="button" class="btn" id="btnFetchProxy">دریافت پروکسی سالم</button>
-          <span id="proxyTestResult" style="font-size:12px;color:var(--text-muted)"></span>
-        </div>
-        <div id="proxyHealthyList" style="display:none;margin-bottom:12px"></div>
-        <div class="field">
-          <label>دامنه‌ها (با کاما جدا کنید)</label>
-          <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
-        </div>
-        <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnSaveProxy">ذخیره پروکسی</button>
       </div>
     </section>
   </main>
@@ -3052,18 +3046,22 @@ function openMapProvince(provinceName){
   
   async function loadProxySettings(){
     try{
+      const LOCKED_PROXY = "proxyip.cmliussss.net";
+      const pe=document.getElementById("egressProxy");
+      if(pe){ pe.value=LOCKED_PROXY; pe.readOnly=true; pe.disabled=true; }
       const r=await api("/api/proxy-settings");
       if(!r||!r.ok) return;
-      const pe=document.getElementById("egressProxy");
       const de=document.getElementById("egressDomains");
-      if(pe) pe.value=r.proxy||"";
       if(de) de.value=r.domains||"";
     }catch{}
   }
+  document.getElementById("btnProxyLockHelp")?.addEventListener("click",()=>{
+    toast("فعلاً فقط با این دامنه کار می‌کند (proxyip.cmliussss.net)","ok");
+  });
   document.getElementById("btnSaveProxy")?.addEventListener("click",async()=>{
     try{
       const r=await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
-        proxy:document.getElementById("egressProxy")?.value?.trim()||"",
+        proxy:"proxyip.cmliussss.net",
         domains:document.getElementById("egressDomains")?.value?.trim()||""
       })});
       const pu=r&&r.nodes_updated;
@@ -3078,47 +3076,6 @@ function openMapProvince(provinceName){
     }catch(e){toast(e.message||"خطا","err");}
   });
   
-  document.getElementById("btnFetchProxy")?.addEventListener("click",async()=>{
-    const el=document.getElementById("proxyTestResult");
-    const box=document.getElementById("proxyHealthyList");
-    const btn=document.getElementById("btnFetchProxy");
-    if(btn){btn.disabled=true;btn.textContent="در حال دریافت و تست…";}
-    if(el) el.textContent="لیست از GitHub + اسکن…";
-    if(box){box.style.display="none";box.innerHTML="";}
-    try{
-      const r=await api("/api/proxy-fetch",{method:"POST",body:JSON.stringify({limit:28,want:6})});
-      if(!r||!r.ok) throw new Error((r&&r.err)||"ناموفق");
-      const list=r.healthy||[];
-      if(el) el.textContent="از "+faNum(r.total_list||0)+" مورد، "+faNum(r.tested||0)+" تست شد · "+faNum(list.length)+" سالم";
-      if(!list.length){
-        toast("پروکسی سالمی پیدا نشد — دوباره تلاش کنید","err");
-      } else {
-        toast(faNum(list.length)+" پروکسی سالم پیدا شد","ok");
-        if(box){
-          box.style.display="block";
-          box.innerHTML='<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">روی یک مورد بزنید تا در کادر پروکسی قرار بگیرد:</div>'+
-            list.map((h,i)=>`<button type="button" class="btn" data-proxy-pick="${esc(h.raw)}" style="width:100%;margin-bottom:6px;justify-content:space-between;display:flex;text-align:left;direction:ltr">
-              <span>${esc(h.raw)}${h.tag?(" · "+esc(h.tag)):""}</span>
-              <span style="color:var(--accent)">${h.ms!=null?(h.ms+" ms"):"—"}</span>
-            </button>`).join("");
-          box.querySelectorAll("[data-proxy-pick]").forEach(b=>{
-            b.addEventListener("click",()=>{
-              const v=b.getAttribute("data-proxy-pick");
-              const inp=document.getElementById("egressProxy");
-              if(inp) inp.value=v;
-              toast("کپی شد در کادر پروکسی — ذخیره را بزنید","ok");
-            });
-          });
-        }
-      }
-    }catch(e){
-      if(el) el.textContent="✗ "+(e.message||"خطا");
-      toast(e.message||"خطا در دریافت لیست","err");
-    }finally{
-      if(btn){btn.disabled=false;btn.textContent="دریافت پروکسی سالم";}
-    }
-  });
-
   document.getElementById("btnTestProxy")?.addEventListener("click",async()=>{
     const el=document.getElementById("proxyTestResult");
     if(el) el.textContent="در حال تست…";
@@ -3196,6 +3153,17 @@ function openMapProvince(provinceName){
     });
     document.querySelectorAll(".wiz-pane").forEach(p=>p.classList.remove("on"));
     document.getElementById("tgWiz"+step)?.classList.add("on");
+  }
+  function setSw(id, on){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle("on", !!on);
+    el.dataset.on = on ? "1" : "0";
+  }
+  function getSw(id){
+    const el = document.getElementById(id);
+    if (!el) return false;
+    return el.classList.contains("on") || el.dataset.on === "1";
   }
   async function loadTelegram(){
     try{
@@ -3357,10 +3325,10 @@ function openMapProvince(provinceName){
     if(!requireFeature("telegram_bot"))return;
     try{
       await api("/api/telegram/config",{method:"POST",body:JSON.stringify({reports:{
-        panel_open:document.getElementById("tgRepPanel").classList.contains("on"),
-        sub_view:document.getElementById("tgRepSub").classList.contains("on"),
-        auth_fail:document.getElementById("tgRepAuth").classList.contains("on"),
-        node_off:document.getElementById("tgRepNode").classList.contains("on"),
+        panel_open:getSw("tgRepPanel"),
+        sub_view:getSw("tgRepSub"),
+        auth_fail:getSw("tgRepAuth"),
+        node_off:getSw("tgRepNode"),
       }})});
       toast("گزارش‌ها ذخیره شد","ok");
     }catch(e){toast(e.message,"err");}
