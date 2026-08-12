@@ -242,6 +242,8 @@ tbody tr:hover td.row-actions{background:transparent!important}
 .auth-box{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:400px}
 .auth-box h2{font-size:18px;margin-bottom:8px}
 .auth-box p{font-size:13px;color:var(--text-muted);margin-bottom:18px}
+.auth-logo{filter:grayscale(1) brightness(1.15) contrast(1.05);opacity:.92}
+.auth-logo img{filter:grayscale(1) brightness(1.15);opacity:.92}
 code{font-family:ui-monospace,monospace;font-size:12.5px;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px}
 @media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){
@@ -778,10 +780,9 @@ table tbody tr{height:auto}
 <body>
 <div class="auth-gate" id="authGate">
   <div class="auth-box">
-    <div style="text-align:center;margin-bottom:16px"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="SAOW" width="64" height="64" style="object-fit:contain"></div>
+    <div class="auth-logo" style="text-align:center;margin-bottom:16px"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="SAOW" width="64" height="64" style="object-fit:contain"></div>
     <h2 style="text-align:center">ورود به پنل SAOW</h2>
     <p style="text-align:center">نام کاربری و رمز عبور را وارد کنید.</p>
-    <div class="field"><label>Base URL (خالی = همین دامنه)</label><input type="text" id="cfgBase" placeholder="https://your-worker.workers.dev" autocomplete="off" /></div>
     <div class="field"><label>نام کاربری</label><input type="text" id="cfgUser" value="admin" autocomplete="username" /></div>
     <div class="field"><label>رمز عبور</label><input type="password" id="cfgPass" value="" placeholder="رمز پنل" autocomplete="current-password" /></div>
     <button class="btn btn-primary" style="width:100%" id="authBtn" type="button">ورود</button>
@@ -1114,18 +1115,7 @@ table tbody tr{height:auto}
 
 <section class="section" id="settings">
       <div class="grid-2">
-        <div class="setting-block"><h4>قفل‌های پنل</h4><p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">این قفل‌ها توسط سرویس لایسنس اعمال می‌شوند و برای محدودسازی پنل ادمین هستند.</p>
-          <div class="field"><label>پیام محدودیت (لایسنس)</label><textarea id="rulesMessage" rows="2" placeholder="پیام نمایش‌داده‌شده هنگام محدودیت"></textarea></div>
-          <div class="row"><span>قفل ساخت کاربر</span><div class="switch" id="swLockCreateUser"></div></div>
-          <div class="sub-panel" id="sub-create-user"><div class="field"><label>حداکثر کاربران (۰=∞)</label><input type="number" id="rulesMaxUsers" value="0" /></div></div>
-          <div class="row"><span>قفل ساخت نود</span><div class="switch" id="swLockCreateNode"></div></div>
-          <div class="sub-panel" id="sub-create-node"><div class="field"><label>حداکثر نودها (۰=∞)</label><input type="number" id="rulesMaxNodes" value="0" /></div></div>
-          <div class="row"><span>قفل فروشگاه</span><div class="switch" id="swLockShop"></div></div>
-          <div class="row"><span>قفل ساب (لینک‌ها بسته)</span><div class="switch" id="swLockSub"></div></div>
-          <div class="row"><span>خاموشی اتصال (قطع VPN)</span><div class="switch" id="swLockConnect"></div></div>
-          <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnSaveRules" type="button">ذخیره قوانین</button>
-        </div>
-                <div class="setting-block"><h4>امنیت ورود</h4>
+        <div class="setting-block"><h4>امنیت ورود</h4>
           <div class="field"><label>نام کاربری جدید</label><input type="text" id="secUser" placeholder="admin" autocomplete="off" /></div>
           <div class="field"><label>رمز فعلی</label><input type="password" id="secCurPass" placeholder="رمز فعلی" autocomplete="off" /></div>
           <div class="field"><label>رمز جدید</label><input type="password" id="secNewPass" placeholder="حداقل ۴ کاراکتر" autocomplete="new-password" /></div>
@@ -1609,11 +1599,10 @@ table tbody tr{height:auto}
   document.getElementById("authBtn").addEventListener("click",async()=>{
     const errEl=document.getElementById("authErr");
     errEl.style.display="none";
-    const base=document.getElementById("cfgBase").value.trim().replace(/\/$/,"");
     const user=document.getElementById("cfgUser").value.trim();
     const pass=document.getElementById("cfgPass").value;
     if(!user||!pass){errEl.style.display="";errEl.textContent="نام کاربری و رمز را وارد کنید";return;}
-    API_BASE=base||location.origin;
+    API_BASE=location.origin.replace(/\/$/,"");
     try{
       const res=await fetch(API_BASE+"/api/auth/login",{
         method:"POST",
@@ -1641,10 +1630,9 @@ table tbody tr{height:auto}
   (function tryRestore(){
     const b=localStorage.getItem(LS_BASE), tok=localStorage.getItem(LS_SECRET);
     if(!tok) return;
-    API_BASE=(b||location.origin).replace(/\/$/,"");
+    API_BASE=location.origin.replace(/\/$/,"");
     API_SECRET=tok;
     try{
-      document.getElementById("cfgBase").value=b||"";
       const u=localStorage.getItem("saow_panel_user");
       if(u) document.getElementById("cfgUser").value=u;
     }catch{}
@@ -3000,17 +2988,19 @@ function openMapProvince(provinceName){
     }catch(e){toast(e.message||"خطا","err");}
   });
 
-  async function loadRules(){
-    try{const data=await api("/api/rules");const r=data.rules||{};
-      setSw("swLockCreateUser",r.lock_create_user);setSw("swLockCreateNode",r.lock_create_node);setSw("swLockShop",r.lock_shop);setSw("swLockSub",r.lock_sub);setSw("swLockConnect",r.lock_connect);
-      document.getElementById("rulesMaxUsers").value=r.max_users||0;document.getElementById("rulesMaxNodes").value=r.max_nodes||0;document.getElementById("rulesMessage").value=r.message||"";
-      toggleSub("swLockCreateUser","sub-create-user");toggleSub("swLockCreateNode","sub-create-node");
-    }catch(e){console.warn(e);}
+    async function loadRules(){
+    try{
+      const data=await api("/api/rules");
+      if(data&&data.rules){
+        PANEL_RULES=data.rules;
+        try{ localStorage.setItem("saow_panel_rules", JSON.stringify(PANEL_RULES)); }catch{}
+        applyPanelLocksFromRules();
+      }
+    }catch(e){}
   }
-  function setSw(id,on){const el=document.getElementById(id);if(on)el.classList.add("on");else el.classList.remove("on");}
   function toggleSub(swId,panelId){const sw=document.getElementById(swId),panel=document.getElementById(panelId);if(!panel)return;if(sw.classList.contains("on"))panel.classList.add("open");else panel.classList.remove("open");}
   ["swLockCreateUser","swLockCreateNode","swLockShop","swLockSub","swLockConnect"].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.addEventListener("click",function(){this.classList.toggle("on");if(id==="swLockCreateUser")toggleSub(id,"sub-create-user");if(id==="swLockCreateNode")toggleSub(id,"sub-create-node");});});
-  document.getElementById("btnSaveRules").addEventListener("click",async()=>{
+  document.getElementById("btnSaveRules")?.addEventListener("click",async()=>{
     const body={lock_create_user:document.getElementById("swLockCreateUser").classList.contains("on"),lock_create_node:document.getElementById("swLockCreateNode").classList.contains("on"),lock_shop:document.getElementById("swLockShop").classList.contains("on"),lock_sub:document.getElementById("swLockSub").classList.contains("on"),lock_connect:document.getElementById("swLockConnect").classList.contains("on"),max_users:Number(document.getElementById("rulesMaxUsers").value)||0,max_nodes:Number(document.getElementById("rulesMaxNodes").value)||0,message:document.getElementById("rulesMessage").value.trim()};
     // اعمال فوری سمت کلاینت قبل از پاسخ سرور
     PANEL_RULES=Object.assign({}, PANEL_RULES, body);
