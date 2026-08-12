@@ -547,10 +547,19 @@ try {
       btn.disabled = true;
       btn.textContent = "…";
       try {
-        const res = await fetch(fullUrl, { cache: "no-store", headers: { "Accept": "application/json" } });
+        const res = await fetch(fullUrl, {
+          cache: "no-store",
+          headers: { "Accept": "application/json", "X-Requested-With": "SAOW-Sub" },
+          credentials: "omit",
+        });
         if (!res.ok) throw new Error("HTTP " + res.status);
         const text = await res.text();
-        if (/^\s*</.test(text)) throw new Error("HTML instead of JSON");
+        if (/^\s*</.test(text)) throw new Error("به‌جای JSON صفحه HTML آمد");
+        // base64 لینک‌ها را JSON فرض نکن
+        const trimmed = text.trim();
+        if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+          throw new Error("پاسخ JSON نیست — مادر را به 4.3.62+ آپدیت کنید");
+        }
         JSON.parse(text);
         const ok = await copyTextRobust(text);
         if (ok) toast("JSON کانفیگ کپی شد");
@@ -559,7 +568,7 @@ try {
           toast("کپی خودکار ممکن نشد — دستی کپی کنید");
         }
       } catch (e) {
-        toast("دریافت JSON ناموفق");
+        toast((e && e.message) ? ("خطا: " + e.message) : "دریافت JSON ناموفق");
         console.warn(e);
       }
       btn.disabled = false;
