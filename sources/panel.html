@@ -779,6 +779,20 @@ table tbody tr{height:auto}
 @media (max-width: 900px) {
   #settings .grid-3 { grid-template-columns: 1fr !important; }
 }
+
+.nodes-card-head{align-items:flex-start}
+.nodes-head-actions{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:1;min-width:0}
+.nodes-head-hint{font-size:12px;color:var(--text-muted)}
+.nodes-head-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.nodes-head-btns .btn{font-size:12.5px;padding:7px 12px;text-decoration:none;white-space:nowrap}
+@media(max-width:640px){
+  .nodes-card-head{flex-direction:column;align-items:stretch;gap:10px}
+  .nodes-head-actions{align-items:stretch}
+  .nodes-head-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .nodes-head-btns .btn{width:100%;justify-content:center;text-align:center}
+  .nodes-head-hint{order:-1}
+}
+
 </style>
 </head>
 <body>
@@ -885,11 +899,14 @@ table tbody tr{height:auto}
     </section>
     <section class="section" id="nodes">
       <div class="card">
-        <div class="card-head"><h3>نودهای مدیریت‌شده</h3>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <span style="font-size:12px;color:var(--text-muted)">سالم = همگام‌سازی موفق اخیر</span>
-            <button class="btn" type="button" id="btnUpdateAllNodes" style="font-size:12.5px;padding:7px 12px">آپدیت همه نودها</button>
-            <a class="btn" id="btnCfTokenCreate" href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Saow%20Node" target="_blank" rel="noopener" style="font-size:12.5px;padding:7px 12px;text-decoration:none">ساخت توکن کلودفلر</a>
+        <div class="card-head nodes-card-head">
+          <h3>نودهای مدیریت‌شده</h3>
+          <div class="nodes-head-actions">
+            <span class="nodes-head-hint">سالم = همگام‌سازی موفق اخیر</span>
+            <div class="nodes-head-btns">
+              <button class="btn" type="button" id="btnUpdateAllNodes">آپدیت همه نودها</button>
+              <a class="btn" id="btnCfTokenCreate" href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Saow%20Node" target="_blank" rel="noopener">ساخت توکن کلودفلر</a>
+            </div>
           </div>
         </div>
         <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>نسخه</th><th>کاربران</th><th>ریکوست امروز</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
@@ -1574,6 +1591,10 @@ table tbody tr{height:auto}
       [/upsert failed/i,"ذخیره کاربر ناموفق بود"],
       [/fetch child code/i,"دانلود کد نود از گیت‌هاب ناموفق بود"],
       [/no workers\.dev/i,"ساب‌دامین workers.dev فعال نیست"],
+      [/sync failed/i,"همگام‌سازی ناموفق بود"],
+      [/unreachable|rejected payload/i,"نود در دسترس نیست یا رمز API را رد کرد — دکمه «آپدیت نود» را بزنید"],
+      [/unauthorized/i,"دسترسی رد شد — معمولاً API_SECRET مادر و نود یکی نیست؛ نود را آپدیت کنید"],
+      [/HTTP 403/i,"دسترسی رد شد (۴۰۳) — نود را از دکمه «آپدیت نود» به‌روز کنید"],
     ];
     for(const [re,fa] of map){ if(re.test(m)) return fa; }
     // if already Persian-ish keep
