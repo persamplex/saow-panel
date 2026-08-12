@@ -764,7 +764,7 @@ try {
       const boot=document.getElementById("saowBoot");
       if(boot){
         // حداقل ~1.6s نمایش لودینگ تا حس کامل‌شدن بدهد
-        const minMs = 1600;
+        const minMs = 3000;
         const t0 = performance.now();
         const finish = () => {
           const left = Math.max(0, minMs - (performance.now() - t0));
