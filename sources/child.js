@@ -1,1 +1,2449 @@
-const _0x5c7b86=_0x5c13;(function(_0x532c22,_0x288aa1){const _0x4a3fa4=_0x5c13,_0x5dbb5d=_0x532c22();while(!![]){try{const _0x728f9a=parseInt(_0x4a3fa4(0x2ea))/0x1+-parseInt(_0x4a3fa4(0x33e))/0x2*(parseInt(_0x4a3fa4(0x302))/0x3)+parseInt(_0x4a3fa4(0x300))/0x4+-parseInt(_0x4a3fa4(0x238))/0x5*(parseInt(_0x4a3fa4(0x283))/0x6)+-parseInt(_0x4a3fa4(0x2e0))/0x7+parseInt(_0x4a3fa4(0x28b))/0x8*(parseInt(_0x4a3fa4(0x266))/0x9)+-parseInt(_0x4a3fa4(0x28e))/0xa;if(_0x728f9a===_0x288aa1)break;else _0x5dbb5d['push'](_0x5dbb5d['shift']());}catch(_0x571d82){_0x5dbb5d['push'](_0x5dbb5d['shift']());}}}(_0x11cc,0xe7f62));import{connect}from'cloudflare:sockets';const VERSION=_0x5c7b86(0x2f5),API_SECRET=_0x5c7b86(0x323);let MOTHER_URL=null;const MEM_LOG_MAX=0xc8,D1_LOG_MAX_ROWS=0x1f4;let logMode=_0x5c7b86(0x284);function refreshLogMode(_0x26e250){const _0x515a84=_0x5c7b86;try{const _0x125c4b=String(_0x26e250?.[_0x515a84(0x33f)]??_0x26e250?.[_0x515a84(0x213)]??_0x26e250?.[_0x515a84(0x24c)]??'')[_0x515a84(0x361)]()['trim']();if(!_0x125c4b||_0x125c4b==='0'||_0x125c4b===_0x515a84(0x21a)||_0x125c4b===_0x515a84(0x285)||_0x125c4b==='no')logMode='off';else{if(_0x125c4b===_0x515a84(0x284)||_0x125c4b==='memory'||_0x125c4b===_0x515a84(0x2ba))logMode='mem';else _0x125c4b==='1'||_0x125c4b===_0x515a84(0x202)||_0x125c4b==='on'||_0x125c4b==='full'||_0x125c4b===_0x515a84(0x32f)?logMode=_0x515a84(0x258):logMode=_0x515a84(0x285);}}catch(_0x395d1c){logMode=_0x515a84(0x285);}}const REPORT_THRESHOLD=0x8*0x400*0x400,STATUS_HTML_URL=_0x5c7b86(0x320),IP_IDLE_MS=0xa*0x3c*0x3e8,SOFT_REJECT_DELAY_MS=0x32,IP_CACHE_TTL_MS=0x5*0x3e8,IP_CLEANUP_PROB=0.08,DOH_URL=_0x5c7b86(0x296),DOH_CLEAN_URL=_0x5c7b86(0x2f4),DOH_FALLBACK_URL=_0x5c7b86(0x246),DOH_CACHE_TTL_MS=0xa*0x3c*0x3e8,DOH_TIMEOUT_MS=0x708,DOH_FALLBACK_TIMEOUT_MS=0x4b0;let usersByUuid=new Map();const activeConns=new Map(),activeSessions=new Map(),limiters=new Map(),ipCache=new Map(),memIps=new Map(),dohCache=new Map();let egressProxy='',egressDomains=[];const DEFAULT_EGRESS_DOMAINS=[_0x5c7b86(0x324),_0x5c7b86(0x2b4),'*.openai.com',_0x5c7b86(0x21e),_0x5c7b86(0x2d3),'speedtest.net','*.speedtest.net',_0x5c7b86(0x20c),_0x5c7b86(0x322),_0x5c7b86(0x2ac),'ookla.com'],EGRESS_NEVER=['google.com','gstatic.com',_0x5c7b86(0x2c2),_0x5c7b86(0x2b0),_0x5c7b86(0x2f1),_0x5c7b86(0x282),_0x5c7b86(0x201),_0x5c7b86(0x214),'ggpht.com',_0x5c7b86(0x2c5),_0x5c7b86(0x27c),'android.com',_0x5c7b86(0x2a2),_0x5c7b86(0x272),_0x5c7b86(0x304),_0x5c7b86(0x30b),_0x5c7b86(0x25e),_0x5c7b86(0x34d)];function isNeverEgressHost(_0x45656d){const _0x2ced8c=_0x5c7b86,_0x7f10c3=String(_0x45656d||'')[_0x2ced8c(0x361)]()[_0x2ced8c(0x316)](/\.$/,'');if(!_0x7f10c3)return![];for(const _0x1c9baa of EGRESS_NEVER){const _0xc8467b=_0x1c9baa['replace'](/\.$/,'');if(_0x7f10c3===_0xc8467b||_0x7f10c3['endsWith']('.'+_0xc8467b))return!![];}if(_0x7f10c3[_0x2ced8c(0x312)](_0x2ced8c(0x2c3))||_0x7f10c3[_0x2ced8c(0x212)](_0x2ced8c(0x30a))||_0x7f10c3===_0x2ced8c(0x2ad))return!![];if(_0x7f10c3[_0x2ced8c(0x312)]('.wiki')&&(_0x7f10c3[_0x2ced8c(0x312)](_0x2ced8c(0x224))||_0x7f10c3['includes']('media')))return!![];return![];}function parseProxyFull(_0x5ee944){const _0x27cd51=_0x5c7b86;let _0x127aea=String(_0x5ee944||'')[_0x27cd51(0x2d4)]();if(!_0x127aea)return null;let _0x580437=_0x27cd51(0x1e9),_0xbc5fc3='',_0x5aa741='';const _0x6be870=/^(socks5|socks|http|https|proxyip):\/\//i['exec'](_0x127aea);if(_0x6be870){_0x580437=_0x6be870[0x1][_0x27cd51(0x361)]();if(_0x580437===_0x27cd51(0x23a))_0x580437=_0x27cd51(0x25c);if(_0x580437===_0x27cd51(0x2ae))_0x580437=_0x27cd51(0x24f);if(_0x580437===_0x27cd51(0x1e9))_0x580437=_0x27cd51(0x1e9);_0x127aea=_0x127aea[_0x27cd51(0x268)](_0x6be870[0x0]['length']);}const _0x104778=_0x127aea[_0x27cd51(0x25d)]('@');if(_0x104778>0x0){const _0x75185=_0x127aea[_0x27cd51(0x268)](0x0,_0x104778);_0x127aea=_0x127aea[_0x27cd51(0x268)](_0x104778+0x1);const _0x4d56ab=_0x75185[_0x27cd51(0x1f7)](':');if(_0x4d56ab>=0x0)_0xbc5fc3=_0x75185[_0x27cd51(0x268)](0x0,_0x4d56ab),_0x5aa741=_0x75185[_0x27cd51(0x268)](_0x4d56ab+0x1);else _0xbc5fc3=_0x75185;}let _0x21eef5=_0x127aea,_0x56ffc6=_0x580437===_0x27cd51(0x25c)?0x438:_0x580437===_0x27cd51(0x24f)?0x1f90:0x1bb;if(_0x127aea['includes'](':')&&!_0x127aea[_0x27cd51(0x271)]('[')){const _0x34a34a=_0x127aea['lastIndexOf'](':'),_0x315472=parseInt(_0x127aea[_0x27cd51(0x268)](_0x34a34a+0x1),0xa);_0x315472>0x0&&(_0x56ffc6=_0x315472,_0x21eef5=_0x127aea[_0x27cd51(0x268)](0x0,_0x34a34a));}_0x21eef5=_0x21eef5[_0x27cd51(0x2d4)]();if(!_0x21eef5)return null;return _0x580437==='proxyip'&&(_0x56ffc6===0x438||_0x56ffc6===0x439||_0x56ffc6===0x235a||_0x56ffc6===0x1ed2)&&(_0x580437='socks5'),{'host':_0x21eef5,'port':_0x56ffc6,'protocol':_0x580437,'user':_0xbc5fc3,'pass':_0x5aa741};}function matchEgressHost(_0x534879){const _0x57e08d=_0x5c7b86,_0x5e0c95=String(_0x534879||'')[_0x57e08d(0x361)]()['replace'](/\.$/,'');if(!_0x5e0c95||!egressDomains['length'])return![];if(isNeverEgressHost(_0x5e0c95))return![];if(/^\d{1,3}(?:\.\d{1,3}){3}$/[_0x57e08d(0x1f1)](_0x5e0c95)||_0x5e0c95['includes'](':')&&!_0x5e0c95[_0x57e08d(0x312)]('.'))return![];for(const _0x41cad8 of egressDomains){let _0x210035=String(_0x41cad8||'')['trim']()[_0x57e08d(0x361)]()[_0x57e08d(0x316)](/\.$/,'');if(!_0x210035||_0x210035==='*'||_0x210035==='*.*')continue;if(_0x210035[_0x57e08d(0x271)]('*.')){const _0x5725ac=_0x210035[_0x57e08d(0x268)](0x2);if(!_0x5725ac||!_0x5725ac[_0x57e08d(0x312)]('.')&&_0x5725ac[_0x57e08d(0x345)]<0x4)continue;if(isNeverEgressHost(_0x5725ac))continue;if(_0x5e0c95===_0x5725ac||_0x5e0c95[_0x57e08d(0x212)]('.'+_0x5725ac))return!![];continue;}if(!_0x210035[_0x57e08d(0x312)]('.')&&_0x210035['length']<0x5)continue;if(isNeverEgressHost(_0x210035))continue;if(_0x5e0c95===_0x210035||_0x5e0c95[_0x57e08d(0x212)]('.'+_0x210035))return!![];}return![];}function loadEgressFromEnv(_0x49fce3){const _0x37945d=_0x5c7b86;try{const _0x503aef=String(_0x49fce3?.[_0x37945d(0x1eb)]||_0x49fce3?.['EGRESS_PROXY']||'')[_0x37945d(0x2d4)]();egressProxy=_0x503aef;const _0x30519e=String(_0x49fce3?.[_0x37945d(0x35f)]||'')['trim']();if(_0x503aef&&_0x30519e)egressDomains=_0x30519e[_0x37945d(0x2ee)](/[,\n]+/)['map'](_0x1291cf=>_0x1291cf[_0x37945d(0x2d4)]())[_0x37945d(0x2e1)](Boolean);else _0x503aef?egressDomains=DEFAULT_EGRESS_DOMAINS['slice']():egressDomains=[];}catch(_0x4080bc){}}function applyEgressFromSync(_0x28d55e){const _0x1ab3bd=_0x5c7b86;try{const _0x4327fc=_0x28d55e?.[_0x1ab3bd(0x292)];if(!_0x4327fc)return;if(_0x4327fc[_0x1ab3bd(0x342)]!=null)egressProxy=String(_0x4327fc[_0x1ab3bd(0x342)])[_0x1ab3bd(0x2d4)]();if(!egressProxy){egressDomains=[];return;}if(Array[_0x1ab3bd(0x2ca)](_0x4327fc[_0x1ab3bd(0x2cb)])&&_0x4327fc[_0x1ab3bd(0x2cb)][_0x1ab3bd(0x345)])egressDomains=_0x4327fc['domains'][_0x1ab3bd(0x274)](_0x21e735=>String(_0x21e735)[_0x1ab3bd(0x2d4)]())[_0x1ab3bd(0x2e1)](Boolean);else{if(typeof _0x4327fc[_0x1ab3bd(0x2cb)]===_0x1ab3bd(0x2f6)&&_0x4327fc['domains'][_0x1ab3bd(0x2d4)]())egressDomains=_0x4327fc[_0x1ab3bd(0x2cb)][_0x1ab3bd(0x2ee)](/[,\n]+/)[_0x1ab3bd(0x274)](_0x4202ac=>_0x4202ac[_0x1ab3bd(0x2d4)]())[_0x1ab3bd(0x2e1)](Boolean);else!egressDomains[_0x1ab3bd(0x345)]&&(egressDomains=DEFAULT_EGRESS_DOMAINS[_0x1ab3bd(0x268)]());}}catch(_0x37776e){}}async function readHttpConnectResponse(_0x235b6b){const _0x4bc2fc=_0x5c7b86,_0xe431f2=[];let _0x374ca4=0x0;while(_0x374ca4<0x2000){const {value:_0x4a5192,done:_0x565386}=await _0x235b6b['read']();if(_0x565386)break;if(_0x4a5192&&_0x4a5192[_0x4bc2fc(0x20a)]){_0xe431f2['push'](_0x4a5192),_0x374ca4+=_0x4a5192['byteLength'];const _0x5ee2a5=new Uint8Array(_0x374ca4);let _0x37a13e=0x0;for(const _0xfdd917 of _0xe431f2){_0x5ee2a5['set'](_0xfdd917,_0x37a13e),_0x37a13e+=_0xfdd917[_0x4bc2fc(0x20a)];}const _0x28ed94=new TextDecoder()['decode'](_0x5ee2a5);if(_0x28ed94['includes']('\x0d\x0a\x0d\x0a')){const _0x139e36=_0x28ed94[_0x4bc2fc(0x2ee)]('\x0d\x0a')[0x0]||'';if(!/ 200 /[_0x4bc2fc(0x1f1)](_0x139e36))throw new Error(_0x4bc2fc(0x356)+_0x139e36);return;}}}throw new Error(_0x4bc2fc(0x2b1));}async function connectViaHttpProxy(_0x4edeed,_0x478566,_0x108d73,_0x280620){const _0x7592b2=_0x5c7b86,_0x194118=connect({'hostname':_0x4edeed,'port':_0x478566}),_0x2939cd=_0x194118['writable']['getWriter'](),_0x2c5ed6=_0x194118[_0x7592b2(0x1f3)][_0x7592b2(0x261)](),_0x292642=_0x7592b2(0x313)+_0x108d73+':'+_0x280620+_0x7592b2(0x254)+_0x108d73+':'+_0x280620+_0x7592b2(0x2b5);await _0x2939cd[_0x7592b2(0x325)](new TextEncoder()['encode'](_0x292642)),await readHttpConnectResponse(_0x2c5ed6);try{_0x2939cd[_0x7592b2(0x2a0)]();}catch(_0x1c250c){}try{_0x2c5ed6[_0x7592b2(0x2a0)]();}catch(_0x2da92c){}return _0x194118;}async function connectViaSocks5(_0x152786,_0x447d6d,_0x3f8be4,_0x5ecaae,_0x17a726,_0x57bac5){const _0x3688eb=_0x5c7b86,_0x53a7e4=connect({'hostname':_0x152786,'port':_0x447d6d}),_0x5782fd=_0x53a7e4[_0x3688eb(0x352)]['getWriter'](),_0x539435=_0x53a7e4[_0x3688eb(0x1f3)][_0x3688eb(0x261)]();async function _0x1455c0(_0x5cace6){const _0x470ee6=_0x3688eb,_0x46e102=new Uint8Array(_0x5cace6);let _0x43e620=0x0;while(_0x43e620<_0x5cace6){const {value:_0xed9c63,done:_0x1349e0}=await _0x539435['read']();if(_0x1349e0)throw new Error(_0x470ee6(0x22e));_0x46e102['set'](_0xed9c63,_0x43e620),_0x43e620+=_0xed9c63['byteLength'];}return _0x46e102;}if(_0x17a726)await _0x5782fd['write'](new Uint8Array([0x5,0x2,0x0,0x2]));else await _0x5782fd['write'](new Uint8Array([0x5,0x1,0x0]));const _0x1a4a21=await _0x1455c0(0x2);if(_0x1a4a21[0x0]!==0x5)throw new Error(_0x3688eb(0x228));if(_0x1a4a21[0x1]===0x2){const _0x538634=new TextEncoder()[_0x3688eb(0x260)](_0x17a726||''),_0x52e444=new TextEncoder()[_0x3688eb(0x260)](_0x57bac5||''),_0x423312=new Uint8Array(0x3+_0x538634[_0x3688eb(0x345)]+_0x52e444[_0x3688eb(0x345)]);_0x423312[0x0]=0x1,_0x423312[0x1]=_0x538634['length'],_0x423312['set'](_0x538634,0x2),_0x423312[0x2+_0x538634[_0x3688eb(0x345)]]=_0x52e444[_0x3688eb(0x345)],_0x423312[_0x3688eb(0x339)](_0x52e444,0x3+_0x538634[_0x3688eb(0x345)]),await _0x5782fd[_0x3688eb(0x325)](_0x423312);const _0x56a676=await _0x1455c0(0x2);if(_0x56a676[0x1]!==0x0)throw new Error(_0x3688eb(0x347));}else{if(_0x1a4a21[0x1]===0xff)throw new Error('socks5\x20no\x20acceptable\x20method');else{if(_0x1a4a21[0x1]!==0x0)throw new Error('socks5\x20method\x20'+_0x1a4a21[0x1]);}}const _0xb754f9=new TextEncoder()[_0x3688eb(0x260)](_0x3f8be4),_0x1f6837=new Uint8Array(0x4+0x1+_0xb754f9['length']+0x2);_0x1f6837[0x0]=0x5,_0x1f6837[0x1]=0x1,_0x1f6837[0x2]=0x0,_0x1f6837[0x3]=0x3,_0x1f6837[0x4]=_0xb754f9[_0x3688eb(0x345)],_0x1f6837[_0x3688eb(0x339)](_0xb754f9,0x5),_0x1f6837[0x5+_0xb754f9[_0x3688eb(0x345)]]=_0x5ecaae>>0x8&0xff,_0x1f6837[0x6+_0xb754f9[_0x3688eb(0x345)]]=_0x5ecaae&0xff,await _0x5782fd[_0x3688eb(0x325)](_0x1f6837);const _0x568883=await _0x1455c0(0x4);if(_0x568883[0x0]!==0x5||_0x568883[0x1]!==0x0)throw new Error('socks5\x20connect\x20status\x20'+(_0x568883[0x1]??'?'));const _0x551cc2=_0x568883[0x3];if(_0x551cc2===0x1)await _0x1455c0(0x6);else{if(_0x551cc2===0x3){const _0x2de9e4=await _0x1455c0(0x1);await _0x1455c0(_0x2de9e4[0x0]+0x2);}else{if(_0x551cc2===0x4)await _0x1455c0(0x12);else throw new Error(_0x3688eb(0x251));}}try{_0x5782fd[_0x3688eb(0x2a0)]();}catch(_0x2730bd){}try{_0x539435[_0x3688eb(0x2a0)]();}catch(_0x454482){}return _0x53a7e4;}async function connectViaProxyIP(_0xf480c2,_0x416ec0){return connect({'hostname':_0xf480c2,'port':_0x416ec0||0x1bb});}async function connectOutbound(_0x5b4323,_0x5d869d){const _0x24deb2=_0x5c7b86,_0x132050=String(_0x5b4323||''),_0x2fd276=Number(_0x5d869d)||0x1bb,_0x366f89=()=>connect({'hostname':_0x132050,'port':_0x2fd276});if(isNeverEgressHost(_0x132050))return _0x366f89();if(!egressProxy||!matchEgressHost(_0x132050))return _0x366f89();const _0x1b31b1=parseProxyFull(egressProxy);if(!_0x1b31b1||!_0x1b31b1[_0x24deb2(0x209)])return _0x366f89();if(_0x1b31b1[_0x24deb2(0x275)]!==_0x24deb2(0x25c)&&_0x1b31b1[_0x24deb2(0x275)]!==_0x24deb2(0x24f))return wlog(_0x24deb2(0x1ee),_0x24deb2(0x223),{'target':_0x132050,'via':_0x1b31b1[_0x24deb2(0x209)],'protocol':_0x1b31b1['protocol']}),_0x366f89();wlog(_0x24deb2(0x1ee),_0x24deb2(0x22c),{'target':_0x132050,'targetPort':_0x2fd276,'via':_0x1b31b1[_0x24deb2(0x209)],'viaPort':_0x1b31b1[_0x24deb2(0x298)],'protocol':_0x1b31b1[_0x24deb2(0x275)]});try{if(_0x1b31b1['protocol']==='socks5')return await connectViaSocks5(_0x1b31b1[_0x24deb2(0x209)],_0x1b31b1['port'],_0x132050,_0x2fd276,_0x1b31b1['user'],_0x1b31b1['pass']);return await connectViaHttpProxy(_0x1b31b1[_0x24deb2(0x209)],_0x1b31b1[_0x24deb2(0x298)],_0x132050,_0x2fd276);}catch(_0x45cf7a){return wlog('warn',_0x24deb2(0x338),_0x45cf7a?.[_0x24deb2(0x34b)]||String(_0x45cf7a)),_0x366f89();}}function pickNum(_0x46bf0c,_0x412118,_0x41c57c){for(const _0x45d832 of _0x412118){if(_0x46bf0c==null||!(_0x45d832 in _0x46bf0c))continue;const _0x521e0f=_0x46bf0c[_0x45d832];if(_0x521e0f===null||_0x521e0f===undefined||_0x521e0f==='')continue;const _0x497213=Number(_0x521e0f);if(Number['isFinite'](_0x497213))return _0x497213;}return _0x41c57c;}function normalizeUserLimits(_0x46dd69){const _0x22ac16=_0x5c7b86,_0x7cefc5=_0x46dd69||{};let _0x5bb9b1;[_0x22ac16(0x2d7),_0x22ac16(0x21f),_0x22ac16(0x314),_0x22ac16(0x256),_0x22ac16(0x21d)][_0x22ac16(0x30d)](_0x567c57=>_0x567c57 in _0x7cefc5&&_0x7cefc5[_0x567c57]!==null&&_0x7cefc5[_0x567c57]!==undefined&&_0x7cefc5[_0x567c57]!=='')?_0x5bb9b1=Math[_0x22ac16(0x2bd)](0x0,pickNum(_0x7cefc5,[_0x22ac16(0x2d7),_0x22ac16(0x21f),_0x22ac16(0x314),_0x22ac16(0x256),_0x22ac16(0x21d)],0x1)):_0x5bb9b1=0x1;let _0x1da393=0x0;if([_0x22ac16(0x303),_0x22ac16(0x315),_0x22ac16(0x24b),_0x22ac16(0x1ff),_0x22ac16(0x203)]['some'](_0x5770c7=>_0x5770c7 in _0x7cefc5&&_0x7cefc5[_0x5770c7]!=null&&_0x7cefc5[_0x5770c7]!==''))_0x1da393=Math[_0x22ac16(0x2bd)](0x0,pickNum(_0x7cefc5,['speedLimitKBps',_0x22ac16(0x315),_0x22ac16(0x24b),_0x22ac16(0x1ff),'limitKBps'],0x0));else{if([_0x22ac16(0x23b),_0x22ac16(0x32c),_0x22ac16(0x241)]['some'](_0x3efee7=>_0x3efee7 in _0x7cefc5&&_0x7cefc5[_0x3efee7]!=null&&_0x7cefc5[_0x3efee7]!=='')){const _0x250d4a=Math[_0x22ac16(0x2bd)](0x0,pickNum(_0x7cefc5,[_0x22ac16(0x23b),_0x22ac16(0x32c),_0x22ac16(0x241)],0x0));_0x1da393=_0x250d4a*0x80;}}return{'ipLimit':_0x5bb9b1,'speedLimitKBps':_0x1da393};}let dnsStats={'total':0x0,'ok':0x0,'fail':0x0,'fallback':0x0,'dotBlocked':0x0,'dohBlocked':0x0};const memLogs=[];let nodeDisabled=![],lastSyncAt=0x0,childId='child-unknown',dbReady=![],_env=null,_ctx=null;function wlog(_0x3ef744,_0x36ec95,_0x152de8){const _0x1021ad=_0x5c7b86;if(logMode===_0x1021ad(0x285))return null;const _0x32483c=Date['now']();let _0xa3c487='';try{if(_0x152de8!==undefined){_0xa3c487=typeof _0x152de8===_0x1021ad(0x2f6)?_0x152de8:JSON[_0x1021ad(0x1e5)](_0x152de8);if(_0xa3c487['length']>0x5dc)_0xa3c487=_0xa3c487[_0x1021ad(0x268)](0x0,0x5dc)+'…';}}catch(_0x4ded53){_0xa3c487=String(_0x152de8);}const _0x548761={'ts':_0x32483c,'level':String(_0x3ef744||_0x1021ad(0x25f)),'msg':String(_0x36ec95||''),'extra':_0xa3c487};try{memLogs[_0x1021ad(0x276)](_0x548761);while(memLogs[_0x1021ad(0x345)]>MEM_LOG_MAX)memLogs[_0x1021ad(0x30c)]();}catch(_0x1db69d){}try{console[_0x1021ad(0x280)]('['+_0x3ef744+']',_0x36ec95,_0xa3c487||'');}catch(_0x385a50){}if(logMode===_0x1021ad(0x258))try{_env?.['DB']&&_ctx&&typeof _ctx[_0x1021ad(0x205)]==='function'&&_ctx[_0x1021ad(0x205)](dbInsertLog(_env,_0x548761)['catch'](()=>{}));}catch(_0x291e24){}return _0x548761;}async function dbInsertLog(_0x19ad27,_0x1a9361){const _0x539c37=_0x5c7b86;if(!_0x19ad27?.['DB'])return;try{await ensureDb(_0x19ad27),await _0x19ad27['DB'][_0x539c37(0x20d)](_0x539c37(0x206))[_0x539c37(0x2a1)](_0x1a9361['ts'],_0x1a9361[_0x539c37(0x32b)],_0x1a9361['msg'],_0x1a9361[_0x539c37(0x200)]||'')[_0x539c37(0x25a)](),Math[_0x539c37(0x262)]()<0.02&&await _0x19ad27['DB']['prepare'](_0x539c37(0x1e8))['bind'](D1_LOG_MAX_ROWS)['run']();}catch(_0x10b61c){}}async function dbLoadLogs(_0x14371c,_0x733674=0x64){const _0x7e142e=_0x5c7b86,_0x233de4={'mem':memLogs[_0x7e142e(0x268)](-_0x733674),'d1':[],'version':VERSION,'childId':childId,'logMode':logMode,'dnsStats':{...dnsStats}};if(!_0x14371c?.['DB'])return _0x233de4;try{await ensureDb(_0x14371c);const _0x135b22=await _0x14371c['DB'][_0x7e142e(0x20d)](_0x7e142e(0x2ed))[_0x7e142e(0x2a1)](Math[_0x7e142e(0x20b)](0x1f4,Math[_0x7e142e(0x2bd)](0x1,_0x733674)))[_0x7e142e(0x355)]();_0x233de4['d1']=_0x135b22[_0x7e142e(0x2ef)]||[];}catch(_0x2e8600){_0x233de4['d1Error']=String(_0x2e8600?.[_0x7e142e(0x34b)]||_0x2e8600);}return _0x233de4;}async function dbClearLogs(_0x27e3f5){const _0x1cde0a=_0x5c7b86;if(!_0x27e3f5?.['DB'])return![];try{return await ensureDb(_0x27e3f5),await _0x27e3f5['DB'][_0x1cde0a(0x20d)](_0x1cde0a(0x34c))[_0x1cde0a(0x25a)](),memLogs[_0x1cde0a(0x345)]=0x0,!![];}catch(_0x3fa990){return![];}}async function ensureDb(_0x45d1ea){const _0x2f1f6d=_0x5c7b86;if(!_0x45d1ea?.['DB'])return![];if(dbReady)return!![];try{await _0x45d1ea['DB'][_0x2f1f6d(0x255)]([_0x45d1ea['DB'][_0x2f1f6d(0x20d)](_0x2f1f6d(0x2fd)),_0x45d1ea['DB'][_0x2f1f6d(0x20d)](_0x2f1f6d(0x252)),_0x45d1ea['DB']['prepare'](_0x2f1f6d(0x27a)),_0x45d1ea['DB'][_0x2f1f6d(0x20d)]('CREATE\x20TABLE\x20IF\x20NOT\x20EXISTS\x20node_usage_delta\x20(\x0a\x20\x20\x20\x20\x20\x20\x20\x20user_id\x20TEXT\x20PRIMARY\x20KEY,\x20up\x20INTEGER\x20DEFAULT\x200,\x20down\x20INTEGER\x20DEFAULT\x200\x0a\x20\x20\x20\x20\x20\x20)'),_0x45d1ea['DB']['prepare'](_0x2f1f6d(0x20f))]);try{const _0x47bfb9=await _0x45d1ea['DB'][_0x2f1f6d(0x20d)](_0x2f1f6d(0x31d))[_0x2f1f6d(0x355)](),_0x37234b=new Set((_0x47bfb9[_0x2f1f6d(0x2ef)]||[])[_0x2f1f6d(0x274)](_0x1022f1=>_0x1022f1[_0x2f1f6d(0x35e)]));!_0x37234b['has'](_0x2f1f6d(0x328))&&await _0x45d1ea['DB']['prepare'](_0x2f1f6d(0x225))['run']();const _0x5e60d1=[[_0x2f1f6d(0x2cd),_0x2f1f6d(0x2e4)],['speed_limit_kbps',_0x2f1f6d(0x2e4)],['ip_limit',_0x2f1f6d(0x1e7)]];for(const [_0x3c62fc,_0x17822f]of _0x5e60d1){!_0x37234b[_0x2f1f6d(0x2dc)](_0x3c62fc)&&await _0x45d1ea['DB']['prepare']('ALTER\x20TABLE\x20node_users\x20ADD\x20COLUMN\x20'+_0x3c62fc+'\x20'+_0x17822f)[_0x2f1f6d(0x25a)]();}}catch(_0x47c6e7){}return dbReady=!![],!![];}catch(_0x4d42d6){return![];}}async function saveUsersToDb(_0x31b9fa,_0x2cef8a,_0x43aaf9){const _0x4b483b=_0x5c7b86;if(!await ensureDb(_0x31b9fa))return;try{const _0x7f82ff=[_0x31b9fa['DB'][_0x4b483b(0x20d)](_0x4b483b(0x32a)),_0x31b9fa['DB'][_0x4b483b(0x20d)](_0x4b483b(0x308))[_0x4b483b(0x2a1)](_0x43aaf9?'1':'0',Date['now']()),_0x31b9fa['DB'][_0x4b483b(0x20d)]('INSERT\x20INTO\x20node_state\x20(key,\x20value,\x20updated_at)\x20VALUES\x20(\x27last_sync\x27,\x20?,\x20?)\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20ON\x20CONFLICT(key)\x20DO\x20UPDATE\x20SET\x20value=excluded.value,\x20updated_at=excluded.updated_at')['bind'](String(Date[_0x4b483b(0x318)]()),Date['now']())];for(const _0x25eae6 of _0x2cef8a){if(!_0x25eae6?.['uuid']||!_0x25eae6?.['id'])continue;_0x7f82ff[_0x4b483b(0x276)](_0x31b9fa['DB'][_0x4b483b(0x20d)](_0x4b483b(0x2d8))[_0x4b483b(0x2a1)](String(_0x25eae6[_0x4b483b(0x2e6)])[_0x4b483b(0x361)](),String(_0x25eae6['id']),_0x25eae6[_0x4b483b(0x35e)]||'',_0x25eae6['enabled']===![]?0x0:0x1,_0x25eae6[_0x4b483b(0x334)]||null,Number(_0x25eae6[_0x4b483b(0x326)])||0x0,Number(_0x25eae6[_0x4b483b(0x30f)])||0x0,normalizeUserLimits(_0x25eae6)[_0x4b483b(0x303)],normalizeUserLimits(_0x25eae6)[_0x4b483b(0x2d7)],_0x25eae6[_0x4b483b(0x207)]===![]?0x0:0x1));}await _0x31b9fa['DB'][_0x4b483b(0x255)](_0x7f82ff);}catch(_0x3f4f01){}}async function loadUsersFromDb(_0x468dec){const _0x31abef=_0x5c7b86;if(!await ensureDb(_0x468dec))return![];try{const _0xae5f62=await _0x468dec['DB'][_0x31abef(0x20d)](_0x31abef(0x360))[_0x31abef(0x355)](),_0x501ca7=_0xae5f62[_0x31abef(0x2ef)]||[];if(!_0x501ca7['length'])return![];const _0x224c71=new Map();for(const _0x201f43 of _0x501ca7){const _0x1cb4bf=String(_0x201f43['uuid'])[_0x31abef(0x361)]();{const _0x349959=normalizeUserLimits({'speed_limit_kbps':_0x201f43[_0x31abef(0x315)],'ip_limit':_0x201f43[_0x31abef(0x21f)],'speedLimitKBps':_0x201f43[_0x31abef(0x315)],'ipLimit':_0x201f43[_0x31abef(0x21f)]}),_0x167cb7=_0x201f43[_0x31abef(0x21f)]===null||_0x201f43[_0x31abef(0x21f)]===undefined?0x1:Math[_0x31abef(0x2bd)](0x0,Number(_0x201f43[_0x31abef(0x21f)])||0x0);_0x224c71['set'](_0x1cb4bf,{'id':String(_0x201f43['id']),'uuid':_0x1cb4bf,'name':_0x201f43['name']||'','enabled':!!_0x201f43[_0x31abef(0x2f3)],'expiry':_0x201f43[_0x31abef(0x334)]||null,'quotaBytes':_0x201f43[_0x31abef(0x2de)]||0x0,'dailyQuotaBytes':_0x201f43[_0x31abef(0x2cd)]||0x0,'speedLimitKBps':Math[_0x31abef(0x2bd)](0x0,Number(_0x201f43[_0x31abef(0x315)])||0x0),'ipLimit':_0x167cb7,'blockAds':!!_0x201f43[_0x31abef(0x328)]});}}usersByUuid=_0x224c71;const _0x3210c6=await _0x468dec['DB'][_0x31abef(0x20d)](_0x31abef(0x2d9))[_0x31abef(0x32d)]();nodeDisabled=_0x3210c6?.['value']==='1';const _0x4f0fa4=await _0x468dec['DB'][_0x31abef(0x20d)](_0x31abef(0x220))['first']();return lastSyncAt=_0x4f0fa4?.[_0x31abef(0x2d5)]?Number(_0x4f0fa4[_0x31abef(0x2d5)]):Date[_0x31abef(0x318)](),!![];}catch(_0x3f6b5b){return![];}}async function ensureUsersLoaded(_0x4afd4a){try{if(usersByUuid['size']>0x0&&lastSyncAt>0x0)return;await loadUsersFromDb(_0x4afd4a||_env);}catch(_0x4ba687){}}async function dbAddUsage(_0x4d26a1,_0xe419e2,_0x1fcd7e,_0x3a3665){const _0x42f156=_0x5c7b86;if(!_0x4d26a1?.['DB']||!_0xe419e2||_0x1fcd7e+_0x3a3665<=0x0)return;try{await ensureDb(_0x4d26a1),await _0x4d26a1['DB'][_0x42f156(0x20d)]('\x0a\x20\x20\x20\x20\x20\x20INSERT\x20INTO\x20node_usage_delta\x20(user_id,\x20up,\x20down)\x20VALUES\x20(?,\x20?,\x20?)\x0a\x20\x20\x20\x20\x20\x20ON\x20CONFLICT(user_id)\x20DO\x20UPDATE\x20SET\x0a\x20\x20\x20\x20\x20\x20\x20\x20up\x20=\x20up\x20+\x20excluded.up,\x20down\x20=\x20down\x20+\x20excluded.down\x0a\x20\x20\x20\x20')[_0x42f156(0x2a1)](_0xe419e2,_0x1fcd7e,_0x3a3665)[_0x42f156(0x25a)]();}catch(_0x56bf61){}}async function dbLoadActiveIps(_0xaba1cc){const _0x2aa370=_0x5c7b86;if(!_0xaba1cc?.['DB'])return[];try{await ensureDb(_0xaba1cc);const _0x46364a=Date[_0x2aa370(0x318)]()-IP_IDLE_MS;await _0xaba1cc['DB']['prepare'](_0x2aa370(0x263))[_0x2aa370(0x2a1)](_0x46364a)[_0x2aa370(0x25a)]();const _0x4bfff3=await _0xaba1cc['DB'][_0x2aa370(0x20d)]('SELECT\x20user_id,\x20ip\x20FROM\x20node_active_ips')[_0x2aa370(0x355)](),_0xc13584=new Map();for(const _0x155051 of _0x4bfff3[_0x2aa370(0x2ef)]||[]){if(!_0xc13584[_0x2aa370(0x2dc)](_0x155051[_0x2aa370(0x362)]))_0xc13584[_0x2aa370(0x339)](_0x155051[_0x2aa370(0x362)],[]);_0xc13584[_0x2aa370(0x236)](_0x155051['user_id'])['push'](_0x155051['ip']);}return Array[_0x2aa370(0x1ef)](_0xc13584[_0x2aa370(0x248)]())['map'](([_0x2200ff,_0x8efb9e])=>({'user_id':_0x2200ff,'ips':_0x8efb9e}));}catch{return[];}}async function dbLoadAndClearUsage(_0x584131){const _0x5b31dd=_0x5c7b86;if(!_0x584131?.['DB'])return[];try{await ensureDb(_0x584131);const _0x34be63=await _0x584131['DB'][_0x5b31dd(0x20d)](_0x5b31dd(0x294))['all'](),_0x57b73d=(_0x34be63[_0x5b31dd(0x2ef)]||[])[_0x5b31dd(0x274)](_0x11702d=>({'user_id':_0x11702d[_0x5b31dd(0x362)],'up':Number(_0x11702d['up'])||0x0,'down':Number(_0x11702d['down'])||0x0}));if(_0x57b73d[_0x5b31dd(0x345)])await _0x584131['DB'][_0x5b31dd(0x20d)](_0x5b31dd(0x1f8))['run']();return _0x57b73d;}catch{return[];}}async function tryAcquireIp(_0x3969c4,_0x5b3509,_0x1385da,_0x2d4fb4){const _0x5c85ce=_0x5c7b86,_0xbe684e=Number(_0x2d4fb4);if(!Number['isFinite'](_0xbe684e)||_0xbe684e<=0x0)return{'ok':!![],'unlimited':!![]};if(!_0x5b3509||!_0x1385da)return{'ok':!![],'fallback':!![]};const _0x1fef67=String(_0x1385da)[_0x5c85ce(0x2d4)]();if(!isValidPublicIp(_0x1fef67)||_0x1fef67===_0x5c85ce(0x244))return{'ok':!![],'skipped':!![],'reason':'invalid-or-unknown-ip'};const _0x488a90=_0x5b3509+'|'+_0x1fef67,_0x39a5a1=Date[_0x5c85ce(0x318)](),_0x3d1bee=_0x39a5a1-IP_IDLE_MS;let _0x6590e2=memIps['get'](_0x5b3509);!_0x6590e2&&(_0x6590e2=new Map(),memIps[_0x5c85ce(0x339)](_0x5b3509,_0x6590e2));for(const [_0x148a84,_0x14feba]of _0x6590e2){if(_0x39a5a1-_0x14feba>IP_IDLE_MS)_0x6590e2[_0x5c85ce(0x2b2)](_0x148a84);}const _0x3a9e4e=ipCache[_0x5c85ce(0x236)](_0x488a90);if(_0x3a9e4e&&_0x3a9e4e['ok']&&_0x39a5a1-_0x3a9e4e['at']<IP_CACHE_TTL_MS)return _0x6590e2[_0x5c85ce(0x339)](_0x1fef67,_0x39a5a1),{'ok':!![],'cached':!![],'limit':_0xbe684e};if(!_0x3969c4?.['DB']){if(!_0x6590e2[_0x5c85ce(0x2dc)](_0x1fef67)&&_0x6590e2[_0x5c85ce(0x33d)]>=_0xbe684e)return{'ok':![],'reason':_0x5c85ce(0x2c1),'current':_0x6590e2[_0x5c85ce(0x33d)],'limit':_0xbe684e,'via':_0x5c85ce(0x35c)};return _0x6590e2[_0x5c85ce(0x339)](_0x1fef67,_0x39a5a1),ipCache['set'](_0x488a90,{'at':_0x39a5a1,'ok':!![]}),{'ok':!![],'via':_0x5c85ce(0x31e),'current':_0x6590e2[_0x5c85ce(0x33d)],'limit':_0xbe684e};}try{await ensureDb(_0x3969c4),await _0x3969c4['DB']['prepare'](_0x5c85ce(0x299))[_0x5c85ce(0x2a1)](_0x5b3509,_0x3d1bee)[_0x5c85ce(0x25a)]();const _0x2256fe=await _0x3969c4['DB'][_0x5c85ce(0x20d)](_0x5c85ce(0x31a))[_0x5c85ce(0x2a1)](_0x5b3509)[_0x5c85ce(0x355)](),_0x308733=_0x2256fe['results']||[],_0x44f593=new Set(_0x308733[_0x5c85ce(0x274)](_0x4f05f3=>String(_0x4f05f3['ip'])));if(_0x44f593['has'](_0x1fef67))return await _0x3969c4['DB'][_0x5c85ce(0x20d)](_0x5c85ce(0x23d))[_0x5c85ce(0x2a1)](_0x39a5a1,_0x5b3509,_0x1fef67)[_0x5c85ce(0x25a)](),_0x6590e2[_0x5c85ce(0x339)](_0x1fef67,_0x39a5a1),ipCache[_0x5c85ce(0x339)](_0x488a90,{'at':_0x39a5a1,'ok':!![]}),{'ok':!![],'existing':!![],'current':_0x44f593[_0x5c85ce(0x33d)],'limit':_0xbe684e};if(_0x308733[_0x5c85ce(0x345)]>=_0xbe684e)return{'ok':![],'reason':_0x5c85ce(0x2c1),'current':_0x308733[_0x5c85ce(0x345)],'limit':_0xbe684e,'held':_0x308733[_0x5c85ce(0x274)](_0x4b3fc6=>_0x4b3fc6['ip']),'via':_0x5c85ce(0x23f)};await _0x3969c4['DB'][_0x5c85ce(0x20d)](_0x5c85ce(0x35b))[_0x5c85ce(0x2a1)](_0x5b3509,_0x1fef67,_0x39a5a1)[_0x5c85ce(0x25a)]();const _0x484944=await _0x3969c4['DB'][_0x5c85ce(0x20d)](_0x5c85ce(0x290))[_0x5c85ce(0x2a1)](_0x5b3509,_0x3d1bee)[_0x5c85ce(0x355)](),_0x290c7f=_0x484944[_0x5c85ce(0x2ef)]||[];if(_0x290c7f[_0x5c85ce(0x345)]>_0xbe684e){const _0x1382ba=new Set(_0x290c7f[_0x5c85ce(0x268)](0x0,_0xbe684e)[_0x5c85ce(0x274)](_0x26213e=>String(_0x26213e['ip'])));for(const _0xd1bc42 of _0x290c7f){const _0x21b787=String(_0xd1bc42['ip']);!_0x1382ba[_0x5c85ce(0x2dc)](_0x21b787)&&await _0x3969c4['DB'][_0x5c85ce(0x20d)](_0x5c85ce(0x35a))['bind'](_0x5b3509,_0x21b787)[_0x5c85ce(0x25a)]();}if(!_0x1382ba[_0x5c85ce(0x2dc)](_0x1fef67))return _0x6590e2['delete'](_0x1fef67),ipCache[_0x5c85ce(0x2b2)](_0x488a90),{'ok':![],'reason':_0x5c85ce(0x2c1),'current':_0x290c7f[_0x5c85ce(0x345)],'limit':_0xbe684e,'via':'d1-race'};}_0x6590e2[_0x5c85ce(0x339)](_0x1fef67,_0x39a5a1),ipCache[_0x5c85ce(0x339)](_0x488a90,{'at':_0x39a5a1,'ok':!![]});if(ipCache[_0x5c85ce(0x33d)]>0x1f4)ipCache[_0x5c85ce(0x2b2)](ipCache[_0x5c85ce(0x2d6)]()[_0x5c85ce(0x2f8)]()[_0x5c85ce(0x2d5)]);return{'ok':!![],'current':Math[_0x5c85ce(0x20b)](_0x290c7f['length'],_0xbe684e),'limit':_0xbe684e,'via':'d1'};}catch(_0x1db82a){if(!_0x6590e2[_0x5c85ce(0x2dc)](_0x1fef67)&&_0x6590e2['size']>=_0xbe684e)return{'ok':![],'reason':'ip\x20limit','current':_0x6590e2[_0x5c85ce(0x33d)],'limit':_0xbe684e,'via':_0x5c85ce(0x281)};return _0x6590e2[_0x5c85ce(0x339)](_0x1fef67,_0x39a5a1),ipCache['set'](_0x488a90,{'at':_0x39a5a1,'ok':!![]}),{'ok':!![],'via':_0x5c85ce(0x281),'current':_0x6590e2[_0x5c85ce(0x33d)],'limit':_0xbe684e};}}function touchActiveIp(_0x2c50e9,_0x34cc5e,_0x300d99){const _0x24e379=_0x5c7b86;if(!_0x34cc5e||!_0x300d99)return;const _0x1acb52=String(_0x300d99),_0x2aa89f=Date[_0x24e379(0x318)](),_0x21f8e9=memIps[_0x24e379(0x236)](_0x34cc5e);if(_0x21f8e9)_0x21f8e9[_0x24e379(0x339)](_0x1acb52,_0x2aa89f);const _0x30fcd3=_0x34cc5e+'|'+_0x1acb52,_0x4401d0=ipCache['get'](_0x30fcd3);if(_0x4401d0&&_0x2aa89f-_0x4401d0['at']<IP_CACHE_TTL_MS)return;ipCache[_0x24e379(0x339)](_0x30fcd3,{'at':_0x2aa89f,'ok':!![]});if(!_0x2c50e9?.['DB'])return;const _0x22042c=_0x2c50e9['DB'][_0x24e379(0x20d)](_0x24e379(0x2a9))[_0x24e379(0x2a1)](_0x2aa89f,_0x34cc5e,_0x1acb52)['run']()[_0x24e379(0x306)](()=>{});if(_ctx&&typeof _ctx[_0x24e379(0x205)]==='function')_ctx[_0x24e379(0x205)](_0x22042c);}function generateChildId(_0x3b68b1){const _0xc38047=_0x5c7b86;try{const _0x387a15=new URL(_0x3b68b1)[_0xc38047(0x24e)]['toLowerCase']();return _0xc38047(0x1e6)+_0x387a15[_0xc38047(0x316)](/[^a-z0-9.-]/g,'')['replace'](/\./g,'-');}catch{return'child-unknown';}}function isValidPublicIp(_0x4b1678){const _0x4ec212=_0x5c7b86;if(!_0x4b1678||typeof _0x4b1678!==_0x4ec212(0x2f6))return![];const _0x486082=_0x4b1678['trim'](),_0x2c0478=_0x486082['match'](/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);if(_0x2c0478){const _0x4ef172=[+_0x2c0478[0x1],+_0x2c0478[0x2],+_0x2c0478[0x3],+_0x2c0478[0x4]];if(_0x4ef172[_0x4ec212(0x30d)](_0x110ebc=>_0x110ebc>0xff))return![];if(_0x4ef172[0x0]===0x0)return![];if(_0x4ef172[0x0]===0xa)return![];if(_0x4ef172[0x0]===0x7f)return![];if(_0x4ef172[0x0]===0xa9&&_0x4ef172[0x1]===0xfe)return![];if(_0x4ef172[0x0]===0xac&&_0x4ef172[0x1]>=0x10&&_0x4ef172[0x1]<=0x1f)return![];if(_0x4ef172[0x0]===0xc0&&_0x4ef172[0x1]===0xa8)return![];if(_0x4ef172[0x0]===0x64&&_0x4ef172[0x1]>=0x40&&_0x4ef172[0x1]<=0x7f)return![];if(_0x4ef172[0x0]===0x68&&_0x4ef172[0x1]>=0x10&&_0x4ef172[0x1]<=0x1f)return![];if(_0x4ef172[0x0]===0xac&&_0x4ef172[0x1]>=0x40&&_0x4ef172[0x1]<=0x47)return![];if(_0x4ef172[0x0]===0xad&&_0x4ef172[0x1]===0xf5)return![];if(_0x4ef172[0x0]===0x67&&_0x4ef172[0x1]===0x15&&_0x4ef172[0x2]===0xf4)return![];if(_0x4ef172[0x0]===0x8d&&_0x4ef172[0x1]===0x65)return![];if(_0x4ef172[0x0]===0x6c&&_0x4ef172[0x1]===0xa2)return![];if(_0x4ef172[0x0]===0xbe&&_0x4ef172[0x1]===0x5d)return![];if(_0x4ef172[0x0]===0xbc&&_0x4ef172[0x1]===0x72)return![];if(_0x4ef172[0x0]===0xc5&&_0x4ef172[0x1]===0xea)return![];if(_0x4ef172[0x0]===0xc6&&_0x4ef172[0x1]===0x29)return![];if(_0x4ef172[0x0]===0xa2&&_0x4ef172[0x1]===0x9e)return![];if(_0x4ef172[0x0]===0xcd&&_0x4ef172[0x1]>=0xfb)return![];return!![];}if(_0x486082[_0x4ec212(0x312)](':')){const _0x4e9a2a=_0x486082['toLowerCase']();if(_0x4e9a2a===_0x4ec212(0x354)||_0x4e9a2a[_0x4ec212(0x271)](_0x4ec212(0x21b))||_0x4e9a2a[_0x4ec212(0x271)]('fc')||_0x4e9a2a[_0x4ec212(0x271)]('fd'))return![];const _0x54cb22=_0x4e9a2a[_0x4ec212(0x226)](/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);if(_0x54cb22)return isValidPublicIp(_0x54cb22[0x1]);return!![];}return![];}function getClientIP(_0x3a64c9){const _0x2b379f=_0x5c7b86;try{const _0x2ca056=(_0x3a64c9[_0x2b379f(0x26b)][_0x2b379f(0x236)]('CF-Connecting-IP')||_0x3a64c9[_0x2b379f(0x26b)][_0x2b379f(0x236)](_0x2b379f(0x1fd))||'')[_0x2b379f(0x2d4)]();if(isValidPublicIp(_0x2ca056))return _0x2ca056;const _0x4aa210=(_0x3a64c9['headers'][_0x2b379f(0x236)](_0x2b379f(0x23c))||_0x3a64c9['headers'][_0x2b379f(0x236)](_0x2b379f(0x366))||'')[_0x2b379f(0x2d4)]();if(isValidPublicIp(_0x4aa210))return _0x4aa210;const _0x1d5d67=_0x3a64c9[_0x2b379f(0x26b)][_0x2b379f(0x236)](_0x2b379f(0x1fb))||_0x3a64c9[_0x2b379f(0x26b)]['get'](_0x2b379f(0x364))||'';if(_0x1d5d67){const _0x802b3b=_0x1d5d67[_0x2b379f(0x2ee)](',')[_0x2b379f(0x274)](_0x3bba6c=>_0x3bba6c[_0x2b379f(0x2d4)]())[_0x2b379f(0x2e1)](Boolean);for(const _0xcdb6db of _0x802b3b){if(isValidPublicIp(_0xcdb6db))return _0xcdb6db;}}}catch(_0x297825){}return'0.0.0.0';}function extractSecret(_0x57cc22){const _0x4ab235=_0x5c7b86,_0x3513b0=_0x57cc22['headers'],_0x110083=_0x3513b0[_0x4ab235(0x236)](_0x4ab235(0x288))||'';if(_0x110083['toLowerCase']()[_0x4ab235(0x271)](_0x4ab235(0x2eb)))return _0x110083[_0x4ab235(0x268)](0x7)['trim']();return(_0x3513b0[_0x4ab235(0x236)](_0x4ab235(0x28c))||_0x3513b0[_0x4ab235(0x236)](_0x4ab235(0x216))||_0x3513b0[_0x4ab235(0x236)]('x-secret')||'')[_0x4ab235(0x2d4)]();}function requireMotherAuth(_0x45de12){const _0x2b02d3=extractSecret(_0x45de12);return!!(_0x2b02d3&&_0x2b02d3===API_SECRET);}function isExpired(_0x2155b8){const _0x541e71=_0x5c7b86;if(!_0x2155b8)return![];const _0x21067d=Date[_0x541e71(0x1e4)](_0x2155b8);return Number[_0x541e71(0x336)](_0x21067d)&&Date[_0x541e71(0x318)]()>_0x21067d;}function getUserByUuid(_0x4c64e1){const _0x28c336=_0x5c7b86;if(!_0x4c64e1)return null;const _0x28f454=usersByUuid['get'](String(_0x4c64e1)[_0x28c336(0x361)]());if(!_0x28f454||!_0x28f454[_0x28c336(0x2f3)]||isExpired(_0x28f454['expiry']))return null;return _0x28f454;}function sleep(_0x590f11){const _0x14a034=_0x5c7b86;if(_0x590f11<=0x0)return Promise[_0x14a034(0x317)]();return new Promise(_0x22d384=>setTimeout(_0x22d384,_0x590f11));}function isIpLiteral(_0x262e87){const _0x3cc798=_0x5c7b86,_0x32486e=String(_0x262e87||'')[_0x3cc798(0x2d4)]();if(!_0x32486e)return![];if(/^\d{1,3}(\.\d{1,3}){3}$/['test'](_0x32486e))return!![];if(_0x32486e[_0x3cc798(0x312)](':'))return!![];return![];}function createRateLimiter(_0x3cf055){const _0x57d15a=_0x5c7b86,_0x5b8dba=_0x3cf055>0x0?_0x3cf055*0x400:0x0;if(!_0x5b8dba)return{'enabled':![],async 'take'(){}};const _0x3a01bc=Math[_0x57d15a(0x2bd)](_0x5b8dba*0x2,0x40*0x400);let _0x54bf52=_0x3a01bc,_0x5dc81f=Date[_0x57d15a(0x318)](),_0x2404a3=Promise['resolve']();const _0x44a068=async _0x260ccc=>{const _0x56b131=_0x57d15a;_0x260ccc=Math[_0x56b131(0x2bd)](0x0,_0x260ccc|0x0);if(!_0x260ccc)return;for(;;){const _0x417c9a=Date[_0x56b131(0x318)]();_0x54bf52=Math[_0x56b131(0x20b)](_0x3a01bc,_0x54bf52+(_0x417c9a-_0x5dc81f)/0x3e8*_0x5b8dba),_0x5dc81f=_0x417c9a;if(_0x54bf52>=_0x260ccc){_0x54bf52-=_0x260ccc;return;}const _0x259fa3=_0x260ccc-_0x54bf52,_0x2d50f6=Math[_0x56b131(0x20b)](0x96,Math[_0x56b131(0x2bd)](0x5,Math[_0x56b131(0x229)](_0x259fa3/_0x5b8dba*0x3e8)));await new Promise(_0x320a7f=>setTimeout(_0x320a7f,_0x2d50f6));}};return{'enabled':!![],'kbps':_0x3cf055,'take'(_0x15d1cf){const _0x462916=_0x57d15a,_0xd899ee=_0x2404a3['then'](()=>_0x44a068(_0x15d1cf));return _0x2404a3=_0xd899ee[_0x462916(0x306)](()=>{}),_0xd899ee;}};}function getLimiter(_0xf18737,_0x4f99bc){const _0xc20d5e=_0x5c7b86,_0x4ee1e7=Math[_0xc20d5e(0x2bd)](0x0,Number(_0x4f99bc)||0x0);if(_0x4ee1e7<=0x0)return{'enabled':![],async 'take'(){}};let _0x4af871=limiters[_0xc20d5e(0x236)](_0xf18737);return(!_0x4af871||_0x4af871['kbps']!==_0x4ee1e7)&&(_0x4af871={'kbps':_0x4ee1e7,'limiter':createRateLimiter(_0x4ee1e7)},limiters['set'](_0xf18737,_0x4af871)),_0x4af871[_0xc20d5e(0x2ab)];}function base64UrlEncode(_0x21b3d2){const _0x273e6c=_0x5c7b86;let _0xbf8c0c='';for(let _0x4cfe2f=0x0;_0x4cfe2f<_0x21b3d2[_0x273e6c(0x345)];_0x4cfe2f++)_0xbf8c0c+=String[_0x273e6c(0x1fa)](_0x21b3d2[_0x4cfe2f]);return btoa(_0xbf8c0c)[_0x273e6c(0x316)](/\+/g,'-')[_0x273e6c(0x316)](/\//g,'_')[_0x273e6c(0x316)](/=+$/,'');}function _0x5c13(_0x1941f7,_0x57c80c){_0x1941f7=_0x1941f7-0x1e4;const _0x11ccc9=_0x11cc();let _0x5c1375=_0x11ccc9[_0x1941f7];return _0x5c1375;}function buildDnsQueryA(_0x353215){const _0x3c63eb=_0x5c7b86,_0x5d2da4=String(_0x353215)[_0x3c63eb(0x361)]()[_0x3c63eb(0x316)](/\.$/,'')[_0x3c63eb(0x2ee)]('.')[_0x3c63eb(0x2e1)](Boolean),_0x5c929a=[];for(const _0x5d8cd0 of _0x5d2da4){const _0x55700c=new TextEncoder()[_0x3c63eb(0x260)](_0x5d8cd0);if(_0x55700c[_0x3c63eb(0x345)]>0x3f)return null;_0x5c929a['push'](_0x55700c[_0x3c63eb(0x345)]);for(let _0x3082a6=0x0;_0x3082a6<_0x55700c[_0x3c63eb(0x345)];_0x3082a6++)_0x5c929a['push'](_0x55700c[_0x3082a6]);}_0x5c929a[_0x3c63eb(0x276)](0x0);const _0x283dad=Math['floor'](Math[_0x3c63eb(0x262)]()*0xffff),_0x3f5dde=new Uint8Array(0xc),_0x5e3731=new DataView(_0x3f5dde[_0x3c63eb(0x353)]);_0x5e3731['setUint16'](0x0,_0x283dad),_0x5e3731[_0x3c63eb(0x218)](0x2,0x100),_0x5e3731[_0x3c63eb(0x218)](0x4,0x1);const _0x450bae=new Uint8Array(_0x5c929a['length']+0x4);_0x450bae['set'](_0x5c929a,0x0);const _0x3ecbba=new DataView(_0x450bae[_0x3c63eb(0x353)]);_0x3ecbba[_0x3c63eb(0x218)](_0x5c929a[_0x3c63eb(0x345)],0x1),_0x3ecbba[_0x3c63eb(0x218)](_0x5c929a['length']+0x2,0x1);const _0x1eb99a=new Uint8Array(_0x3f5dde[_0x3c63eb(0x345)]+_0x450bae['length']);return _0x1eb99a[_0x3c63eb(0x339)](_0x3f5dde,0x0),_0x1eb99a[_0x3c63eb(0x339)](_0x450bae,_0x3f5dde['length']),_0x1eb99a;}function isBlockedFromDnsResponse(_0x3cbfa2){const _0x1488a9=_0x5c7b86;if(!_0x3cbfa2||_0x3cbfa2[_0x1488a9(0x20a)]<0xc)return![];const _0x4f56d4=new DataView(_0x3cbfa2),_0x1a7533=_0x4f56d4[_0x1488a9(0x2b7)](0x2),_0x14a865=_0x1a7533&0xf;if(_0x14a865!==0x0)return![];const _0x5e2755=_0x4f56d4['getUint16'](0x4),_0x132cb6=_0x4f56d4[_0x1488a9(0x2b7)](0x6);if(_0x132cb6===0x0)return!![];let _0x204db8=0xc;for(let _0x2c9536=0x0;_0x2c9536<_0x5e2755;_0x2c9536++){while(_0x204db8<_0x3cbfa2[_0x1488a9(0x20a)]){const _0x29ef14=_0x4f56d4[_0x1488a9(0x221)](_0x204db8);if(_0x29ef14===0x0){_0x204db8+=0x1;break;}if((_0x29ef14&0xc0)===0xc0){_0x204db8+=0x2;break;}_0x204db8+=0x1+_0x29ef14;}_0x204db8+=0x4;}let _0x31f625=![];for(let _0xeb70fa=0x0;_0xeb70fa<_0x132cb6&&_0x204db8+0xa<_0x3cbfa2[_0x1488a9(0x20a)];_0xeb70fa++){while(_0x204db8<_0x3cbfa2['byteLength']){const _0x2486ca=_0x4f56d4[_0x1488a9(0x221)](_0x204db8);if(_0x2486ca===0x0){_0x204db8+=0x1;break;}if((_0x2486ca&0xc0)===0xc0){_0x204db8+=0x2;break;}_0x204db8+=0x1+_0x2486ca;}if(_0x204db8+0xa>_0x3cbfa2[_0x1488a9(0x20a)])break;const _0x458cb5=_0x4f56d4['getUint16'](_0x204db8);_0x204db8+=0x2,_0x204db8+=0x2,_0x204db8+=0x4;const _0x394553=_0x4f56d4[_0x1488a9(0x2b7)](_0x204db8);_0x204db8+=0x2;if(_0x458cb5===0x1&&_0x394553===0x4&&_0x204db8+0x4<=_0x3cbfa2[_0x1488a9(0x20a)]){const _0x209ba6=_0x4f56d4[_0x1488a9(0x221)](_0x204db8),_0x410896=_0x4f56d4[_0x1488a9(0x221)](_0x204db8+0x1),_0xd7c825=_0x4f56d4[_0x1488a9(0x221)](_0x204db8+0x2),_0x114c53=_0x4f56d4['getUint8'](_0x204db8+0x3);if(_0x209ba6===0x0&&_0x410896===0x0&&_0xd7c825===0x0&&_0x114c53===0x0)return!![];_0x31f625=!![];}_0x204db8+=_0x394553;}return!_0x31f625;}async function queryDohBlocked(_0xda0cb1){const _0x3cbbfd=_0x5c7b86,_0x40075a=String(_0xda0cb1||'')[_0x3cbbfd(0x361)]()['replace'](/\.$/,'');if(!_0x40075a||isIpLiteral(_0x40075a))return![];const _0x34c1f0=Date[_0x3cbbfd(0x318)](),_0x288cf3=dohCache[_0x3cbbfd(0x236)](_0x40075a);if(_0x288cf3&&_0x34c1f0-_0x288cf3['at']<DOH_CACHE_TTL_MS)return _0x288cf3[_0x3cbbfd(0x273)];try{const _0x5b6704=buildDnsQueryA(_0x40075a);if(!_0x5b6704)return![];const _0x5bf07e=base64UrlEncode(_0x5b6704),_0xbc9c52=DOH_URL+'?dns='+_0x5bf07e,_0x486e07=new AbortController(),_0x53f200=setTimeout(()=>_0x486e07['abort'](),DOH_TIMEOUT_MS),_0x141b30=await fetch(_0xbc9c52,{'method':_0x3cbbfd(0x239),'headers':{'Accept':_0x3cbbfd(0x1f4),'User-Agent':_0x3cbbfd(0x29b)+VERSION},'signal':_0x486e07[_0x3cbbfd(0x2a4)],'cf':{'cacheTtl':0x0,'cacheEverything':![]}});clearTimeout(_0x53f200);if(!_0x141b30['ok'])return dohCache['set'](_0x40075a,{'blocked':![],'at':_0x34c1f0}),![];const _0x11e9b8=await _0x141b30[_0x3cbbfd(0x208)](),_0x2e3f67=isBlockedFromDnsResponse(_0x11e9b8);dohCache[_0x3cbbfd(0x339)](_0x40075a,{'blocked':_0x2e3f67,'at':_0x34c1f0});if(dohCache['size']>0x7d0){const _0x345d63=dohCache[_0x3cbbfd(0x2d6)]()['next']()[_0x3cbbfd(0x2d5)];dohCache[_0x3cbbfd(0x2b2)](_0x345d63);}return _0x2e3f67;}catch(_0x58f707){return dohCache['set'](_0x40075a,{'blocked':![],'at':_0x34c1f0}),![];}}async function isAdHost(_0x395cd1){return queryDohBlocked(_0x395cd1);}function pickDohUrl(_0x462d10){return _0x462d10?DOH_URL:DOH_CLEAN_URL;}function parseDnsQname(_0x4852e4){const _0x28368c=_0x5c7b86;try{if(!_0x4852e4||_0x4852e4[_0x28368c(0x20a)]<0xd)return null;const _0x178609=_0x4852e4 instanceof Uint8Array?_0x4852e4:new Uint8Array(_0x4852e4);let _0x105423=0xc;const _0x120d7c=[];for(let _0x2c1aed=0x0;_0x2c1aed<0x40;_0x2c1aed++){if(_0x105423>=_0x178609['byteLength'])return null;const _0x51b9cf=_0x178609[_0x105423];if(_0x51b9cf===0x0){_0x105423+=0x1;break;}if((_0x51b9cf&0xc0)===0xc0){_0x105423+=0x2;break;}if(_0x51b9cf>0x3f||_0x105423+0x1+_0x51b9cf>_0x178609[_0x28368c(0x20a)])return null;let _0x2b9c68='';for(let _0x3844ea=0x0;_0x3844ea<_0x51b9cf;_0x3844ea++)_0x2b9c68+=String[_0x28368c(0x1fa)](_0x178609[_0x105423+0x1+_0x3844ea]);_0x120d7c[_0x28368c(0x276)](_0x2b9c68),_0x105423+=0x1+_0x51b9cf;}if(!_0x120d7c['length'])return null;let _0x50f473=0x0;_0x105423+0x4<=_0x178609[_0x28368c(0x20a)]&&(_0x50f473=_0x178609[_0x105423]<<0x8|_0x178609[_0x105423+0x1]);const _0x650db6={0x1:'A',0x1c:_0x28368c(0x335),0x5:'CNAME',0xf:'MX',0x10:'TXT',0x2:'NS',0xc:_0x28368c(0x28a)};return{'name':_0x120d7c[_0x28368c(0x210)]('.'),'type':_0x650db6[_0x50f473]||String(_0x50f473),'qtype':_0x50f473};}catch(_0x31486e){return null;}}async function fetchDohOnce(_0x4ef6ec,_0x3d1a01,_0x4c25a9){const _0x4fa736=_0x5c7b86,_0x30af91=new AbortController(),_0x59a4af=setTimeout(()=>_0x30af91['abort'](),_0x4c25a9);try{const _0x90358a=await fetch(_0x4ef6ec,{'method':_0x4fa736(0x2ec),'headers':{'Content-Type':_0x4fa736(0x1f4),'Accept':_0x4fa736(0x1f4),'User-Agent':_0x4fa736(0x29b)+VERSION},'body':_0x3d1a01,'signal':_0x30af91[_0x4fa736(0x2a4)],'cf':{'cacheTtl':0x0,'cacheEverything':![]}});clearTimeout(_0x59a4af);if(_0x90358a['ok'])return new Uint8Array(await _0x90358a[_0x4fa736(0x208)]());const _0x4af87e=base64UrlEncode(_0x3d1a01),_0x8115ce=await fetch(_0x4ef6ec+_0x4fa736(0x234)+_0x4af87e,{'method':_0x4fa736(0x239),'headers':{'Accept':_0x4fa736(0x1f4),'User-Agent':_0x4fa736(0x29b)+VERSION},'cf':{'cacheTtl':0x0,'cacheEverything':![]}});if(!_0x8115ce['ok'])return null;return new Uint8Array(await _0x8115ce[_0x4fa736(0x208)]());}catch(_0x1d772c){return clearTimeout(_0x59a4af),null;}}async function dohResolve(_0x399360,_0x556b49=!![]){const _0x20a3c2=_0x5c7b86;if(!_0x399360||_0x399360[_0x20a3c2(0x20a)]<0xc)return wlog('dns',_0x20a3c2(0x26c),_0x399360?.[_0x20a3c2(0x20a)]),null;const _0x74a316=_0x399360 instanceof Uint8Array?_0x399360:new Uint8Array(_0x399360),_0x5e8a3=pickDohUrl(!!_0x556b49);dnsStats[_0x20a3c2(0x1ea)]+=0x1;const _0x57e66a=parseDnsQname(_0x74a316),_0x39915e=_0x57e66a?_0x57e66a[_0x20a3c2(0x35e)]+'\x20('+_0x57e66a[_0x20a3c2(0x257)]+')':'?';wlog('dns','START\x20resolve',{'qname':_0x39915e,'primary':_0x5e8a3,'blockAds':!!_0x556b49,'qlen':_0x74a316[_0x20a3c2(0x20a)],'total':dnsStats[_0x20a3c2(0x1ea)]});let _0x2a5bdc=await fetchDohOnce(_0x5e8a3,_0x74a316,DOH_TIMEOUT_MS);if(_0x2a5bdc&&_0x2a5bdc[_0x20a3c2(0x20a)]>=0xc)return dnsStats['ok']+=0x1,wlog(_0x20a3c2(0x311),'OK\x20primary',{'qname':_0x39915e,'primary':_0x5e8a3,'len':_0x2a5bdc[_0x20a3c2(0x20a)],'ok':dnsStats['ok']}),_0x2a5bdc;wlog(_0x20a3c2(0x311),_0x20a3c2(0x24d),{'qname':_0x39915e,'primary':_0x5e8a3}),_0x2a5bdc=await fetchDohOnce(DOH_FALLBACK_URL,_0x74a316,DOH_FALLBACK_TIMEOUT_MS);if(_0x2a5bdc&&_0x2a5bdc[_0x20a3c2(0x20a)]>=0xc)return dnsStats['ok']+=0x1,dnsStats['fallback']+=0x1,wlog(_0x20a3c2(0x311),_0x20a3c2(0x2bf),{'qname':_0x39915e,'len':_0x2a5bdc['byteLength'],'fallback':dnsStats[_0x20a3c2(0x249)]}),_0x2a5bdc;return dnsStats[_0x20a3c2(0x235)]+=0x1,wlog(_0x20a3c2(0x311),_0x20a3c2(0x2bb),{'qname':_0x39915e,'primary':_0x5e8a3,'fail':dnsStats['fail']}),null;}const DNS_PLAIN_HOSTS=new Set(['1.1.1.1',_0x5c7b86(0x2a7),_0x5c7b86(0x2d2),'8.8.4.4',_0x5c7b86(0x346),'149.112.112.112',_0x5c7b86(0x272),_0x5c7b86(0x304),_0x5c7b86(0x327),_0x5c7b86(0x2d0),_0x5c7b86(0x365),_0x5c7b86(0x211),_0x5c7b86(0x29c),_0x5c7b86(0x245),_0x5c7b86(0x357),_0x5c7b86(0x237),_0x5c7b86(0x34e),_0x5c7b86(0x242),'resolver1.opendns.com',_0x5c7b86(0x253)]),DOH_BLOCK_HOSTS=new Set([_0x5c7b86(0x267),_0x5c7b86(0x2a7),_0x5c7b86(0x20e),_0x5c7b86(0x2c4),_0x5c7b86(0x2e8),'1.0.0.3',_0x5c7b86(0x327),_0x5c7b86(0x2d0),_0x5c7b86(0x365),_0x5c7b86(0x33c),'security.cloudflare-dns.com','family.cloudflare-dns.com',_0x5c7b86(0x286),'dns64.cloudflare-dns.com',_0x5c7b86(0x2d2),_0x5c7b86(0x349),'dns.google',_0x5c7b86(0x304),_0x5c7b86(0x297),_0x5c7b86(0x346),_0x5c7b86(0x27f),_0x5c7b86(0x29d),_0x5c7b86(0x247),'149.112.112.10',_0x5c7b86(0x29c),_0x5c7b86(0x264),'dns10.quad9.net','dns11.quad9.net','dns.adguard.com','dns-family.adguard.com','dns-unfiltered.adguard.com',_0x5c7b86(0x34f),'family.adguard-dns.com',_0x5c7b86(0x2c8),_0x5c7b86(0x237),_0x5c7b86(0x34e),_0x5c7b86(0x242),'resolver1.opendns.com',_0x5c7b86(0x253),_0x5c7b86(0x363),_0x5c7b86(0x22a),_0x5c7b86(0x245),'hard.dnsforge.de',_0x5c7b86(0x2be),_0x5c7b86(0x1f5),_0x5c7b86(0x350),'dns.alidns.com','doh.360.cn',_0x5c7b86(0x358),_0x5c7b86(0x27b),_0x5c7b86(0x2c0),_0x5c7b86(0x2b3),_0x5c7b86(0x23e),_0x5c7b86(0x2c6),'cloudflare-dns.com.','dns.google.',_0x5c7b86(0x269),_0x5c7b86(0x330),_0x5c7b86(0x287),'doh.blahdns.com','dns.rubyfish.cn','doh.tiar.app',_0x5c7b86(0x33b),_0x5c7b86(0x26a),'dns.aa.net.uk','dns.digitale-gesellschaft.ch']),ENCRYPTED_DNS_PORTS=new Set([0x355,0x310,0x2295,0x14e9]);function isKnownDnsHost(_0x1ecbbf){const _0x7376d6=_0x5c7b86;return DNS_PLAIN_HOSTS[_0x7376d6(0x2dc)](String(_0x1ecbbf||'')[_0x7376d6(0x361)]());}function isDohEndpoint(_0x59215a){const _0x40b76a=_0x5c7b86;return DOH_BLOCK_HOSTS[_0x40b76a(0x2dc)](String(_0x59215a||'')[_0x40b76a(0x361)]());}function shouldBlockEncryptedDns(_0x99973e,_0x1a136f){const _0x106b6d=_0x5c7b86,_0x254aa7=String(_0x99973e||'')['toLowerCase'](),_0x1f3103=Number(_0x1a136f);if(ENCRYPTED_DNS_PORTS[_0x106b6d(0x2dc)](_0x1f3103)||_0x1f3103===0x355)return{'block':!![],'reason':'encrypted-dns-port','port':_0x1f3103};if(_0x1f3103!==0x35&&isDohEndpoint(_0x254aa7))return{'block':!![],'reason':_0x106b6d(0x2fb),'host':_0x254aa7,'port':_0x1f3103};return{'block':![]};}function parseVlessHeader(_0x43741){const _0x2d214f=_0x5c7b86,_0x479830=new DataView(_0x43741);if(_0x43741['byteLength']<0x13||_0x479830['getUint8'](0x0)!==0x0)return{'ok':![]};const _0x2378d0=new Uint8Array(_0x43741,0x1,0x10);let _0x131cbf=0x11;const _0x15b777=_0x479830['getUint8'](_0x131cbf);_0x131cbf+=0x1+_0x15b777;if(_0x131cbf+0x4>_0x43741[_0x2d214f(0x20a)])return{'ok':![]};const _0x2a0afe=_0x479830[_0x2d214f(0x221)](_0x131cbf);_0x131cbf+=0x1;if(_0x2a0afe!==0x1&&_0x2a0afe!==0x2)return{'ok':![]};const _0x5679f9=_0x479830[_0x2d214f(0x2b7)](_0x131cbf);_0x131cbf+=0x2;const _0x3c6a51=_0x479830[_0x2d214f(0x221)](_0x131cbf);_0x131cbf+=0x1;let _0x3a0d60='';if(_0x3c6a51===0x1){if(_0x131cbf+0x4>_0x43741['byteLength'])return{'ok':![]};_0x3a0d60=Array[_0x2d214f(0x1ef)](new Uint8Array(_0x43741,_0x131cbf,0x4))[_0x2d214f(0x210)]('.'),_0x131cbf+=0x4;}else{if(_0x3c6a51===0x2){const _0x3fe7f4=_0x479830[_0x2d214f(0x221)](_0x131cbf);_0x131cbf+=0x1;if(_0x131cbf+_0x3fe7f4>_0x43741[_0x2d214f(0x20a)])return{'ok':![]};_0x3a0d60=new TextDecoder()[_0x2d214f(0x301)](new Uint8Array(_0x43741,_0x131cbf,_0x3fe7f4)),_0x131cbf+=_0x3fe7f4;}else{if(_0x3c6a51===0x3){if(_0x131cbf+0x10>_0x43741[_0x2d214f(0x20a)])return{'ok':![]};const _0x284ff7=[];for(let _0x2f599e=0x0;_0x2f599e<0x8;_0x2f599e++)_0x284ff7[_0x2d214f(0x276)](_0x479830['getUint16'](_0x131cbf+_0x2f599e*0x2)[_0x2d214f(0x243)](0x10));_0x3a0d60=_0x284ff7['join'](':'),_0x131cbf+=0x10;}else return{'ok':![]};}}const _0xb2ce8a=Array['from'](_0x2378d0)[_0x2d214f(0x274)](_0x1be42d=>_0x1be42d[_0x2d214f(0x243)](0x10)[_0x2d214f(0x29e)](0x2,'0'))[_0x2d214f(0x210)](''),_0x3f8ce9=[_0xb2ce8a[_0x2d214f(0x268)](0x0,0x8),_0xb2ce8a[_0x2d214f(0x268)](0x8,0xc),_0xb2ce8a[_0x2d214f(0x268)](0xc,0x10),_0xb2ce8a[_0x2d214f(0x268)](0x10,0x14),_0xb2ce8a[_0x2d214f(0x268)](0x14)][_0x2d214f(0x210)]('-');return{'ok':!![],'cmd':_0x2a0afe,'address':_0x3a0d60,'port':_0x5679f9,'uuid':_0x3f8ce9,'rest':_0x43741[_0x2d214f(0x20a)]>_0x131cbf?_0x43741[_0x2d214f(0x268)](_0x131cbf):null};}async function handleSync(_0x12ed30,_0x31f330){const _0x441725=_0x5c7b86;if(!requireMotherAuth(_0x12ed30))return new Response(JSON['stringify']({'ok':![],'reason':'unauthorized'}),{'status':0x193,'headers':{'content-type':'application/json'}});let _0x4c8b46;try{_0x4c8b46=await _0x12ed30[_0x441725(0x340)]();}catch{return new Response(JSON[_0x441725(0x1e5)]({'ok':![],'reason':'invalid\x20json'}),{'status':0x190,'headers':{'content-type':'application/json'}});}if(_0x4c8b46?.['type']!==_0x441725(0x2ff))return new Response(JSON[_0x441725(0x1e5)]({'ok':![],'reason':_0x441725(0x2b9)}),{'status':0x190,'headers':{'content-type':_0x441725(0x29f)}});nodeDisabled=!!(_0x4c8b46[_0x441725(0x22d)]&&_0x4c8b46[_0x441725(0x22d)][_0x441725(0x2fa)]);const _0x1156cb=Array[_0x441725(0x2ca)](_0x4c8b46[_0x441725(0x22b)])?_0x4c8b46[_0x441725(0x22b)]:[],_0x2b6215=new Map();for(const _0x378fcb of _0x1156cb){if(!_0x378fcb?.[_0x441725(0x2e6)]||!_0x378fcb?.['id'])continue;const _0x319bc7=String(_0x378fcb['uuid'])['toLowerCase']();{const _0x4e37a8=normalizeUserLimits(_0x378fcb);_0x2b6215[_0x441725(0x339)](_0x319bc7,{'id':String(_0x378fcb['id']),'uuid':_0x319bc7,'name':_0x378fcb[_0x441725(0x35e)]||'','enabled':_0x378fcb[_0x441725(0x2f3)]!==![],'expiry':_0x378fcb[_0x441725(0x334)]||null,'quotaBytes':Number(_0x378fcb[_0x441725(0x326)])||Number(_0x378fcb['quota_bytes'])||0x0,'dailyQuotaBytes':Number(_0x378fcb['dailyQuotaBytes'])||Number(_0x378fcb['daily_quota_bytes'])||0x0,'speedLimitKBps':_0x4e37a8[_0x441725(0x303)],'ipLimit':_0x4e37a8[_0x441725(0x2d7)],'blockAds':_0x378fcb['blockAds']!==![]&&_0x378fcb[_0x441725(0x328)]!==0x0&&_0x378fcb[_0x441725(0x328)]!==![]});}}usersByUuid=_0x2b6215,lastSyncAt=Date[_0x441725(0x318)](),applyEgressFromSync(_0x4c8b46),ipCache[_0x441725(0x321)](),memIps[_0x441725(0x321)](),limiters[_0x441725(0x321)]();for(const [_0x478997,_0x494d97]of[...activeSessions[_0x441725(0x248)]()]){const _0xc63096=usersByUuid[_0x441725(0x236)](_0x478997),_0x41750c=!_0xc63096||!_0xc63096['enabled']||isExpired(_0xc63096[_0x441725(0x334)]);if(_0x41750c){for(const _0x43cc38 of _0x494d97){try{_0x43cc38[_0x441725(0x351)]();}catch{}}activeSessions[_0x441725(0x2b2)](_0x478997),activeConns[_0x441725(0x2b2)](_0x478997);}}if(nodeDisabled)for(const [_0x5b2600,_0x2187da]of[...activeSessions[_0x441725(0x248)]()]){for(const _0xcfdf11 of _0x2187da){try{_0xcfdf11[_0x441725(0x351)]();}catch{}}activeSessions[_0x441725(0x2b2)](_0x5b2600),activeConns[_0x441725(0x2b2)](_0x5b2600);}await saveUsersToDb(_0x31f330,_0x1156cb,nodeDisabled);const _0x2e5dd8=await dbLoadAndClearUsage(_0x31f330),_0x24cffa=await dbLoadActiveIps(_0x31f330);let _0x1f5782=0x0;for(const _0x1feb92 of activeConns[_0x441725(0x27e)]())if(_0x1feb92>0x0)_0x1f5782++;if(_0x24cffa[_0x441725(0x345)]>_0x1f5782)_0x1f5782=_0x24cffa[_0x441725(0x345)];return new Response(JSON[_0x441725(0x1e5)]({'ok':!![],'child_id':childId,'version':VERSION,'capacity':0x40,'active_users':_0x1f5782,'healthy':!nodeDisabled,'last_sync_received':lastSyncAt,'usage':_0x2e5dd8,'active_ips':_0x24cffa,'meta':{'users_loaded':usersByUuid[_0x441725(0x33d)],'node_disabled':nodeDisabled,'usage_entries':_0x2e5dd8[_0x441725(0x345)],'ip_entries':_0x24cffa[_0x441725(0x345)],'doh':DOH_URL,'dohClean':DOH_CLEAN_URL,'dohFallback':DOH_FALLBACK_URL,'egress':{'proxy':egressProxy||null,'domainsCount':egressDomains['length']}}}),{'status':0xc8,'headers':{'content-type':_0x441725(0x2f7),'cache-control':'no-store'}});}async function handleVlessXhttp(_0x49c786,_0x3d4ff8,_0x45f57e){const _0x156c5d=_0x5c7b86,_0x27c8df=Date[_0x156c5d(0x318)](),_0x23f876=getClientIP(_0x49c786);try{await ensureUsersLoaded(_0x3d4ff8);}catch(_0x588948){}if(nodeDisabled)return new Response(_0x156c5d(0x2fe),{'status':0x1f7});if(!_0x49c786[_0x156c5d(0x2d1)])return new Response(_0x156c5d(0x1f9),{'status':0x190});const _0x2d3f92=_0x3d4ff8,_0x5e2950=_0x49c786[_0x156c5d(0x2d1)][_0x156c5d(0x261)]();let _0x312adc=new Uint8Array(0x0),_0x482137=null,_0xa854e4=null;const _0x52ae9f=(_0x3d3557,_0x34626d)=>{const _0x3ac7f5=_0x156c5d,_0x53818f=new Uint8Array(_0x3d3557[_0x3ac7f5(0x345)]+_0x34626d[_0x3ac7f5(0x345)]);return _0x53818f[_0x3ac7f5(0x339)](_0x3d3557,0x0),_0x53818f[_0x3ac7f5(0x339)](_0x34626d,_0x3d3557['length']),_0x53818f;};try{while(_0x312adc[_0x156c5d(0x345)]<0x200){const {done:_0x238b5d,value:_0x1f4186}=await _0x5e2950[_0x156c5d(0x233)]();if(_0x238b5d&&(!_0x1f4186||!_0x1f4186[_0x156c5d(0x20a)]))break;_0x1f4186&&_0x1f4186[_0x156c5d(0x20a)]&&(_0x312adc=_0x52ae9f(_0x312adc,_0x1f4186 instanceof Uint8Array?_0x1f4186:new Uint8Array(_0x1f4186)));if(_0x312adc['length']>=0x18){const _0x880b51=parseVlessHeader(_0x312adc[_0x156c5d(0x353)][_0x156c5d(0x268)](_0x312adc[_0x156c5d(0x333)],_0x312adc[_0x156c5d(0x333)]+_0x312adc[_0x156c5d(0x20a)]));if(_0x880b51['ok']){_0xa854e4=_0x880b51;_0xa854e4[_0x156c5d(0x29a)]&&_0xa854e4[_0x156c5d(0x29a)][_0x156c5d(0x20a)]>0x0&&(_0x482137=new Uint8Array(_0xa854e4[_0x156c5d(0x29a)]));break;}}if(_0x238b5d)break;if(_0x312adc[_0x156c5d(0x345)]>0x1000)break;}}catch(_0x5ad9b0){return new Response(_0x156c5d(0x2b8),{'status':0x190});}if(!_0xa854e4||!_0xa854e4['ok']){try{_0x5e2950[_0x156c5d(0x2a0)]();}catch{}return new Response(_0x156c5d(0x31b),{'status':0x190});}const _0x62858e=_0xa854e4[_0x156c5d(0x2e6)]['toLowerCase'](),_0x5860ef=getUserByUuid(_0x62858e);if(!_0x5860ef){wlog(_0x156c5d(0x2cf),_0x156c5d(0x240),{'uuid':_0x62858e,'loaded':usersByUuid[_0x156c5d(0x33d)]});try{_0x5e2950[_0x156c5d(0x2a0)]();}catch{}return new Response('unauthorized',{'status':0x193});}const _0x3a8cc7=_0x5860ef['id'];wlog(_0x156c5d(0x2cf),'OK',{'id':_0x3a8cc7,'name':_0x5860ef[_0x156c5d(0x35e)],'blockAds':_0x5860ef[_0x156c5d(0x207)],'ipLimit':_0x5860ef[_0x156c5d(0x2d7)],'uuid':_0x62858e[_0x156c5d(0x268)](0x0,0x8)});const _0x1a36d0=String(_0xa854e4['address']||'')[_0x156c5d(0x361)](),_0xf07403=_0xa854e4[_0x156c5d(0x298)],_0x1114bc=_0xf07403===0x35&&(isKnownDnsHost(_0x1a36d0)||isIpLiteral(_0x1a36d0));wlog(_0x156c5d(0x1ee),_0x156c5d(0x28d),{'addr':_0xa854e4[_0x156c5d(0x270)],'port':_0xf07403,'cmd':_0xa854e4[_0x156c5d(0x21c)],'isDns':_0x1114bc,'knownDns':isKnownDnsHost(_0x1a36d0)});const _0x1a1a6c=shouldBlockEncryptedDns(_0xa854e4[_0x156c5d(0x270)],_0xf07403);if(_0x1a1a6c[_0x156c5d(0x277)]){_0x1a1a6c[_0x156c5d(0x2a6)]===_0x156c5d(0x295)||_0xf07403===0x355?(dnsStats[_0x156c5d(0x278)]+=0x1,wlog(_0x156c5d(0x277),_0x156c5d(0x250),{'reason':_0x1a1a6c[_0x156c5d(0x2a6)],'addr':_0xa854e4[_0x156c5d(0x270)],'port':_0xf07403,'uuid':_0x62858e[_0x156c5d(0x268)](0x0,0x8),'ip':_0x23f876,'count':dnsStats['dotBlocked']})):(dnsStats[_0x156c5d(0x1ec)]+=0x1,wlog(_0x156c5d(0x277),_0x156c5d(0x2c9),{'reason':_0x1a1a6c[_0x156c5d(0x2a6)],'addr':_0xa854e4[_0x156c5d(0x270)],'port':_0xf07403,'uuid':_0x62858e[_0x156c5d(0x268)](0x0,0x8),'ip':_0x23f876,'count':dnsStats[_0x156c5d(0x1ec)]}));try{_0x5e2950[_0x156c5d(0x2a0)]();}catch{}return new Response('encrypted\x20dns\x20blocked',{'status':0x193});}if(_0xf07403===0x35&&!_0x1114bc){dnsStats[_0x156c5d(0x1ec)]+=0x1,wlog('block',_0x156c5d(0x2df),{'addr':_0xa854e4['address'],'port':_0xf07403,'uuid':_0x62858e[_0x156c5d(0x268)](0x0,0x8),'ip':_0x23f876});try{_0x5e2950['releaseLock']();}catch{}return new Response(_0x156c5d(0x1fe),{'status':0x193});}if(_0xa854e4[_0x156c5d(0x21c)]===0x2&&!_0x1114bc){try{_0x5e2950[_0x156c5d(0x2a0)]();}catch{}return new Response(_0x156c5d(0x2dd),{'status':0x190});}if(_0xa854e4[_0x156c5d(0x21c)]!==0x1&&_0xa854e4[_0x156c5d(0x21c)]!==0x2){try{_0x5e2950[_0x156c5d(0x2a0)]();}catch{}return new Response(_0x156c5d(0x2c7),{'status':0x190});}const _0x380647=await tryAcquireIp(_0x2d3f92,_0x3a8cc7,_0x23f876,_0x5860ef[_0x156c5d(0x2d7)]);if(!_0x380647['ok']){try{_0x5e2950[_0x156c5d(0x2a0)]();}catch{}return new Response(_0x156c5d(0x2c1),{'status':0x1ad});}const _0x1daeb5=_0x5860ef['blockAds']===!![],_0x571c5b=getLimiter(_0x62858e,_0x5860ef[_0x156c5d(0x303)]);let _0x11f5e0=0x0,_0x472c15=0x0,_0x6ac83=0x0,_0x3eab21=0x0,_0xdcbf96=![];activeConns[_0x156c5d(0x339)](_0x62858e,(activeConns[_0x156c5d(0x236)](_0x62858e)||0x0)+0x1);const _0x1cc92f={'close':()=>{_0xdcbf96=!![];}};if(!activeSessions[_0x156c5d(0x2dc)](_0x62858e))activeSessions['set'](_0x62858e,new Set());activeSessions[_0x156c5d(0x236)](_0x62858e)[_0x156c5d(0x2a8)](_0x1cc92f);const _0x1e1d53=()=>{const _0x29305b=_0x156c5d;if(!_0x3a8cc7||_0x11f5e0+_0x472c15===0x0)return;const _0x4c9ae9=_0x11f5e0,_0xe7fe60=_0x472c15;_0x11f5e0=0x0,_0x472c15=0x0,_0x45f57e['waitUntil'](dbAddUsage(_0x2d3f92,_0x3a8cc7,_0x4c9ae9,_0xe7fe60)[_0x29305b(0x306)](()=>{}));},_0x41b32e=()=>{if(_0x6ac83-_0x3eab21>=REPORT_THRESHOLD){_0x1e1d53(),_0x3eab21=_0x6ac83;if(_0x3a8cc7)touchActiveIp(_0x2d3f92,_0x3a8cc7,_0x23f876);}},_0x48ce84=()=>{const _0x2630dc=_0x156c5d;if(_0xdcbf96)return;_0xdcbf96=!![],activeConns[_0x2630dc(0x339)](_0x62858e,Math[_0x2630dc(0x2bd)](0x0,(activeConns[_0x2630dc(0x236)](_0x62858e)||0x1)-0x1)),_0x1e1d53();if(activeSessions[_0x2630dc(0x2dc)](_0x62858e)){const _0x1464c8=activeSessions[_0x2630dc(0x236)](_0x62858e);_0x1464c8[_0x2630dc(0x2b2)](_0x1cc92f);if(_0x1464c8[_0x2630dc(0x33d)]===0x0)activeSessions[_0x2630dc(0x2b2)](_0x62858e);}};if(_0x1114bc){wlog(_0x156c5d(0x311),_0x156c5d(0x231),{'addr':_0xa854e4[_0x156c5d(0x270)],'port':_0xf07403,'cmd':_0xa854e4[_0x156c5d(0x21c)],'blockAds':_0x1daeb5,'uuid':_0x62858e[_0x156c5d(0x268)](0x0,0x8),'ip':_0x23f876});try{const _0x9f7ced=[];_0x482137&&_0x482137[_0x156c5d(0x20a)]>0x0&&_0x9f7ced[_0x156c5d(0x276)](_0x482137);for(;;){const {done:_0xc7cc23,value:_0x47a90b}=await _0x5e2950[_0x156c5d(0x233)]();_0x47a90b&&_0x47a90b[_0x156c5d(0x20a)]&&_0x9f7ced['push'](_0x47a90b instanceof Uint8Array?_0x47a90b:new Uint8Array(_0x47a90b));if(_0xc7cc23)break;}let _0xc074bb=new Uint8Array(0x0);for(const _0x5bae17 of _0x9f7ced)_0xc074bb=_0x52ae9f(_0xc074bb,_0x5bae17);const _0x3fb4c3=[];let _0x1a76ac=![];if(_0xc074bb[_0x156c5d(0x20a)]>=0x2){let _0x436d20=0x0;while(_0x436d20+0x2<=_0xc074bb[_0x156c5d(0x20a)]){const _0x4de63a=_0xc074bb[_0x436d20]<<0x8|_0xc074bb[_0x436d20+0x1];if(_0x4de63a<0xc||_0x436d20+0x2+_0x4de63a>_0xc074bb[_0x156c5d(0x20a)])break;_0x3fb4c3['push'](_0xc074bb[_0x156c5d(0x2bc)](_0x436d20+0x2,_0x436d20+0x2+_0x4de63a)),_0x436d20+=0x2+_0x4de63a,_0x1a76ac=!![];}}!_0x3fb4c3['length']&&_0xc074bb[_0x156c5d(0x20a)]>=0xc&&(_0x3fb4c3[_0x156c5d(0x276)](_0xc074bb),_0x1a76ac=![]);const _0x43be6a=[];_0x43be6a[_0x156c5d(0x276)](new Uint8Array([0x0,0x0]));for(const _0x4d3bfd of _0x3fb4c3){if(_0x571c5b[_0x156c5d(0x2f3)])await _0x571c5b[_0x156c5d(0x2fc)](_0x4d3bfd['byteLength']);_0x11f5e0+=_0x4d3bfd[_0x156c5d(0x20a)],_0x6ac83+=_0x4d3bfd[_0x156c5d(0x20a)];const _0x4b210a=await dohResolve(_0x4d3bfd,_0x1daeb5);if(!_0x4b210a||_0x4b210a[_0x156c5d(0x20a)]<0xc)continue;let _0x4c8a50;_0x1a76ac?(_0x4c8a50=new Uint8Array(0x2+_0x4b210a[_0x156c5d(0x20a)]),_0x4c8a50[0x0]=_0x4b210a['byteLength']>>0x8&0xff,_0x4c8a50[0x1]=_0x4b210a['byteLength']&0xff,_0x4c8a50[_0x156c5d(0x339)](_0x4b210a,0x2)):_0x4c8a50=_0x4b210a;if(_0x571c5b[_0x156c5d(0x2f3)])await _0x571c5b[_0x156c5d(0x2fc)](_0x4c8a50[_0x156c5d(0x20a)]);_0x472c15+=_0x4c8a50[_0x156c5d(0x20a)],_0x6ac83+=_0x4c8a50[_0x156c5d(0x20a)],_0x43be6a[_0x156c5d(0x276)](_0x4c8a50);}_0x41b32e(),_0x48ce84();let _0x479c66=0x0;for(const _0x28494f of _0x43be6a)_0x479c66+=_0x28494f[_0x156c5d(0x20a)];const _0x2b3203=new Uint8Array(_0x479c66);let _0x51a2db=0x0;for(const _0x4b6178 of _0x43be6a){_0x2b3203['set'](_0x4b6178,_0x51a2db),_0x51a2db+=_0x4b6178[_0x156c5d(0x20a)];}return wlog(_0x156c5d(0x311),_0x156c5d(0x217),{'parts':_0x3fb4c3[_0x156c5d(0x345)],'outLen':_0x479c66,'ms':Date[_0x156c5d(0x318)]()-_0x27c8df,'stats':{...dnsStats}}),new Response(_0x2b3203,{'status':0xc8,'headers':{'Content-Type':_0x156c5d(0x33a),'Cache-Control':'no-store','X-Accel-Buffering':'no'}});}catch(_0x183ac3){return wlog(_0x156c5d(0x293),_0x156c5d(0x2e7),_0x183ac3?.['message']||String(_0x183ac3)),_0x48ce84(),new Response(_0x156c5d(0x219),{'status':0x1f6});}}if(_0x5860ef[_0x156c5d(0x207)]===!![]&&await isAdHost(_0xa854e4[_0x156c5d(0x270)])){_0x48ce84();try{_0x5e2950[_0x156c5d(0x2a0)]();}catch{}return new Response(_0x156c5d(0x26f),{'status':0x193});}let _0x23d172;try{_0x23d172=await connectOutbound(_0xa854e4[_0x156c5d(0x270)],_0xa854e4[_0x156c5d(0x298)]);}catch(_0x2fcc43){_0x48ce84();try{_0x5e2950[_0x156c5d(0x2a0)]();}catch{}return new Response('connect\x20fail',{'status':0x1f6});}const _0x4c6435=_0x23d172[_0x156c5d(0x352)][_0x156c5d(0x1f2)](),_0x50970e=((async()=>{const _0x15099c=_0x156c5d;try{if(_0x482137&&_0x482137[_0x15099c(0x20a)]>0x0){if(_0x571c5b[_0x15099c(0x2f3)])await _0x571c5b[_0x15099c(0x2fc)](_0x482137['byteLength']);_0x11f5e0+=_0x482137['byteLength'],_0x6ac83+=_0x482137[_0x15099c(0x20a)],await _0x4c6435[_0x15099c(0x325)](_0x482137),_0x41b32e();}while(!_0xdcbf96){const {done:_0x31c6d9,value:_0x18f52a}=await _0x5e2950[_0x15099c(0x233)]();if(_0x18f52a&&_0x18f52a[_0x15099c(0x20a)]){const _0x392ba7=_0x18f52a instanceof Uint8Array?_0x18f52a:new Uint8Array(_0x18f52a);if(_0x571c5b[_0x15099c(0x2f3)])await _0x571c5b[_0x15099c(0x2fc)](_0x392ba7[_0x15099c(0x20a)]);_0x11f5e0+=_0x392ba7[_0x15099c(0x20a)],_0x6ac83+=_0x392ba7[_0x15099c(0x20a)],_0x41b32e(),await _0x4c6435[_0x15099c(0x325)](_0x392ba7);}if(_0x31c6d9)break;if(_0x62858e&&!getUserByUuid(_0x62858e)){_0xdcbf96=!![];break;}}}catch(_0x33fd45){}finally{try{await _0x4c6435[_0x15099c(0x351)]();}catch{}try{_0x5e2950[_0x15099c(0x2a0)]();}catch{}}})()),{readable:_0x2281a6,writable:_0x3bf615}=new TransformStream(),_0x50d84a=_0x3bf615[_0x156c5d(0x1f2)](),_0x1fc150=((async()=>{const _0xdb5ed=_0x156c5d;try{await _0x50d84a[_0xdb5ed(0x325)](new Uint8Array([0x0,0x0]));const _0x5d51e0=_0x23d172[_0xdb5ed(0x1f3)]['getReader']();while(!_0xdcbf96){const {done:_0x4e8a3b,value:_0x42c2eb}=await _0x5d51e0[_0xdb5ed(0x233)]();if(_0x42c2eb&&_0x42c2eb[_0xdb5ed(0x20a)]){const _0x517714=_0x42c2eb instanceof Uint8Array?_0x42c2eb:new Uint8Array(_0x42c2eb);if(_0x62858e&&!getUserByUuid(_0x62858e)){_0xdcbf96=!![];break;}if(_0x571c5b[_0xdb5ed(0x2f3)])await _0x571c5b[_0xdb5ed(0x2fc)](_0x517714['byteLength']);_0x472c15+=_0x517714['byteLength'],_0x6ac83+=_0x517714['byteLength'],_0x41b32e(),await _0x50d84a[_0xdb5ed(0x325)](_0x517714);}if(_0x4e8a3b)break;}try{_0x5d51e0[_0xdb5ed(0x2a0)]();}catch{}}catch(_0x29121d){}finally{try{await _0x50d84a[_0xdb5ed(0x351)]();}catch{}try{_0x23d172[_0xdb5ed(0x351)]();}catch{}_0x48ce84();}})());return _0x45f57e[_0x156c5d(0x205)](Promise[_0x156c5d(0x289)]([_0x50970e,_0x1fc150])[_0x156c5d(0x204)](()=>{_0x48ce84();})),new Response(_0x2281a6,{'status':0xc8,'headers':{'Content-Type':'application/octet-stream','Cache-Control':'no-store','X-Accel-Buffering':'no'}});}async function handleVlessWebSocket(_0x3a7019,_0x501fd4,_0x10f43f){const _0x103afc=_0x5c7b86;if((_0x3a7019[_0x103afc(0x26b)][_0x103afc(0x236)](_0x103afc(0x2e3))||'')[_0x103afc(0x361)]()!==_0x103afc(0x2b6))return new Response(_0x103afc(0x319),{'status':0x1aa});try{await ensureUsersLoaded(_0x501fd4);}catch{}if(nodeDisabled)return new Response(_0x103afc(0x2fe),{'status':0x1f7});let _0x1b07c9,_0x29aca2,_0x324d81;try{_0x1b07c9=new WebSocketPair(),[_0x29aca2,_0x324d81]=Object[_0x103afc(0x27e)](_0x1b07c9),_0x324d81[_0x103afc(0x265)]=_0x103afc(0x343),_0x324d81['accept']();}catch(_0xf33ba){return new Response(_0x103afc(0x22f),{'status':0x1f4});}const _0x580386=_0x501fd4,_0x376f5f=getClientIP(_0x3a7019);let _0x5ab511=![],_0x1942b2=![],_0x23dc9d=null,_0x1e4c5a=null,_0x11337c=0x0,_0x1d4440=0x0,_0x36df28=0x0,_0x14835b=0x0,_0x364f9e=null,_0x398f6a=null,_0x6b0f1d={'enabled':![],async 'take'(){}},_0x52940b=null,_0x59b612=![],_0x41c232=!![];const _0x56dd58=()=>{const _0x236a5e=_0x103afc;if(!_0x1e4c5a||_0x11337c+_0x1d4440===0x0)return;const _0x47b4c6=_0x11337c,_0x3a0aed=_0x1d4440;_0x11337c=0x0,_0x1d4440=0x0,_0x10f43f['waitUntil'](dbAddUsage(_0x580386,_0x1e4c5a,_0x47b4c6,_0x3a0aed)[_0x236a5e(0x306)](()=>{}));},_0x303c15=()=>{if(_0x36df28-_0x14835b>=REPORT_THRESHOLD){_0x56dd58(),_0x14835b=_0x36df28;if(_0x1e4c5a)touchActiveIp(_0x580386,_0x1e4c5a,_0x376f5f);}},_0x595425=(_0x2b6388='')=>{const _0x415b05=_0x103afc;if(_0x5ab511)return;_0x5ab511=!![];if(_0x23dc9d&&_0x1942b2){activeConns['set'](_0x23dc9d,Math[_0x415b05(0x2bd)](0x0,(activeConns[_0x415b05(0x236)](_0x23dc9d)||0x1)-0x1));if(_0x1e4c5a)_0x56dd58();if(_0x52940b&&activeSessions['has'](_0x23dc9d)){const _0x5e23d4=activeSessions[_0x415b05(0x236)](_0x23dc9d);_0x5e23d4['delete'](_0x52940b);if(_0x5e23d4[_0x415b05(0x33d)]===0x0)activeSessions[_0x415b05(0x2b2)](_0x23dc9d);}}try{_0x398f6a?.[_0x415b05(0x2a0)]();}catch{}try{_0x364f9e?.['close']();}catch{}try{if(_0x324d81['readyState']===0x1||_0x324d81['readyState']===0x2)_0x324d81['close'](0x3e8,_0x2b6388);}catch{}},_0x368096=()=>{try{_0x324d81['send'](new Uint8Array([0x0,0x0]));}catch{}};let _0x220151=null;const _0x519639=_0x3a7019['headers'][_0x103afc(0x236)](_0x103afc(0x2f9))||'';if(_0x519639)try{const _0xc0bd7c=_0x519639[_0x103afc(0x316)](/-/g,'+')[_0x103afc(0x316)](/_/g,'/');_0x220151=Uint8Array[_0x103afc(0x1ef)](atob(_0xc0bd7c),_0xcdd741=>_0xcdd741[_0x103afc(0x32e)](0x0));}catch{}const _0x264f71=async _0x3b8e71=>{const _0x1b0ee0=_0x103afc;if(_0x5ab511||!(_0x3b8e71 instanceof Uint8Array)||_0x3b8e71[_0x1b0ee0(0x20a)]===0x0)return;if(_0x398f6a){if(_0x23dc9d&&!getUserByUuid(_0x23dc9d))return _0x595425(_0x1b0ee0(0x1f6));try{if(_0x6b0f1d[_0x1b0ee0(0x2f3)])await _0x6b0f1d[_0x1b0ee0(0x2fc)](_0x3b8e71[_0x1b0ee0(0x20a)]);_0x11337c+=_0x3b8e71[_0x1b0ee0(0x20a)],_0x36df28+=_0x3b8e71[_0x1b0ee0(0x20a)],_0x303c15(),await _0x398f6a[_0x1b0ee0(0x325)](_0x3b8e71);}catch{_0x595425(_0x1b0ee0(0x259));}return;}if(_0x59b612){if(_0x23dc9d&&!getUserByUuid(_0x23dc9d))return _0x595425(_0x1b0ee0(0x1f6));try{const _0x343a49=[];let _0x26ad69=![];if(_0x3b8e71[_0x1b0ee0(0x20a)]>=0x2){let _0xa55cca=0x0;while(_0xa55cca+0x2<=_0x3b8e71[_0x1b0ee0(0x20a)]){const _0x2aeedd=_0x3b8e71[_0xa55cca]<<0x8|_0x3b8e71[_0xa55cca+0x1];if(_0x2aeedd<0xc||_0xa55cca+0x2+_0x2aeedd>_0x3b8e71[_0x1b0ee0(0x20a)])break;_0x343a49[_0x1b0ee0(0x276)](_0x3b8e71[_0x1b0ee0(0x2bc)](_0xa55cca+0x2,_0xa55cca+0x2+_0x2aeedd)),_0xa55cca+=0x2+_0x2aeedd,_0x26ad69=!![];}}_0x343a49[_0x1b0ee0(0x345)]===0x0&&(_0x343a49[_0x1b0ee0(0x276)](_0x3b8e71),_0x26ad69=![]);for(const _0x3b847c of _0x343a49){if(_0x6b0f1d[_0x1b0ee0(0x2f3)])await _0x6b0f1d['take'](_0x3b847c[_0x1b0ee0(0x20a)]);_0x11337c+=_0x3b847c[_0x1b0ee0(0x20a)],_0x36df28+=_0x3b847c[_0x1b0ee0(0x20a)],_0x303c15();const _0x67c9bd=await dohResolve(_0x3b847c,_0x41c232);if(!_0x67c9bd||_0x67c9bd[_0x1b0ee0(0x20a)]<0xc)continue;let _0x54f728;_0x26ad69?(_0x54f728=new Uint8Array(0x2+_0x67c9bd['byteLength']),_0x54f728[0x0]=_0x67c9bd[_0x1b0ee0(0x20a)]>>0x8&0xff,_0x54f728[0x1]=_0x67c9bd['byteLength']&0xff,_0x54f728[_0x1b0ee0(0x339)](_0x67c9bd,0x2)):_0x54f728=_0x67c9bd;if(_0x6b0f1d['enabled'])await _0x6b0f1d['take'](_0x54f728[_0x1b0ee0(0x20a)]);_0x1d4440+=_0x54f728[_0x1b0ee0(0x20a)],_0x36df28+=_0x54f728['byteLength'],_0x303c15();try{_0x324d81['send'](_0x54f728);}catch{_0x595425('ws\x20send\x20fail');return;}}}catch(_0x6d844d){_0x595425(_0x1b0ee0(0x219));}return;}const _0x423c51=_0x3b8e71[_0x1b0ee0(0x353)]['slice'](_0x3b8e71[_0x1b0ee0(0x333)],_0x3b8e71[_0x1b0ee0(0x333)]+_0x3b8e71['byteLength']),_0x1d1001=parseVlessHeader(_0x423c51);if(!_0x1d1001['ok'])return _0x595425(_0x1b0ee0(0x1fc));_0x23dc9d=_0x1d1001[_0x1b0ee0(0x2e6)][_0x1b0ee0(0x361)]();const _0x35e3fc=getUserByUuid(_0x23dc9d);if(!_0x35e3fc)return _0x595425(_0x1b0ee0(0x34a));_0x1e4c5a=_0x35e3fc['id'];const _0xf558ed=String(_0x1d1001[_0x1b0ee0(0x270)]||'')['toLowerCase'](),_0x265524=_0x1d1001[_0x1b0ee0(0x298)],_0x1a5975=_0x265524===0x35&&(isKnownDnsHost(_0xf558ed)||isIpLiteral(_0xf558ed)),_0x19f00e=shouldBlockEncryptedDns(_0x1d1001[_0x1b0ee0(0x270)],_0x265524);if(_0x19f00e['block'])return _0x19f00e[_0x1b0ee0(0x2a6)]==='encrypted-dns-port'||_0x265524===0x355?(dnsStats[_0x1b0ee0(0x278)]+=0x1,wlog('block',_0x1b0ee0(0x2a5),{'reason':_0x19f00e['reason'],'addr':_0x1d1001[_0x1b0ee0(0x270)],'port':_0x265524,'uuid':_0x23dc9d[_0x1b0ee0(0x268)](0x0,0x8),'ip':_0x376f5f,'count':dnsStats[_0x1b0ee0(0x278)]})):(dnsStats[_0x1b0ee0(0x1ec)]+=0x1,wlog(_0x1b0ee0(0x277),_0x1b0ee0(0x2af),{'reason':_0x19f00e['reason'],'addr':_0x1d1001[_0x1b0ee0(0x270)],'port':_0x265524,'uuid':_0x23dc9d[_0x1b0ee0(0x268)](0x0,0x8),'ip':_0x376f5f,'count':dnsStats['dohBlocked']})),_0x368096(),await sleep(SOFT_REJECT_DELAY_MS),_0x595425(_0x1b0ee0(0x359));if(_0x265524===0x35&&!_0x1a5975)return dnsStats[_0x1b0ee0(0x1ec)]+=0x1,wlog(_0x1b0ee0(0x277),_0x1b0ee0(0x232),{'addr':_0x1d1001['address'],'port':_0x265524,'uuid':_0x23dc9d[_0x1b0ee0(0x268)](0x0,0x8),'ip':_0x376f5f}),_0x368096(),await sleep(SOFT_REJECT_DELAY_MS),_0x595425(_0x1b0ee0(0x1fe));if(_0x1d1001[_0x1b0ee0(0x21c)]===0x2&&!_0x1a5975)return _0x368096(),_0x595425(_0x1b0ee0(0x2dd));if(_0x1d1001[_0x1b0ee0(0x21c)]!==0x1&&_0x1d1001[_0x1b0ee0(0x21c)]!==0x2)return _0x368096(),_0x595425('only\x20TCP');const _0x389b45=await tryAcquireIp(_0x580386,_0x1e4c5a,_0x376f5f,_0x35e3fc[_0x1b0ee0(0x2d7)]);if(!_0x389b45['ok'])return _0x368096(),await sleep(SOFT_REJECT_DELAY_MS),_0x595425(_0x1b0ee0(0x2c1));_0x1942b2=!![],_0x41c232=_0x35e3fc[_0x1b0ee0(0x207)]===!![],activeConns[_0x1b0ee0(0x339)](_0x23dc9d,(activeConns[_0x1b0ee0(0x236)](_0x23dc9d)||0x0)+0x1),_0x6b0f1d=getLimiter(_0x23dc9d,_0x35e3fc[_0x1b0ee0(0x303)]),_0x52940b={'close':()=>_0x595425(_0x1b0ee0(0x1f6))};if(!activeSessions[_0x1b0ee0(0x2dc)](_0x23dc9d))activeSessions[_0x1b0ee0(0x339)](_0x23dc9d,new Set());activeSessions[_0x1b0ee0(0x236)](_0x23dc9d)['add'](_0x52940b);const _0x1ff017=_0x1d1001[_0x1b0ee0(0x270)];if(!_0x1a5975&&_0x35e3fc[_0x1b0ee0(0x207)]===!![]&&await isAdHost(_0x1ff017))return _0x1942b2=![],_0x368096(),await sleep(SOFT_REJECT_DELAY_MS),_0x595425(_0x1b0ee0(0x26f));if(_0x1a5975){_0x59b612=!![],wlog('dns',_0x1b0ee0(0x331),{'addr':_0x1ff017,'port':_0x265524,'blockAds':_0x41c232,'uuid':_0x23dc9d[_0x1b0ee0(0x268)](0x0,0x8),'ip':_0x376f5f}),_0x368096();if(_0x1d1001[_0x1b0ee0(0x29a)]&&_0x1d1001[_0x1b0ee0(0x29a)][_0x1b0ee0(0x20a)]>0x0){const _0x4c56af=new Uint8Array(_0x1d1001[_0x1b0ee0(0x29a)]);await _0x264f71(_0x4c56af);}return;}try{_0x364f9e=await connectOutbound(_0x1ff017,_0x265524),_0x398f6a=_0x364f9e[_0x1b0ee0(0x352)][_0x1b0ee0(0x1f2)](),_0x368096();if(_0x1d1001[_0x1b0ee0(0x29a)]&&_0x1d1001['rest'][_0x1b0ee0(0x20a)]>0x0){const _0x541417=new Uint8Array(_0x1d1001[_0x1b0ee0(0x29a)]);if(_0x6b0f1d[_0x1b0ee0(0x2f3)])await _0x6b0f1d[_0x1b0ee0(0x2fc)](_0x541417[_0x1b0ee0(0x20a)]);_0x11337c+=_0x541417[_0x1b0ee0(0x20a)],_0x36df28+=_0x541417['byteLength'],await _0x398f6a[_0x1b0ee0(0x325)](_0x541417);}_0x364f9e[_0x1b0ee0(0x1f3)][_0x1b0ee0(0x2f0)](new WritableStream({async 'write'(_0x317d78){const _0x49c94d=_0x1b0ee0;if(_0x324d81[_0x49c94d(0x279)]!==0x1)return;if(_0x23dc9d&&!getUserByUuid(_0x23dc9d)){_0x595425(_0x49c94d(0x1f6));return;}if(_0x6b0f1d['enabled'])await _0x6b0f1d[_0x49c94d(0x2fc)](_0x317d78['byteLength']);_0x1d4440+=_0x317d78[_0x49c94d(0x20a)],_0x36df28+=_0x317d78['byteLength'],_0x303c15();try{_0x324d81[_0x49c94d(0x2a3)](_0x317d78);}catch{_0x595425(_0x49c94d(0x2cc));}},'close'(){_0x595425('remote\x20closed');},'abort'(){const _0x37c131=_0x1b0ee0;_0x595425(_0x37c131(0x1ed));}}))[_0x1b0ee0(0x306)](()=>_0x595425(_0x1b0ee0(0x2e2)));}catch{_0x595425('connect\x20fail');}};_0x324d81[_0x103afc(0x230)]('message',_0x10e876=>{const _0xebd999=_0x103afc;try{const _0x134a4e=_0x10e876[_0xebd999(0x25b)];if(_0x134a4e instanceof ArrayBuffer)_0x264f71(new Uint8Array(_0x134a4e))['catch'](()=>{try{_0x595425();}catch{}});else{if(_0x134a4e instanceof Blob)_0x134a4e['arrayBuffer']()[_0xebd999(0x204)](_0x3e619c=>_0x264f71(new Uint8Array(_0x3e619c)))[_0xebd999(0x306)](()=>{try{_0x595425();}catch{}});else typeof _0x134a4e==='string'&&_0x264f71(new TextEncoder()[_0xebd999(0x260)](_0x134a4e))[_0xebd999(0x306)](()=>{try{_0x595425();}catch{}});}}catch{try{_0x595425();}catch{}}}),_0x324d81[_0x103afc(0x230)](_0x103afc(0x351),()=>{try{_0x595425();}catch{}}),_0x324d81[_0x103afc(0x230)](_0x103afc(0x293),()=>{try{_0x595425();}catch{}});if(_0x220151&&_0x220151[_0x103afc(0x20a)]>0x0)try{_0x10f43f[_0x103afc(0x205)](_0x264f71(_0x220151)['catch'](()=>{}));}catch{_0x264f71(_0x220151)[_0x103afc(0x306)](()=>{});}return new Response(null,{'status':0x65,'webSocket':_0x29aca2});}async function serveStatusPage(_0x51aebb){const _0x2dbcaf=_0x5c7b86;try{const _0x1285d0=await fetch(STATUS_HTML_URL,{'headers':{'User-Agent':_0x2dbcaf(0x29b)+VERSION},'cf':{'cacheTtl':0x12c,'cacheEverything':!![]}});if(!_0x1285d0['ok'])throw new Error(_0x2dbcaf(0x215));let _0x3895bb=await _0x1285d0[_0x2dbcaf(0x348)]();const _0x717014=_0x2dbcaf(0x222)+JSON[_0x2dbcaf(0x1e5)](VERSION)+_0x2dbcaf(0x337)+JSON[_0x2dbcaf(0x1e5)](_0x51aebb)+';</script>';return _0x3895bb=_0x3895bb[_0x2dbcaf(0x312)](_0x2dbcaf(0x341))?_0x3895bb[_0x2dbcaf(0x316)](_0x2dbcaf(0x341),_0x717014+_0x2dbcaf(0x341)):_0x717014+_0x3895bb,new Response(_0x3895bb,{'status':0xc8,'headers':{'Content-Type':_0x2dbcaf(0x26e),'Cache-Control':_0x2dbcaf(0x2da)}});}catch{return new Response(_0x2dbcaf(0x2aa)+VERSION+'</b></p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22opacity:.5\x22>'+_0x51aebb+'</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></body></html>',{'status':0xc8,'headers':{'Content-Type':_0x2dbcaf(0x26e)}});}}export default{async 'fetch'(_0x56aa46,_0x4b4543,_0x5e5f28){const _0x231165=_0x5c7b86;try{_env=_0x4b4543,_ctx=_0x5e5f28,refreshLogMode(_0x4b4543);if(!MOTHER_URL)MOTHER_URL=_0x4b4543[_0x231165(0x1f0)]||'';loadEgressFromEnv(_0x4b4543);const _0xf0d1ff=new URL(_0x56aa46[_0x231165(0x26d)]),_0x18047d=_0xf0d1ff[_0x231165(0x2f2)];childId=generateChildId(_0x56aa46['url']);const _0x42629f=(_0x56aa46[_0x231165(0x26b)][_0x231165(0x236)](_0x231165(0x2e3))||'')[_0x231165(0x361)]()===_0x231165(0x2b6);if(_0x56aa46[_0x231165(0x344)]===_0x231165(0x2ec)&&(_0x18047d===_0x231165(0x27d)||_0x18047d==='/sync/'))return handleSync(_0x56aa46,_0x4b4543);if(_0x18047d==='/health'){await ensureUsersLoaded(_0x4b4543);const _0x4fd6a7=await dbLoadActiveIps(_0x4b4543);let _0x3605cf=0x0;for(const _0x400d20 of activeConns[_0x231165(0x27e)]())if(_0x400d20>0x0)_0x3605cf++;return new Response(JSON[_0x231165(0x1e5)]({'ok':!![],'id':childId,'version':VERSION,'mode':_0x231165(0x227),'transport':[_0x231165(0x2ce),'ws'],'activeUsers':Math[_0x231165(0x2bd)](_0x3605cf,_0x4fd6a7['length']),'usersLoaded':usersByUuid[_0x231165(0x33d)],'activeIpEntries':_0x4fd6a7[_0x231165(0x345)],'nodeDisabled':nodeDisabled,'lastSyncAt':lastSyncAt||null,'hasDB':!!_0x4b4543['DB'],'doh':DOH_URL,'dohClean':DOH_CLEAN_URL,'dohFallback':DOH_FALLBACK_URL,'dohCacheSize':dohCache[_0x231165(0x33d)],'egress':{'proxy':egressProxy||null,'domains':egressDomains[_0x231165(0x268)](0x0,0x14)},'dns':{...dnsStats},'memLogSize':memLogs[_0x231165(0x345)],'logMode':logMode,'limits':Array['from'](usersByUuid['values']())[_0x231165(0x268)](0x0,0x14)['map'](_0x2a783f=>({'id':_0x2a783f['id'],'ipLimit':_0x2a783f[_0x231165(0x2d7)],'speedLimitKBps':_0x2a783f[_0x231165(0x303)],'blockAds':_0x2a783f[_0x231165(0x207)]})),'memIpUsers':memIps[_0x231165(0x33d)]}),{'headers':{'content-type':_0x231165(0x29f)}});}if(_0x18047d===_0x231165(0x30e)||_0x18047d===_0x231165(0x24a)){const _0xebc688=Math['min'](0x1f4,Math[_0x231165(0x2bd)](0x1,Number(_0xf0d1ff[_0x231165(0x332)]['get'](_0x231165(0x31c)))||0x64));if(_0xf0d1ff[_0x231165(0x332)][_0x231165(0x236)](_0x231165(0x321))==='1'||_0xf0d1ff[_0x231165(0x332)][_0x231165(0x236)](_0x231165(0x321))===_0x231165(0x202)){const _0x28b7eb=await dbClearLogs(_0x4b4543);return memLogs['length']=0x0,new Response(JSON[_0x231165(0x1e5)]({'ok':_0x28b7eb,'cleared':!![],'version':VERSION}),{'headers':{'content-type':_0x231165(0x29f),'cache-control':'no-store'}});}if(_0x56aa46['method']===_0x231165(0x2ec)){try{const _0x49a1b2=await _0x56aa46[_0x231165(0x340)]()['catch'](()=>({}));wlog(_0x49a1b2['level']||_0x231165(0x25f),_0x49a1b2[_0x231165(0x309)]||_0x49a1b2['message']||_0x231165(0x2e5),_0x49a1b2['extra']);}catch(_0x51a106){wlog(_0x231165(0x25f),_0x231165(0x305));}return new Response(JSON[_0x231165(0x1e5)]({'ok':!![]}),{'headers':{'content-type':_0x231165(0x29f)}});}const _0x1a4be5=await dbLoadLogs(_0x4b4543,_0xebc688);return new Response(JSON['stringify'](_0x1a4be5,null,0x2),{'headers':{'content-type':_0x231165(0x2f7),'cache-control':'no-store'}});}if(_0x56aa46[_0x231165(0x344)]===_0x231165(0x2ec)&&_0x56aa46[_0x231165(0x2d1)])return wlog(_0x231165(0x1ee),_0x231165(0x329),{'path':_0x18047d,'ip':getClientIP(_0x56aa46),'host':_0x56aa46['headers'][_0x231165(0x236)](_0x231165(0x209))}),handleVlessXhttp(_0x56aa46,_0x4b4543,_0x5e5f28);if(_0x42629f)return wlog(_0x231165(0x1ee),_0x231165(0x2e9),{'path':_0x18047d,'ip':getClientIP(_0x56aa46),'host':_0x56aa46['headers'][_0x231165(0x236)](_0x231165(0x209))}),handleVlessWebSocket(_0x56aa46,_0x4b4543,_0x5e5f28);_0x18047d!=='/'&&_0x18047d!==_0x231165(0x291)&&_0x18047d!==_0x231165(0x31f)&&_0x18047d!==_0x231165(0x2db)&&_0x18047d!==_0x231165(0x30e)&&wlog(_0x231165(0x1ee),_0x231165(0x307),{'method':_0x56aa46[_0x231165(0x344)],'path':_0x18047d,'ip':getClientIP(_0x56aa46),'upgrade':_0x56aa46[_0x231165(0x26b)][_0x231165(0x236)]('upgrade')});if(_0x18047d==='/')return serveStatusPage(childId);if(_0x18047d==='/version')return await ensureUsersLoaded(_0x4b4543),new Response(JSON[_0x231165(0x1e5)]({'version':VERSION,'role':_0x231165(0x22d),'mode':_0x231165(0x227),'id':childId,'usersLoaded':usersByUuid[_0x231165(0x33d)],'nodeDisabled':nodeDisabled,'lastSyncAt':lastSyncAt||null,'hasDB':!!_0x4b4543['DB'],'doh':DOH_URL,'dohClean':DOH_CLEAN_URL,'dohFallback':DOH_FALLBACK_URL,'dns':{...dnsStats}}),{'headers':{'content-type':_0x231165(0x29f)}});return new Response(_0x231165(0x28f),{'status':0x194});}catch(_0x18ba99){try{wlog(_0x231165(0x293),'fetch\x20fatal',{'message':_0x18ba99?.[_0x231165(0x34b)]||String(_0x18ba99),'stack':String(_0x18ba99?.[_0x231165(0x35d)]||'')[_0x231165(0x268)](0x0,0x1f4)});}catch(_0x5cb4ed){}return new Response(JSON['stringify']({'error':_0x231165(0x310),'message':String(_0x18ba99?.['message']||_0x18ba99),'version':VERSION}),{'status':0x1f4,'headers':{'content-type':_0x231165(0x29f)}});}},async 'scheduled'(){}};function _0x11cc(){const _0x2e400b=['egress_proxy','error','SELECT\x20user_id,\x20up,\x20down\x20FROM\x20node_usage_delta\x20WHERE\x20up\x20+\x20down\x20>\x200','encrypted-dns-port','https://hard.dnsforge.de/dns-query','dns.google.com.','port','DELETE\x20FROM\x20node_active_ips\x20WHERE\x20user_id\x20=\x20?\x20AND\x20last_seen\x20<\x20?','rest','cf-child/','dns.quad9.net','9.9.9.11','padStart','application/json','releaseLock','bind','chrome.com','send','signal','encrypted-port\x20ws','reason','1.0.0.1','add','\x0a\x20\x20\x20\x20UPDATE\x20node_active_ips\x20SET\x20last_seen\x20=\x20?\x20WHERE\x20user_id\x20=\x20?\x20AND\x20ip\x20=\x20?\x0a\x20\x20','<!DOCTYPE\x20html><html\x20lang=\x22fa\x22\x20dir=\x22rtl\x22><head><meta\x20charset=\x22UTF-8\x22><title>Saow\x20Node</title></head>\x0a\x20\x20\x20\x20\x20\x20\x20<body\x20style=\x22background:#05060f;color:#e2e8f0;font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22text-align:center\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h1>SAOW</h1><p>Edge\x20Node\x20(Push\x20+\x20D1\x20+\x20DoH)</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>Version:\x20<b>','limiter','*.ookla.com','google','https','doh/encrypted\x20ws','googleusercontent.com','HTTP\x20CONNECT\x20no\x20response','delete','doh.powerdns.org','chatgpt.com','\x0d\x0aProxy-Connection:\x20Keep-Alive\x0d\x0a\x0d\x0a','websocket','getUint16','bad\x20request','unknown\x20type','console','FAIL\x20both','subarray','max','soft.dnsforge.de','FALLBACK\x20OK','dns.twnic.tw','ip\x20limit','googleapis.com','.google.','1.0.0.2','gmail.com','dns.osl.basekampen.net','only\x20TCP','unfiltered.adguard-dns.com','doh/encrypted','isArray','domains','ws\x20send\x20fail','daily_quota_bytes','xhttp','auth','one.one.one.one','body','8.8.8.8','chat.openai.com','trim','value','keys','ipLimit','INSERT\x20INTO\x20node_users\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20(uuid,\x20id,\x20name,\x20enabled,\x20expiry,\x20quota_bytes,\x20daily_quota_bytes,\x20speed_limit_kbps,\x20ip_limit,\x20block_ads)\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20VALUES\x20(?,\x20?,\x20?,\x20?,\x20?,\x20?,\x20?,\x20?,\x20?,\x20?)','SELECT\x20value\x20FROM\x20node_state\x20WHERE\x20key=\x27node_disabled\x27','public,\x20max-age=60','/favicon.ico','has','udp\x20not\x20supported','quota_bytes','plain-53\x20unknown\x20host','3086174AlThnm','filter','remote\x20pipe','Upgrade','INTEGER\x20DEFAULT\x200','manual','uuid','MITM\x20FAIL\x20xhttp','1.1.1.3','WS\x20→\x20VLESS','1573723ijfTQC','bearer\x20','POST','SELECT\x20id,\x20ts,\x20level,\x20msg,\x20extra\x20FROM\x20node_logs\x20ORDER\x20BY\x20id\x20DESC\x20LIMIT\x20?','split','results','pipeTo','youtube.com','pathname','enabled','https://dns.google/dns-query','4.36.0','string','application/json;\x20charset=utf-8','next','sec-websocket-protocol','disabled','doh-endpoint','take','CREATE\x20TABLE\x20IF\x20NOT\x20EXISTS\x20node_state\x20(\x0a\x20\x20\x20\x20\x20\x20\x20\x20key\x20TEXT\x20PRIMARY\x20KEY,\x20value\x20TEXT,\x20updated_at\x20INTEGER\x0a\x20\x20\x20\x20\x20\x20)','Node\x20disabled','full_sync','4052008woIyls','decode','1212JGJppR','speedLimitKBps','dns.google.com','manual-post','catch','OTHER','INSERT\x20INTO\x20node_state\x20(key,\x20value,\x20updated_at)\x20VALUES\x20(\x27node_disabled\x27,\x20?,\x20?)\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20ON\x20CONFLICT(key)\x20DO\x20UPDATE\x20SET\x20value=excluded.value,\x20updated_at=excluded.updated_at','msg','.google','wikipedia.org','shift','some','/log','dailyQuotaBytes','internal','dns','includes','CONNECT\x20','maxIp','speed_limit_kbps','replace','resolve','now','Expected\x20Upgrade:\x20websocket','SELECT\x20ip,\x20last_seen\x20FROM\x20node_active_ips\x20WHERE\x20user_id\x20=\x20?\x20ORDER\x20BY\x20last_seen\x20ASC','invalid\x20vless','limit','PRAGMA\x20table_info(node_users)','memory-only','/health','https://raw.githubusercontent.com/isfwic10-arch/babysaow/refs/heads/main/node-status.html','clear','speed.cloudflare.com','saow-pan2','*.chatgpt.com','write','quotaBytes','cloudflare-dns.com','block_ads','POST\x20→\x20XHTTP','DELETE\x20FROM\x20node_users','level','speed_mbps','first','charCodeAt','yes','adblock.doh.mullvad.net','MITM\x20START\x20ws','searchParams','byteOffset','expiry','AAAA','isFinite',';window.__SAOW_CHILD_ID__=','EGRESS\x20failed\x20→\x20direct','set','application/octet-stream','mask.icloud.com','mozilla.cloudflare-dns.com','size','1238mSjPxD','LOG_MODE','json','</head>','proxy','arraybuffer','method','length','9.9.9.9','socks5\x20auth\x20failed','text','8.8.4.4','user\x20not\x20found','message','DELETE\x20FROM\x20node_logs','mediawiki.org','dns.controld.com','dns.adguard-dns.com','doh.pub','close','writable','buffer','::1','all','HTTP\x20CONNECT\x20','hard.dnsforge.de','dns.sb','encrypted\x20dns\x20blocked','DELETE\x20FROM\x20node_active_ips\x20WHERE\x20user_id\x20=\x20?\x20AND\x20ip\x20=\x20?','INSERT\x20INTO\x20node_active_ips\x20(user_id,\x20ip,\x20last_seen)\x20VALUES\x20(?,\x20?,\x20?)\x0a\x20\x20\x20\x20\x20\x20\x20ON\x20CONFLICT(user_id,\x20ip)\x20DO\x20UPDATE\x20SET\x20last_seen\x20=\x20excluded.last_seen','memory','stack','name','EGRESS_DOMAINS','SELECT\x20*\x20FROM\x20node_users','toLowerCase','user_id','208.67.222.222','x-forwarded-for','dns.cloudflare.com','true-client-ip','parse','stringify','child-','INTEGER\x20DEFAULT\x201','DELETE\x20FROM\x20node_logs\x20WHERE\x20id\x20NOT\x20IN\x20(\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20SELECT\x20id\x20FROM\x20node_logs\x20ORDER\x20BY\x20id\x20DESC\x20LIMIT\x20?\x0a\x20\x20\x20\x20\x20\x20\x20\x20)','proxyip','total','PROXYIP','dohBlocked','remote\x20abort','route','from','MOTHER_URL','test','getWriter','readable','application/dns-message','doh.dns.sb','revoked','indexOf','DELETE\x20FROM\x20node_usage_delta','body\x20required','fromCharCode','X-Forwarded-For','bad\x20header','cf-connecting-ip','dns\x20host\x20not\x20allowed','speed_kbps','extra','ytimg.com','true','limitKBps','then','waitUntil','INSERT\x20INTO\x20node_logs\x20(ts,\x20level,\x20msg,\x20extra)\x20VALUES\x20(?,\x20?,\x20?,\x20?)','blockAds','arrayBuffer','host','byteLength','min','www.speedtest.net','prepare','1.1.1.2','CREATE\x20TABLE\x20IF\x20NOT\x20EXISTS\x20node_logs\x20(\x0a\x20\x20\x20\x20\x20\x20\x20\x20id\x20INTEGER\x20PRIMARY\x20KEY\x20AUTOINCREMENT,\x0a\x20\x20\x20\x20\x20\x20\x20\x20ts\x20INTEGER\x20NOT\x20NULL,\x0a\x20\x20\x20\x20\x20\x20\x20\x20level\x20TEXT,\x0a\x20\x20\x20\x20\x20\x20\x20\x20msg\x20TEXT,\x0a\x20\x20\x20\x20\x20\x20\x20\x20extra\x20TEXT\x0a\x20\x20\x20\x20\x20\x20)','join','dns.adguard.com','endsWith','LOG','googlevideo.com','fetch\x20failed','x-api-key','MITM\x20DONE\x20xhttp','setUint16','dns\x20fail','false','fe80:','cmd','ipCount','openai.com','ip_limit','SELECT\x20value\x20FROM\x20node_state\x20WHERE\x20key=\x27last_sync\x27','getUint8','<script>window.__SAOW_VERSION__=','EGRESS\x20skip\x20proxyip-raw\x20(use\x20socks5://\x20or\x20http://)','pedia','ALTER\x20TABLE\x20node_users\x20ADD\x20COLUMN\x20block_ads\x20INTEGER\x20DEFAULT\x201','match','push-d1-doh-xhttp','not\x20socks5','ceil','208.67.220.220','users','EGRESS\x20tunnel','node','socks5\x20eof','ws\x20error','addEventListener','MITM\x20START\x20xhttp','plain-53\x20unknown\x20host\x20ws','read','?dns=','fail','get','dns.nextdns.io','59480nZbyjc','GET','socks','speedLimitMbps','True-Client-IP','UPDATE\x20node_active_ips\x20SET\x20last_seen\x20=\x20?\x20WHERE\x20user_id\x20=\x20?\x20AND\x20ip\x20=\x20?','dns.switch.ch','d1-pre','REJECT\x20user','mbps','doh.opendns.com','toString','0.0.0.0','dns.dnsforge.de','https://1.1.1.1/dns-query','149.112.112.112','entries','fallback','/log/','speedLimit','ENABLE_LOGS','primary\x20FAILED\x20→\x20fallback','hostname','http','encrypted-port','socks5\x20atyp','CREATE\x20TABLE\x20IF\x20NOT\x20EXISTS\x20node_users\x20(\x0a\x20\x20\x20\x20\x20\x20\x20\x20uuid\x20TEXT\x20PRIMARY\x20KEY,\x20id\x20TEXT,\x20name\x20TEXT,\x20enabled\x20INTEGER\x20DEFAULT\x201,\x0a\x20\x20\x20\x20\x20\x20\x20\x20expiry\x20TEXT,\x20quota_bytes\x20INTEGER\x20DEFAULT\x200,\x20daily_quota_bytes\x20INTEGER\x20DEFAULT\x200,\x0a\x20\x20\x20\x20\x20\x20\x20\x20speed_limit_kbps\x20INTEGER\x20DEFAULT\x200,\x20ip_limit\x20INTEGER\x20DEFAULT\x201,\x20block_ads\x20INTEGER\x20DEFAULT\x201\x0a\x20\x20\x20\x20\x20\x20)','resolver2.opendns.com','\x20HTTP/1.1\x0d\x0aHost:\x20','batch','max_ip','type','full','write\x20fail','run','data','socks5','lastIndexOf','wikimedia.org','info','encode','getReader','random','DELETE\x20FROM\x20node_active_ips\x20WHERE\x20last_seen\x20<\x20?','dns9.quad9.net','binaryType','8199ZGmJUx','1.1.1.1','slice','doh.mullvad.net','mask-h2.icloud.com','headers','REJECT\x20empty/short\x20query','url','text/html;\x20charset=utf-8','ad\x20blocked','address','startsWith','dns.google','blocked','map','protocol','push','block','dotBlocked','readyState','CREATE\x20TABLE\x20IF\x20NOT\x20EXISTS\x20node_active_ips\x20(\x0a\x20\x20\x20\x20\x20\x20\x20\x20user_id\x20TEXT\x20NOT\x20NULL,\x20ip\x20TEXT\x20NOT\x20NULL,\x20last_seen\x20INTEGER\x20NOT\x20NULL,\x0a\x20\x20\x20\x20\x20\x20\x20\x20PRIMARY\x20KEY\x20(user_id,\x20ip)\x0a\x20\x20\x20\x20\x20\x20)','doh.li','googlemail.com','/sync','values','9.9.9.10','log','memory-fallback','youtu.be','252hkawUe','mem','off','chrome.cloudflare-dns.com','doh.libredns.gr','authorization','allSettled','PTR','11432QikYZZ','x-mother-secret','CONN\x20target','17478400PCxHuO','Not\x20Found','SELECT\x20ip,\x20last_seen\x20FROM\x20node_active_ips\x20WHERE\x20user_id\x20=\x20?\x20AND\x20last_seen\x20>=\x20?\x20ORDER\x20BY\x20last_seen\x20ASC','/version'];_0x11cc=function(){return _0x2e400b;};return _0x11cc();}
+
+
+import { connect } from 'cloudflare:sockets';
+
+const VERSION = '4.37.0';
+const API_SECRET = 'saow-pan2';
+let MOTHER_URL = null;
+const MEM_LOG_MAX = 200;
+const D1_LOG_MAX_ROWS = 500;
+
+
+let logMode = 'mem'; 
+
+function refreshLogMode(env) {
+  try {
+    const raw = String(env?.LOG_MODE ?? env?.LOG ?? env?.ENABLE_LOGS ?? '')
+      .toLowerCase()
+      .trim();
+    if (!raw || raw === '0' || raw === 'false' || raw === 'off' || raw === 'no') {
+      logMode = 'off';
+    } else if (raw === 'mem' || raw === 'memory' || raw === 'console') {
+      logMode = 'mem';
+    } else if (raw === '1' || raw === 'true' || raw === 'on' || raw === 'full' || raw === 'yes') {
+      logMode = 'full';
+    } else {
+      logMode = 'off';
+    }
+  } catch (_) {
+    logMode = 'off';
+  }
+}
+
+const REPORT_THRESHOLD = 8 * 1024 * 1024; 
+const STATUS_HTML_URL = 'https:
+const IP_IDLE_MS = 10 * 60 * 1000;
+const SOFT_REJECT_DELAY_MS = 50;
+const IP_CACHE_TTL_MS = 5 * 1000; 
+const IP_CLEANUP_PROB = 0.08; 
+
+
+
+const DOH_URL = 'https:
+
+const DOH_CLEAN_URL = 'https:
+
+const DOH_FALLBACK_URL = 'https:
+
+const DOH_CACHE_TTL_MS = 10 * 60 * 1000; 
+const DOH_TIMEOUT_MS = 1800; 
+const DOH_FALLBACK_TIMEOUT_MS = 1200;
+
+
+
+
+let usersByUuid = new Map();
+const activeConns = new Map();
+
+const activeSessions = new Map();
+const limiters = new Map();
+const ipCache = new Map(); 
+const memIps = new Map(); 
+const dohCache = new Map(); 
+
+
+
+let VERSION = '';
+let API_SECRET = [];
+
+const MOTHER_URL = [
+  '*.chatgpt.com', 'chatgpt.com', '*.openai.com', 'openai.com', 'chat.openai.com',
+  'speedtest.net', '*.speedtest.net', 'www.speedtest.net', 'speed.cloudflare.com',
+  '*.ookla.com', 'ookla.com',
+];
+
+const MEM_LOG_MAX = [
+  'google.com', 'gstatic.com', 'googleapis.com', 'googleusercontent.com',
+  'youtube.com', 'youtu.be', 'ytimg.com', 'googlevideo.com', 'ggpht.com',
+  'gmail.com', 'dns.google', 'dns.google.com',
+  'wikipedia.org', 'wikimedia.org',
+];
+
+function isNeverEgressHost(hostname) {
+  const D1_LOG_MAX_ROWS = String(hostname || '').toLowerCase().replace(/\.$/, '');
+  if (!h) return false;
+  for (const logMode of EGRESS_NEVER) {
+    if (h === d0 || h.endsWith('.' + d0)) return true;
+  }
+  if (h.includes('.google.') || h.endsWith('.google') || h === 'google') return true;
+  return false;
+}
+
+function parseProxyFull(raw) {
+  let raw = String(raw || '').trim();
+  if (!s) return null;
+  let REPORT_THRESHOLD = 'proxyip';
+  let STATUS_HTML_URL = '', pass = '';
+  const IP_IDLE_MS = /^(socks5|socks|http|https|proxyip):\/\
+  if (m) {
+    protocol = m[1].toLowerCase();
+    if (protocol === 'socks') protocol = 'socks5';
+    if (protocol === 'https') protocol = 'http';
+    s = s.slice(m[0].length);
+  }
+  const SOFT_REJECT_DELAY_MS = s.lastIndexOf('@');
+  if (at > 0) {
+    const IP_CACHE_TTL_MS = s.slice(0, at);
+    s = s.slice(at + 1);
+    const IP_CLEANUP_PROB = cred.indexOf(':');
+    if (c >= 0) { user = cred.slice(0, c); pass = cred.slice(c + 1); }
+    else user = cred;
+  }
+  let DOH_URL = s, port = protocol === 'socks5' ? 1080 : (protocol === 'http' ? 8080 : 443);
+  if (s.includes('.tp')) {
+    const DOH_CLEAN_URL = s.match(/\.tp(\d+)/i);
+    if (tp) port = parseInt(tp[1], 10) || port;
+  }
+  if (s.includes(':') && !s.startsWith('[') && (s.match(/:/g) || []).length === 1) {
+    const DOH_FALLBACK_URL = s.lastIndexOf(':');
+    const DOH_CACHE_TTL_MS = parseInt(s.slice(i + 1), 10);
+    if (n > 0) { port = n; host = s.slice(0, i); }
+  }
+  host = host.trim();
+  if (!host) return null;
+  if (protocol === 'proxyip' && (port === 1080 || port === 1081 || port === 9050 || port === 7890)) {
+    protocol = 'socks5';
+  }
+  return { host, port, protocol, user, pass };
+}
+
+function matchEgressHost(hostname) {
+  const DOH_TIMEOUT_MS = String(hostname || '').toLowerCase().replace(/\.$/, '');
+  if (!h || !egressDomains.length) return false;
+  if (isNeverEgressHost(h)) return false;
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(h)) return false;
+  for (const DOH_FALLBACK_TIMEOUT_MS of egressDomains) {
+    let usersByUuid = String(d0 || '').trim().toLowerCase().replace(/\.$/, '');
+    if (!d || d === '*' || d === '*.*') continue;
+    if (d.startsWith('*.')) {
+      const activeConns = d.slice(2);
+      if (!base || (!base.includes('.') && base.length < 4)) continue;
+      if (h === base || h.endsWith('.' + base)) return true;
+      continue;
+    }
+    if (!d.includes('.') && d.length < 5) continue;
+    if (h === d || h.endsWith('.' + d)) return true;
+  }
+  return false;
+}
+
+function loadEgressFromEnv(env) {
+  try {
+    const activeSessions = String(env?.PROXYIP || env?.EGRESS_PROXY || '').trim();
+    egressProxy = p;
+    const limiters = String(env?.EGRESS_DOMAINS || '').trim();
+    if (p && d) {
+      egressDomains = d.split(/[,\n]+/).map((x) => x.trim()).filter(Boolean);
+    } else if (p) {
+      egressDomains = DEFAULT_EGRESS_DOMAINS.slice();
+    } else {
+      egressDomains = [];
+    }
+  } catch (_) {}
+}
+
+function applyEgressFromSync(body) {
+  try {
+    const ipCache = body?.egressDOH_FALLBACK_URLroxy;
+    if (!eg) return;
+    if (eg.proxy != null) egressProxy = String(eg.proxy).trim();
+    if (!egressProxy) {
+      egressDomains = [];
+      return;
+    }
+    if (Array.isArray(eg.domains) && eg.domains.length) {
+      egressDomains = eg.domains.map((x) => String(x).trim()).filter(Boolean);
+    } else if (typeof eg.domains === 'string' && eg.domains.trim()) {
+      egressDomains = eg.domains.split(/[,\n]+/).map((x) => x.trim()).filter(Boolean);
+    } else if (!egressDomains.length) {
+      egressDomains = DEFAULT_EGRESS_DOMAINS.slice();
+    }
+  } catch (_) {}
+}
+
+
+async function dohJsonQuery(name, type) {
+  const memIps = `https:
+  try {
+    const dohCache = await fetch(url, {
+      headers: { Accept: 'application/dns-json' },
+      cf: { cacheTtl: 60, cacheEverything: false },
+    });
+    if (!res.ok) return [];
+    const VERSION = await res.json();
+    return Array.isArray(j.Answer) ? j.Answer : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseHostPortString(str, defaultPort = 443) {
+  let API_SECRET = String(str || '').trim().toLowerCase();
+  if (!s) return null;
+  let MOTHER_URL = defaultPort;
+  let MEM_LOG_MAX = s;
+  if (s.includes('.tp')) {
+    const D1_LOG_MAX_ROWS = s.match(/\.tp(\d+)/i);
+    if (tp) port = parseInt(tp[1], 10) || port;
+  }
+  if (s.includes(']:')) {
+    const logMode = s.split(']:');
+    host = parts[0] + ']';
+    port = parseInt(parts[1], 10) || port;
+  } else if ((s.match(/:/g) || []).length === 1 && !s.startsWith('[')) {
+    const raw = s.lastIndexOf(':');
+    const REPORT_THRESHOLD = parseInt(s.slice(i + 1), 10);
+    if (n > 0) { port = n; host = s.slice(0, i); }
+  }
+  return [host, port];
+}
+
+
+async function resolveProxyIPList(proxyRaw) {
+  const STATUS_HTML_URL = String(proxyRaw || '')
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => s.replace(/^(socks5|socks|http|https|proxyip):\/\
+  const IP_IDLE_MS = [];
+  const SOFT_REJECT_DELAY_MS = /^(25[0-5]|2[0-4]\d|[01]?\d\d?)(\.(25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/;
+
+  for (const IP_CACHE_TTL_MS of parts) {
+    const IP_CLEANUP_PROB = parseHostPortString(single, 443);
+    if (!parsed) continue;
+    let [addr, port] = parsed;
+
+    if (ipv4.test(addr) || addr.startsWith('[')) {
+      out.push([addr, port]);
+      continue;
+    }
+
+    
+    const DOH_URL = await dohJsonQuery(addr, 'TXT');
+    const DOH_CLEAN_URL = [];
+    for (const DOH_FALLBACK_URL of txtAns) {
+      let DOH_CACHE_TTL_MS = String(a.data || '').replace(/^"|"$/g, '');
+      data = data.replace(/\\010/g, ',').replace(/\n/g, ',');
+      for (const DOH_TIMEOUT_MS of data.split(',')) {
+        const DOH_FALLBACK_TIMEOUT_MS = parseHostPortString(piece.trim(), port);
+        if (p) txtHosts.push(p);
+      }
+    }
+    if (txtHosts.length) {
+      out.push(...txtHosts);
+      continue;
+    }
+
+    const usersByUuid = await dohJsonQuery(addr, 'A');
+    const activeConns = aAns.filter((r) => r.type === 1 && r.data).map((r) => [r.data, port]);
+    if (ips.length) {
+      out.push(...ips);
+      continue;
+    }
+
+    
+    out.push([addr, port]);
+  }
+
+  
+  const activeSessions = new Set();
+  const limiters = [];
+  for (const [h, p] of out) {
+    const ipCache = h + ':' + p;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    unique.push([h, p]);
+  }
+  return unique;
+}
+
+async function openTcp(hostname, port, timeoutMs = 8000) {
+  const memIps = connect({ hostname: String(hostname).replace(/^\[|\]$/g, ''), port: Number(port) || 443 });
+  if (socket.opened && typeof socket.opened.then === 'function') {
+    await Promise.race([
+      socket.opened,
+      new Promise((_, rej) => setTimeout(() => rej(new Error('connect timeout')), timeoutMs)),
+    ]);
+  }
+  return socket;
+}
+
+async function readHttpConnectResponse(reader) {
+  const dohCache = [];
+  let VERSION = 0;
+  while (total < 8192) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    if (value && value.byteLength) {
+      chunks.push(value);
+      total += value.byteLength;
+      const API_SECRET = new Uint8Array(total);
+      let MOTHER_URL = 0;
+      for (const MEM_LOG_MAX of chunks) { all.set(c, o); o += c.byteLength; }
+      const D1_LOG_MAX_ROWS = new TextDecoder().decode(all);
+      if (text.includes('\r\n\r\n')) {
+        const logMode = text.split('\r\n')[0] || '';
+        if (!/ 200 /.test(line)) throw new Error('HTTP CONNECT ' + line);
+        return;
+      }
+    }
+  }
+  throw new Error('HTTP CONNECT no response');
+}
+
+async function connectViaHttpProxy(proxyHost, proxyPort, targetHost, targetPort) {
+  const raw = await openTcp(proxyHost, proxyPort);
+  const REPORT_THRESHOLD = socket.writable.getWriter();
+  const STATUS_HTML_URL = socket.readable.getReader();
+  const IP_IDLE_MS = `CONNECT ${targetHost}:${targetPort} HTTP/1.1\r\nHost: ${targetHost}:${targetPort}\r\nProxy-Connection: Keep-Alive\r\n\r\n`;
+  await writer.write(new TextEncoder().encode(req));
+  await readHttpConnectResponse(reader);
+  try { writer.releaseLock(); } catch (_) {}
+  try { reader.releaseLock(); } catch (_) {}
+  return socket;
+}
+
+async function connectViaSocks5(proxyHost, proxyPort, targetHost, targetPort, user, pass) {
+  const SOFT_REJECT_DELAY_MS = await openTcp(proxyHost, proxyPort);
+  const IP_CACHE_TTL_MS = socket.writable.getWriter();
+  const IP_CLEANUP_PROB = socket.readable.getReader();
+
+  async function readExact(n) {
+    const DOH_URL = new Uint8Array(n);
+    let DOH_CLEAN_URL = 0;
+    while (o < n) {
+      const { value, done } = await reader.read();
+      if (done) throw new Error('socks5 eof');
+      out.set(value, o);
+      o += value.byteLength;
+    }
+    return out;
+  }
+
+  if (user) await writer.write(new Uint8Array([0x05, 0x02, 0x00, 0x02]));
+  else await writer.write(new Uint8Array([0x05, 0x01, 0x00]));
+
+  const DOH_FALLBACK_URL = await readExact(2);
+  if (greet[0] !== 0x05) throw new Error('not socks5');
+  if (greet[1] === 0x02) {
+    const DOH_CACHE_TTL_MS = new TextEncoder().encode(user || '');
+    const DOH_TIMEOUT_MS = new TextEncoder().encode(pass || '');
+    const DOH_FALLBACK_TIMEOUT_MS = new Uint8Array(3 + u.length + p.length);
+    auth[0] = 0x01; auth[1] = u.length; auth.set(u, 2);
+    auth[2 + u.length] = p.length; auth.set(p, 3 + u.length);
+    await writer.write(auth);
+    const usersByUuid = await readExact(2);
+    if (ar[1] !== 0x00) throw new Error('socks5 auth failed');
+  } else if (greet[1] === 0xff) {
+    throw new Error('socks5 no acceptable method');
+  } else if (greet[1] !== 0x00) {
+    throw new Error('socks5 method ' + greet[1]);
+  }
+
+  const activeConns = new TextEncoder().encode(targetHost);
+  const activeSessions = new Uint8Array(4 + 1 + hostBytes.length + 2);
+  req[0] = 0x05; req[1] = 0x01; req[2] = 0x00; req[3] = 0x03;
+  req[4] = hostBytes.length;
+  req.set(hostBytes, 5);
+  req[5 + hostBytes.length] = (targetPort >> 8) & 0xff;
+  req[6 + hostBytes.length] = targetPort & 0xff;
+  await writer.write(req);
+
+  const limiters = await readExact(4);
+  if (hdr[0] !== 0x05 || hdr[1] !== 0x00) {
+    throw new Error('socks5 connect status ' + (hdr[1] ?? '?'));
+  }
+  const ipCache = hdr[3];
+  if (atyp === 0x01) await readExact(6);
+  else if (atyp === 0x03) {
+    const memIps = await readExact(1);
+    await readExact(l[0] + 2);
+  } else if (atyp === 0x04) await readExact(18);
+  else throw new Error('socks5 atyp');
+
+  try { writer.releaseLock(); } catch (_) {}
+  try { reader.releaseLock(); } catch (_) {}
+  return socket;
+}
+
+
+async function connectViaProxyIPList(proxyRaw) {
+  const dohCache = await resolveProxyIPList(proxyRaw);
+  if (!list.length) throw new Error('no proxyip resolved');
+
+  
+  const VERSION = list.slice();
+  for (let API_SECRET = candidates.length - 1; i > 0; i--) {
+    const MOTHER_URL = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  const MEM_LOG_MAX = candidates.slice(0, Math.min(8, candidates.length));
+
+  let D1_LOG_MAX_ROWS = null;
+  
+  for (let logMode = 0; i < tryList.length; i += 2) {
+    const raw = tryList.slice(i, i + 2);
+    const REPORT_THRESHOLD = batch.map(async ([h, p]) => {
+      const STATUS_HTML_URL = await openTcp(h, p, 6000);
+      return { sock, h, p };
+    });
+    try {
+      const IP_IDLE_MS = await Promise.any(tasks.map(t => t.then(r => r)));
+      wlog('route', 'ProxyIP connected', { via: winner.h, port: winner.p });
+      
+      for (const SOFT_REJECT_DELAY_MS of tasks) {
+        t.then(r => {
+          if (r.sock !== winner.sock) {
+            try { r.sock.close?.(); } catch (_) {}
+          }
+        }).catch(() => {});
+      }
+      return winner.sock;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('all proxyip failed');
+}
+
+async function connectOutbound(hostname, port) {
+  const IP_CACHE_TTL_MS = String(hostname || '');
+  const IP_CLEANUP_PROB = Number(port) || 443;
+  const DOH_URL = () => openTcp(targetHost, targetPort);
+
+  if (isNeverEgressHost(targetHost)) return direct();
+  if (!egressProxy || !matchEgressHost(targetHost)) return direct();
+
+  const DOH_CLEAN_URL = parseProxyFull(egressProxy);
+  if (!ep || !ep.host) return direct();
+
+  wlog('route', 'EGRESS', {
+    target: targetHost, targetPort, proxy: egressProxy.slice(0, 80), protocol: ep.protocol,
+  });
+
+  try {
+    if (ep.protocol === 'socks5') {
+      return await connectViaSocks5(ep.host, ep.port, targetHost, targetPort, ep.user, ep.pass);
+    }
+    if (ep.protocol === 'http') {
+      return await connectViaHttpProxy(ep.host, ep.port, targetHost, targetPort);
+    }
+    
+    return await connectViaProxyIPList(egressProxy);
+  } catch (e) {
+    wlog('warn', 'EGRESS failed → direct', e?.message || String(e));
+    return direct();
+  }
+}
+
+
+function pickNum(obj, keys, fallback) {
+  for (const DOH_FALLBACK_URL of keys) {
+    if (obj == null || !(k in obj)) continue;
+    const DOH_CACHE_TTL_MS = obj[k];
+    if (v === null || v === undefined || v === '') continue;
+    const DOH_TIMEOUT_MS = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+}
+
+
+function normalizeUserLimits(raw) {
+  const DOH_FALLBACK_TIMEOUT_MS = raw || {};
+  
+  let usersByUuid;
+  if (['ipLimit', 'ipIP_CACHE_TTL_MSimit', 'maxIp', 'maxSTATUS_HTML_URLp', 'ipCount'].some((k) => k in o && o[k] !== null && o[k] !== undefined && o[k] !== '')) {
+    ipLimit = Math.max(0, pickNum(o, ['ipLimit', 'ipIP_CACHE_TTL_MSimit', 'maxIp', 'maxSTATUS_HTML_URLp', 'ipCount'], 1));
+  } else {
+    ipLimit = 1; 
+  }
+
+  
+  let activeConns = 0;
+  if (['speedLimitKBps', 'speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps', 'speedLimit', 'speedSOFT_REJECT_DELAY_MSbps', 'limitKBps'].some((k) => k in o && o[k] != null && o[k] !== '')) {
+    speedLimitKBps = Math.max(0, pickNum(o, ['speedLimitKBps', 'speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps', 'speedLimit', 'speedSOFT_REJECT_DELAY_MSbps', 'limitKBps'], 0));
+  } else if (['speedLimitMbps', 'speedIP_CLEANUP_PROBbps', 'mbps'].some((k) => k in o && o[k] != null && o[k] !== '')) {
+    const activeSessions = Math.max(0, pickNum(o, ['speedLimitMbps', 'speedIP_CLEANUP_PROBbps', 'mbps'], 0));
+    speedLimitKBps = mbps * 128; 
+  }
+
+  return { ipLimit, speedLimitKBps };
+}
+
+
+let limiters = { total: 0, ok: 0, fail: 0, fallback: 0, dotBlocked: 0, dohBlocked: 0 };
+
+
+const ipCache = [];
+
+let memIps = false;
+let dohCache = 0;
+let VERSION = 'child-unknown';
+let API_SECRET = false;
+let MOTHER_URL = null;
+let MEM_LOG_MAX = null;
+
+
+function wlog(level, msg, extra) {
+  if (logMode === 'off') return null;
+  const D1_LOG_MAX_ROWS = Date.now();
+  let logMode = '';
+  try {
+    if (extra !== undefined) {
+      extraStr = typeof extra === 'string' ? extra : JSON.stringify(extra);
+      if (extraStr.length > 1500) extraStr = extraStr.slice(0, 1500) + '…';
+    }
+  } catch (_) {
+    extraStr = String(extra);
+  }
+  const raw = { ts, level: String(level || 'info'), msg: String(msg || ''), extra: extraStr };
+  try {
+    memLogs.push(line);
+    while (memLogs.length > MEM_LOG_MAX) memLogs.shift();
+  } catch (_) {}
+  try {
+    console.log(`[${level}]`, msg, extraStr || '');
+  } catch (_) {}
+  
+  if (logMode === 'full') {
+    try {
+      if (D1_LOG_MAX_ROWSnv?.DB && MOTHER_URLtx && typeof MOTHER_URLtx.waitUntil === 'function') {
+        MOTHER_URLtx.waitUntil(dbInsertLog(D1_LOG_MAX_ROWSnv, line).catch(() => {}));
+      }
+    } catch (_) {}
+  }
+  return line;
+}
+
+async function dbInsertLog(env, line) {
+  if (!env?.DB) return;
+  try {
+    await ensureDb(env);
+    await env.DB.prepare(
+      `INSERT INTO nodeIP_CACHE_TTL_MSogs (ts, level, msg, extra) VALUES (?, ?, ?, ?)`
+    ).bind(line.ts, line.level, line.msg, line.extra || '').run();
+    
+    if (Math.random() < 0.02) {
+      await env.DB.prepare(
+        `DELETE FROM nodeIP_CACHE_TTL_MSogs WHERE id NOT IN (
+          SELECT id FROM nodeIP_CACHE_TTL_MSogs ORDER BY id DESC LIMIT ?
+        )`
+      ).bind(D1_LOG_MAX_ROWS).run();
+    }
+  } catch (_) {}
+}
+
+async function dbLoadLogs(env, limit = 100) {
+  const REPORT_THRESHOLD = {
+    mem: memLogs.slice(-limit),
+    d1: [],
+    version: VERSION,
+    childId,
+    logMode,
+    dnsStats: { ...dnsStats },
+  };
+  if (!env?.DB) return out;
+  try {
+    await ensureDb(env);
+    const STATUS_HTML_URL = await env.DB.prepare(
+      `SELECT id, ts, level, msg, extra FROM nodeIP_CACHE_TTL_MSogs ORDER BY id DESC LIMIT ?`
+    ).bind(Math.min(500, Math.max(1, limit))).all();
+    out.d1 = rows.results || [];
+  } catch (e) {
+    out.d1Error = String(e?.message || e);
+  }
+  return out;
+}
+
+async function dbClearLogs(env) {
+  if (!env?.DB) return false;
+  try {
+    await ensureDb(env);
+    await env.DB.prepare(`DELETE FROM nodeIP_CACHE_TTL_MSogs`).run();
+    memLogs.length = 0;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+
+async function ensureDb(env) {
+  if (!env?.DB) return false;
+  if (dbReady) return true;
+  try {
+    await env.DB.batch([
+      env.DB.prepare(`CREATE TABLE IF NOT EXISTS nodeDOH_FALLBACK_TIMEOUT_MState (
+        key TEXT PRIMARY KEY, value TEXT, updatedVERSIONt INTEGER
+      )`),
+      env.DB.prepare(`CREATE TABLE IF NOT EXISTS nodeactiveConnssers (
+        uuid TEXT PRIMARY KEY, id TEXT, name TEXT, enabled INTEGER DEFAULT 1,
+        expiry TEXT, quotaAPI_SECRETytes INTEGER DEFAULT 0, dailyDOH_CACHE_TTL_MSuotaAPI_SECRETytes INTEGER DEFAULT 0,
+        speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps INTEGER DEFAULT 0, ipIP_CACHE_TTL_MSimit INTEGER DEFAULT 1, blockVERSIONds INTEGER DEFAULT 1
+      )`),
+      env.DB.prepare(`CREATE TABLE IF NOT EXISTS nodeVERSIONctiveSTATUS_HTML_URLps (
+        userSTATUS_HTML_URLd TEXT NOT NULL, ip TEXT NOT NULL, lastDOH_FALLBACK_TIMEOUT_MSeen INTEGER NOT NULL,
+        PRIMARY KEY (userSTATUS_HTML_URLd, ip)
+      )`),
+      env.DB.prepare(`CREATE TABLE IF NOT EXISTS nodeactiveConnssageMEM_LOG_MAXelta (
+        userSTATUS_HTML_URLd TEXT PRIMARY KEY, up INTEGER DEFAULT 0, down INTEGER DEFAULT 0
+      )`),
+      env.DB.prepare(`CREATE TABLE IF NOT EXISTS nodeIP_CACHE_TTL_MSogs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts INTEGER NOT NULL,
+        level TEXT,
+        msg TEXT,
+        extra TEXT
+      )`),
+    ]);
+
+    
+    try {
+      const IP_IDLE_MS = await env.DB.prepare(`PRAGMA tableSTATUS_HTML_URLnfo(nodeactiveConnssers)`).all();
+      const SOFT_REJECT_DELAY_MS = new Set((cols.results || []).map((r) => r.name));
+      if (!names.has('blockVERSIONds')) {
+        await env.DB.prepare(
+          `ALTER TABLE nodeactiveConnssers ADD COLUMN blockVERSIONds INTEGER DEFAULT 1`
+        ).run();
+      }
+      const IP_CACHE_TTL_MS = [
+        ['dailyDOH_CACHE_TTL_MSuotaAPI_SECRETytes', 'INTEGER DEFAULT 0'],
+        ['speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps', 'INTEGER DEFAULT 0'],
+        ['ipIP_CACHE_TTL_MSimit', 'INTEGER DEFAULT 1'],
+      ];
+      for (const [col, def] of need) {
+        if (!names.has(col)) {
+          await env.DB.prepare(`ALTER TABLE nodeactiveConnssers ADD COLUMN ${col} ${def}`).run();
+        }
+      }
+    } catch (_) {}
+
+    dbReady = true;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function saveUsersToDb(env, users, disabled) {
+  if (!(await ensureDb(env))) return;
+  try {
+    const IP_CLEANUP_PROB = [
+      env.DB.prepare('DELETE FROM nodeactiveConnssers'),
+      env.DB.prepare(
+        `INSERT INTO nodeDOH_FALLBACK_TIMEOUT_MState (key, value, updatedVERSIONt) VALUES ('nodeMEM_LOG_MAXisabled', ?, ?)
+         ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedVERSIONt=excluded.updatedVERSIONt`
+      ).bind(disabled ? '1' : '0', Date.now()),
+      env.DB.prepare(
+        `INSERT INTO nodeDOH_FALLBACK_TIMEOUT_MState (key, value, updatedVERSIONt) VALUES ('lastDOH_FALLBACK_TIMEOUT_MSync', ?, ?)
+         ON CONFLICT(key) DO UPDATE SET value=excluded.value, updatedVERSIONt=excluded.updatedVERSIONt`
+      ).bind(String(Date.now()), Date.now()),
+    ];
+    for (const DOH_URL of users) {
+      if (!u?.uuid || !u?.id) continue;
+      stmts.push(
+        env.DB.prepare(
+          `INSERT INTO nodeactiveConnssers
+           (uuid, id, name, enabled, expiry, quotaAPI_SECRETytes, dailyDOH_CACHE_TTL_MSuotaAPI_SECRETytes, speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps, ipIP_CACHE_TTL_MSimit, blockVERSIONds)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          String(u.uuid).toLowerCase(), String(u.id), u.name || '',
+          u.enabled === false ? 0 : 1, u.expiry || null,
+          Number(u.quotaBytes) || 0, Number(u.dailyQuotaBytes) || 0,
+          normalizeUserLimits(u).speedLimitKBps,
+          normalizeUserLimits(u).ipLimit,
+          u.blockAds === false ? 0 : 1
+        )
+      );
+    }
+    await env.DB.batch(stmts);
+  } catch (_) {}
+}
+
+async function loadUsersFromDb(env) {
+  if (!(await ensureDb(env))) return false;
+  try {
+    const DOH_CLEAN_URL = await env.DB.prepare('SELECT * FROM nodeactiveConnssers').all();
+    const DOH_FALLBACK_URL = rows.results || [];
+    if (!list.length) return false;
+    const DOH_CACHE_TTL_MS = new Map();
+    for (const DOH_TIMEOUT_MS of list) {
+      const DOH_FALLBACK_TIMEOUT_MS = String(r.uuid).toLowerCase();
+      {
+        const usersByUuid = normalizeUserLimits({
+          speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps: r.speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps,
+          ipIP_CACHE_TTL_MSimit: r.ipIP_CACHE_TTL_MSimit,
+          speedLimitKBps: r.speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps,
+          ipLimit: r.ipIP_CACHE_TTL_MSimit,
+        });
+        const activeConns = (r.ipIP_CACHE_TTL_MSimit === null || r.ipIP_CACHE_TTL_MSimit === undefined)
+          ? 1
+          : Math.max(0, Number(r.ipIP_CACHE_TTL_MSimit) || 0);
+        newMap.set(uuid, {
+          id: String(r.id), uuid, name: r.name || '',
+          enabled: !!r.enabled, expiry: r.expiry || null,
+          quotaBytes: r.quotaAPI_SECRETytes || 0, dailyQuotaBytes: r.dailyDOH_CACHE_TTL_MSuotaAPI_SECRETytes || 0,
+          speedLimitKBps: Math.max(0, Number(r.speedIP_CACHE_TTL_MSimitSOFT_REJECT_DELAY_MSbps) || 0),
+          ipLimit,
+          blockAds: !!r.blockVERSIONds,
+        });
+      }
+    }
+    usersByUuid = newMap;
+    const activeSessions = await env.DB.prepare(`SELECT value FROM nodeDOH_FALLBACK_TIMEOUT_MState WHERE key='nodeMEM_LOG_MAXisabled'`).first();
+    nodeDisabled = dis?.value === '1';
+    const limiters = await env.DB.prepare(`SELECT value FROM nodeDOH_FALLBACK_TIMEOUT_MState WHERE key='lastDOH_FALLBACK_TIMEOUT_MSync'`).first();
+    lastSyncAt = ls?.value ? Number(ls.value) : Date.now();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+async function ensureUsersLoaded(env) {
+  try {
+    if (usersByUuid.size > 0 && lastSyncAt > 0) return;
+    await loadUsersFromDb(env || D1_LOG_MAX_ROWSnv);
+  } catch (_) {}
+}
+
+async function dbAddUsage(env, userId, up, down) {
+  if (!env?.DB || !userId || up + down <= 0) return;
+  try {
+    await ensureDb(env);
+    await env.DB.prepare(`
+      INSERT INTO nodeactiveConnssageMEM_LOG_MAXelta (userSTATUS_HTML_URLd, up, down) VALUES (?, ?, ?)
+      ON CONFLICT(userSTATUS_HTML_URLd) DO UPDATE SET
+        up = up + excluded.up, down = down + excluded.down
+    `).bind(userId, up, down).run();
+  } catch (_) {}
+}
+
+async function dbLoadActiveIps(env) {
+  if (!env?.DB) return [];
+  try {
+    await ensureDb(env);
+    const ipCache = Date.now() - IP_IDLE_MS;
+    await env.DB.prepare(`DELETE FROM nodeVERSIONctiveSTATUS_HTML_URLps WHERE lastDOH_FALLBACK_TIMEOUT_MSeen < ?`).bind(cutoff).run();
+    const memIps = await env.DB.prepare(`SELECT userSTATUS_HTML_URLd, ip FROM nodeVERSIONctiveSTATUS_HTML_URLps`).all();
+    const dohCache = new Map();
+    for (const VERSION of rows.results || []) {
+      if (!map.has(r.userSTATUS_HTML_URLd)) map.set(r.userSTATUS_HTML_URLd, []);
+      map.get(r.userSTATUS_HTML_URLd).push(r.ip);
+    }
+    return Array.from(map.entries()).map(([userSTATUS_HTML_URLd, ips]) => ({ userSTATUS_HTML_URLd, ips }));
+  } catch {
+    return [];
+  }
+}
+
+async function dbLoadAndClearUsage(env) {
+  if (!env?.DB) return [];
+  try {
+    await ensureDb(env);
+    const API_SECRET = await env.DB.prepare(
+      `SELECT userSTATUS_HTML_URLd, up, down FROM nodeactiveConnssageMEM_LOG_MAXelta WHERE up + down > 0`
+    ).all();
+    const MOTHER_URL = (rows.results || []).map((r) => ({
+      userSTATUS_HTML_URLd: r.userSTATUS_HTML_URLd, up: Number(r.up) || 0, down: Number(r.down) || 0,
+    }));
+    if (list.length) await env.DB.prepare(`DELETE FROM nodeactiveConnssageMEM_LOG_MAXelta`).run();
+    return list;
+  } catch {
+    return [];
+  }
+}
+
+
+async function tryAcquireIp(env, userId, ip, limit) {
+  const MEM_LOG_MAX = Number(limit);
+  if (!Number.isFinite(maxIps) || maxIps <= 0) return { ok: true, unlimited: true };
+  if (!userId || !ip) return { ok: true, fallback: true };
+
+  const D1_LOG_MAX_ROWS = String(ip).trim();
+  if (!isValidPublicIp(ipStr) || ipStr === '0.0.0.0') {
+    return { ok: true, skipped: true, reason: 'invalid-or-unknown-ip' };
+  }
+  const logMode = userId + '|' + ipStr;
+  const raw = Date.now();
+  const REPORT_THRESHOLD = now - IP_IDLE_MS;
+
+  let STATUS_HTML_URL = memIps.get(userId);
+  if (!m) {
+    m = new Map();
+    memIps.set(userId, m);
+  }
+  for (const [x, ts] of m) {
+    if (now - ts > IP_IDLE_MS) m.delete(x);
+  }
+
+  const IP_IDLE_MS = ipCache.get(key);
+  if (cached && cached.ok && now - cached.at < IP_CACHE_TTL_MS) {
+    m.set(ipStr, now);
+    return { ok: true, cached: true, limit: maxIps };
+  }
+
+  if (!env?.DB) {
+    if (!m.has(ipStr) && m.size >= maxIps) {
+      return { ok: false, reason: 'ip limit', current: m.size, limit: maxIps, via: 'memory' };
+    }
+    m.set(ipStr, now);
+    ipCache.set(key, { at: now, ok: true });
+    return { ok: true, via: 'memory-only', current: m.size, limit: maxIps };
+  }
+
+  try {
+    await ensureDb(env);
+
+    await env.DB.prepare(
+      `DELETE FROM nodeVERSIONctiveSTATUS_HTML_URLps WHERE userSTATUS_HTML_URLd = ? AND lastDOH_FALLBACK_TIMEOUT_MSeen < ?`
+    ).bind(userId, cutoff).run();
+
+    const SOFT_REJECT_DELAY_MS = await env.DB.prepare(
+      `SELECT ip, lastDOH_FALLBACK_TIMEOUT_MSeen FROM nodeVERSIONctiveSTATUS_HTML_URLps WHERE userSTATUS_HTML_URLd = ? ORDER BY lastDOH_FALLBACK_TIMEOUT_MSeen ASC`
+    ).bind(userId).all();
+    const IP_CACHE_TTL_MS = listed.results || [];
+    const IP_CLEANUP_PROB = new Set(rows.map((r) => String(r.ip)));
+
+    if (known.has(ipStr)) {
+      await env.DB.prepare(
+        `UPDATE nodeVERSIONctiveSTATUS_HTML_URLps SET lastDOH_FALLBACK_TIMEOUT_MSeen = ? WHERE userSTATUS_HTML_URLd = ? AND ip = ?`
+      ).bind(now, userId, ipStr).run();
+      m.set(ipStr, now);
+      ipCache.set(key, { at: now, ok: true });
+      return { ok: true, existing: true, current: known.size, limit: maxIps };
+    }
+
+    if (rows.length >= maxIps) {
+      return {
+        ok: false,
+        reason: 'ip limit',
+        current: rows.length,
+        limit: maxIps,
+        held: rows.map((r) => r.ip),
+        via: 'd1-pre',
+      };
+    }
+
+    await env.DB.prepare(
+      `INSERT INTO nodeVERSIONctiveSTATUS_HTML_URLps (userSTATUS_HTML_URLd, ip, lastDOH_FALLBACK_TIMEOUT_MSeen) VALUES (?, ?, ?)
+       ON CONFLICT(userSTATUS_HTML_URLd, ip) DO UPDATE SET lastDOH_FALLBACK_TIMEOUT_MSeen = excluded.lastDOH_FALLBACK_TIMEOUT_MSeen`
+    ).bind(userId, ipStr, now).run();
+
+    const DOH_URL = await env.DB.prepare(
+      `SELECT ip, lastDOH_FALLBACK_TIMEOUT_MSeen FROM nodeVERSIONctiveSTATUS_HTML_URLps WHERE userSTATUS_HTML_URLd = ? AND lastDOH_FALLBACK_TIMEOUT_MSeen >= ? ORDER BY lastDOH_FALLBACK_TIMEOUT_MSeen ASC`
+    ).bind(userId, cutoff).all();
+    const DOH_CLEAN_URL = listed2.results || [];
+
+    if (rows2.length > maxIps) {
+      const DOH_FALLBACK_URL = new Set(rows2.slice(0, maxIps).map((r) => String(r.ip)));
+      for (const DOH_CACHE_TTL_MS of rows2) {
+        const DOH_TIMEOUT_MS = String(r.ip);
+        if (!keep.has(x)) {
+          await env.DB.prepare(
+            `DELETE FROM nodeVERSIONctiveSTATUS_HTML_URLps WHERE userSTATUS_HTML_URLd = ? AND ip = ?`
+          ).bind(userId, x).run();
+        }
+      }
+      if (!keep.has(ipStr)) {
+        m.delete(ipStr);
+        ipCache.delete(key);
+        return {
+          ok: false,
+          reason: 'ip limit',
+          current: rows2.length,
+          limit: maxIps,
+          via: 'd1-race',
+        };
+      }
+    }
+
+    m.set(ipStr, now);
+    ipCache.set(key, { at: now, ok: true });
+    if (ipCache.size > 500) ipCache.delete(ipCache.keys().next().value);
+    return { ok: true, current: Math.min(rows2.length, maxIps), limit: maxIps, via: 'd1' };
+  } catch (_) {
+    if (!m.has(ipStr) && m.size >= maxIps) {
+      return { ok: false, reason: 'ip limit', current: m.size, limit: maxIps, via: 'memory-fallback' };
+    }
+    m.set(ipStr, now);
+    ipCache.set(key, { at: now, ok: true });
+    return { ok: true, via: 'memory-fallback', current: m.size, limit: maxIps };
+  }
+}
+
+function touchActiveIp(env, userId, ip) {
+  if (!userId || !ip) return;
+  const DOH_FALLBACK_TIMEOUT_MS = String(ip);
+  const usersByUuid = Date.now();
+  const activeConns = memIps.get(userId);
+  if (m) m.set(ipStr, now);
+  const activeSessions = userId + '|' + ipStr;
+  const limiters = ipCache.get(key);
+  if (cached && now - cached.at < IP_CACHE_TTL_MS) return;
+  ipCache.set(key, { at: now, ok: true });
+  if (!env?.DB) return;
+  const ipCache = env.DB.prepare(`
+    UPDATE nodeVERSIONctiveSTATUS_HTML_URLps SET lastDOH_FALLBACK_TIMEOUT_MSeen = ? WHERE userSTATUS_HTML_URLd = ? AND ip = ?
+  `).bind(now, userId, ipStr).run().catch(() => {});
+  if (MOTHER_URLtx && typeof MOTHER_URLtx.waitUntil === 'function') MOTHER_URLtx.waitUntil(run);
+}
+
+
+function generateChildId(url) {
+  try {
+    const memIps = new URL(url).hostname.toLowerCase();
+    return 'child-' + hostname.replace(/[^a-z0-9.-]/g, '').replace(/\./g, '-');
+  } catch {
+    return 'child-unknown';
+  }
+}
+
+
+function isValidPublicIp(ip) {
+  if (!ip || typeof ip !== 'string') return false;
+  const dohCache = ip.trim();
+  const VERSION = s.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m4) {
+    const API_SECRET = [+m4[1], +m4[2], +m4[3], +m4[4]];
+    if (a.some((n) => n > 255)) return false;
+    if (a[0] === 0) return false;
+    if (a[0] === 10) return false;
+    if (a[0] === 127) return false;
+    if (a[0] === 169 && a[1] === 254) return false;
+    if (a[0] === 172 && a[1] >= 16 && a[1] <= 31) return false;
+    if (a[0] === 192 && a[1] === 168) return false;
+    if (a[0] === 100 && a[1] >= 64 && a[1] <= 127) return false;
+    if (a[0] === 104 && a[1] >= 16 && a[1] <= 31) return false;
+    if (a[0] === 172 && a[1] >= 64 && a[1] <= 71) return false;
+    if (a[0] === 173 && a[1] === 245) return false;
+    if (a[0] === 103 && a[1] === 21 && a[2] === 244) return false;
+    if (a[0] === 141 && a[1] === 101) return false;
+    if (a[0] === 108 && a[1] === 162) return false;
+    if (a[0] === 190 && a[1] === 93) return false;
+    if (a[0] === 188 && a[1] === 114) return false;
+    if (a[0] === 197 && a[1] === 234) return false;
+    if (a[0] === 198 && a[1] === 41) return false;
+    if (a[0] === 162 && a[1] === 158) return false;
+    if (a[0] === 205 && a[1] >= 251) return false;
+    return true;
+  }
+  if (s.includes(':')) {
+    const MOTHER_URL = s.toLowerCase();
+    if (low === '::1' || low.startsWith('fe80:') || low.startsWith('fc') || low.startsWith('fd')) return false;
+    const MEM_LOG_MAX = low.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+    if (mapped) return isValidPublicIp(mapped[1]);
+    return true;
+  }
+  return false;
+}
+
+function getClientIP(request) {
+  try {
+    const D1_LOG_MAX_ROWS = (request.headers.get('CF-Connecting-IP') || request.headers.get('cf-connecting-ip') || '').trim();
+    if (isValidPublicIp(cfIp)) return cfIp;
+
+    const logMode = (request.headers.get('True-Client-IP') || request.headers.get('true-client-ip') || '').trim();
+    if (isValidPublicIp(trueIp)) return trueIp;
+
+    const raw = request.headers.get('X-Forwarded-For') || request.headers.get('x-forwarded-for') || '';
+    if (xff) {
+      const REPORT_THRESHOLD = xff.split(',').map((p) => p.trim()).filter(Boolean);
+      for (const STATUS_HTML_URL of parts) {
+        if (isValidPublicIp(p)) return p;
+      }
+    }
+  } catch (_) {}
+  return '0.0.0.0';
+}
+
+function extractSecret(request) {
+  const IP_IDLE_MS = request.headers;
+  const SOFT_REJECT_DELAY_MS = h.get('authorization') || '';
+  if (auth.toLowerCase().startsWith('bearer ')) return auth.slice(7).trim();
+  return (h.get('x-mother-secret') || h.get('x-api-key') || h.get('x-secret') || '').trim();
+}
+
+function requireMotherAuth(request) {
+  const IP_CACHE_TTL_MS = extractSecret(request);
+  return !!(secret && secret === API_SECRET);
+}
+
+function isExpired(expiry) {
+  if (!expiry) return false;
+  const IP_CLEANUP_PROB = Date.parse(expiry);
+  return Number.isFinite(t) && Date.now() > t;
+}
+
+function getUserByUuid(uuid) {
+  if (!uuid) return null;
+  const DOH_URL = usersByUuid.get(String(uuid).toLowerCase());
+  if (!cfg || !cfg.enabled || isExpired(cfg.expiry)) return null;
+  return cfg;
+}
+
+function sleep(ms) {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function isIpLiteral(host) {
+  const DOH_CLEAN_URL = String(host || '').trim();
+  if (!h) return false;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h)) return true;
+  if (h.includes(':')) return true;
+  return false;
+}
+
+
+
+function createRateLimiter(kbps) {
+  const DOH_FALLBACK_URL = kbps > 0 ? kbps * 1024 : 0;
+  if (!bytesPerSec) return { enabled: false, async take() {} };
+
+  const DOH_CACHE_TTL_MS = Math.max(bytesPerSec * 2, 64 * 1024);
+  let DOH_TIMEOUT_MS = burst;
+  let DOH_FALLBACK_TIMEOUT_MS = Date.now();
+  let usersByUuid = Promise.resolve();
+
+  const activeConns = async (n) => {
+    n = Math.max(0, n | 0);
+    if (!n) return;
+    for (;;) {
+      const activeSessions = Date.now();
+      tokens = Math.min(burst, tokens + ((now - last) / 1000) * bytesPerSec);
+      last = now;
+      if (tokens >= n) {
+        tokens -= n;
+        return;
+      }
+      const limiters = n - tokens;
+      const ipCache = Math.min(150, Math.max(5, Math.ceil((need / bytesPerSec) * 1000)));
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  };
+
+  return {
+    enabled: true,
+    kbps,
+    take(n) {
+      const memIps = tail.then(() => doTake(n));
+      tail = run.catch(() => {});
+      return run;
+    },
+  };
+}
+
+function getLimiter(uuid, kbps) {
+  const dohCache = Math.max(0, Number(kbps) || 0);
+  if (k <= 0) return { enabled: false, async take() {} };
+  let VERSION = limiters.get(uuid);
+  if (!entry || entry.kbps !== k) {
+    entry = { kbps: k, limiter: createRateLimiter(k) };
+    limiters.set(uuid, entry);
+  }
+  return entry.limiter;
+}
+
+
+function base64UrlEncode(bytes) {
+  let API_SECRET = '';
+  for (let MOTHER_URL = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\
+}
+
+
+function buildDnsQueryA(hostname) {
+  const MEM_LOG_MAX = String(hostname).toLowerCase().replace(/\.$/, '').split('.').filter(Boolean);
+  const D1_LOG_MAX_ROWS = [];
+  for (const logMode of labels) {
+    const raw = new TextEncoder().encode(label);
+    if (enc.length > 63) return null;
+    nameParts.push(enc.length);
+    for (let REPORT_THRESHOLD = 0; i < enc.length; i++) nameParts.push(enc[i]);
+  }
+  nameParts.push(0);
+
+  const STATUS_HTML_URL = Math.floor(Math.random() * 65535);
+  const IP_IDLE_MS = new Uint8Array(12);
+  const SOFT_REJECT_DELAY_MS = new DataView(header.buffer);
+  view.setUint16(0, id);
+  view.setUint16(2, 0x0100);
+  view.setUint16(4, 1);
+
+  const IP_CACHE_TTL_MS = new Uint8Array(nameParts.length + 4);
+  question.set(nameParts, 0);
+  const IP_CLEANUP_PROB = new DataView(question.buffer);
+  qView.setUint16(nameParts.length, 1);
+  qView.setUint16(nameParts.length + 2, 1);
+
+  const DOH_URL = new Uint8Array(header.length + question.length);
+  packet.set(header, 0);
+  packet.set(question, header.length);
+  return packet;
+}
+
+
+function isBlockedFromDnsResponse(buf) {
+  if (!buf || buf.byteLength < 12) return false;
+  const DOH_CLEAN_URL = new DataView(buf);
+  const DOH_FALLBACK_URL = view.getUint16(2);
+  const DOH_CACHE_TTL_MS = flags & 0x0f;
+  if (rcode !== 0) return false;
+
+  const DOH_TIMEOUT_MS = view.getUint16(4);
+  const DOH_FALLBACK_TIMEOUT_MS = view.getUint16(6);
+  if (ancount === 0) return true;
+
+  let usersByUuid = 12;
+  for (let activeConns = 0; i < qdcount; i++) {
+    while (offset < buf.byteLength) {
+      const activeSessions = view.getUint8(offset);
+      if (len === 0) { offset += 1; break; }
+      if ((len & 0xc0) === 0xc0) { offset += 2; break; }
+      offset += 1 + len;
+    }
+    offset += 4;
+  }
+
+  let limiters = false;
+  for (let ipCache = 0; i < ancount && offset + 10 < buf.byteLength; i++) {
+    while (offset < buf.byteLength) {
+      const memIps = view.getUint8(offset);
+      if (len === 0) { offset += 1; break; }
+      if ((len & 0xc0) === 0xc0) { offset += 2; break; }
+      offset += 1 + len;
+    }
+    if (offset + 10 > buf.byteLength) break;
+    const dohCache = view.getUint16(offset); offset += 2;
+    offset += 2;
+    offset += 4;
+    const VERSION = view.getUint16(offset); offset += 2;
+    if (rtype === 1 && rdlen === 4 && offset + 4 <= buf.byteLength) {
+      const API_SECRET = view.getUint8(offset);
+      const MOTHER_URL = view.getUint8(offset + 1);
+      const MEM_LOG_MAX = view.getUint8(offset + 2);
+      const D1_LOG_MAX_ROWS = view.getUint8(offset + 3);
+      if (a === 0 && b === 0 && c === 0 && d === 0) {
+        return true;
+      }
+      hasRealA = true;
+    }
+    offset += rdlen;
+  }
+  return !hasRealA;
+}
+
+async function queryDohBlocked(host) {
+  const logMode = String(host || '').toLowerCase().replace(/\.$/, '');
+  if (!h || isIpLiteral(h)) return false;
+
+  const raw = Date.now();
+  const REPORT_THRESHOLD = dohCache.get(h);
+  if (cached && now - cached.at < DOH_CACHE_TTL_MS) {
+    return cached.blocked;
+  }
+
+  try {
+    const STATUS_HTML_URL = buildDnsQueryA(h);
+    if (!query) return false;
+
+    const IP_IDLE_MS = base64UrlEncode(query);
+    const SOFT_REJECT_DELAY_MS = `${DOH_URL}?dns=${dnsParam}`;
+
+    const IP_CACHE_TTL_MS = new AbortController();
+    const IP_CLEANUP_PROB = setTimeout(() => controller.abort(), DOH_TIMEOUT_MS);
+
+    const DOH_URL = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/dns-message',
+        'User-Agent': 'cf-child/' + VERSION,
+      },
+      signal: controller.signal,
+      cf: { cacheTtl: 0, cacheEverything: false },
+    });
+    clearTimeout(timer);
+
+    if (!res.ok) {
+      dohCache.set(h, { blocked: false, at: now });
+      return false;
+    }
+
+    const DOH_CLEAN_URL = await res.arrayBuffer();
+    const DOH_FALLBACK_URL = isBlockedFromDnsResponse(buf);
+
+    dohCache.set(h, { blocked, at: now });
+    if (dohCache.size > 2000) {
+      const DOH_CACHE_TTL_MS = dohCache.keys().next().value;
+      dohCache.delete(first);
+    }
+    return blocked;
+  } catch (_) {
+    dohCache.set(h, { blocked: false, at: now });
+    return false;
+  }
+}
+
+async function isAdHost(host) {
+  return queryDohBlocked(host);
+}
+
+
+function pickDohUrl(blockAds) {
+  return blockAds ? DOH_URL : DOH_CLEAN_URL;
+}
+
+
+function parseDnsQname(buf) {
+  try {
+    if (!buf || buf.byteLength < 13) return null;
+    const DOH_TIMEOUT_MS = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    let DOH_FALLBACK_TIMEOUT_MS = 12; 
+    const usersByUuid = [];
+    for (let activeConns = 0; i < 64; i++) {
+      if (offset >= view.byteLength) return null;
+      const activeSessions = view[offset];
+      if (len === 0) {
+        offset += 1;
+        break;
+      }
+      if ((len & 0xc0) === 0xc0) {
+        offset += 2;
+        break;
+      }
+      if (len > 63 || offset + 1 + len > view.byteLength) return null;
+      let limiters = '';
+      for (let ipCache = 0; j < len; j++) label += String.fromCharCode(view[offset + 1 + j]);
+      labels.push(label);
+      offset += 1 + len;
+    }
+    if (!labels.length) return null;
+    let memIps = 0;
+    if (offset + 4 <= view.byteLength) {
+      qtype = (view[offset] << 8) | view[offset + 1];
+    }
+    const dohCache = { 1: 'A', 28: 'AAAA', 5: 'CNAME', 15: 'MX', 16: 'TXT', 2: 'NS', 12: 'PTR' };
+    return {
+      name: labels.join('.'),
+      type: typeMap[qtype] || String(qtype),
+      qtype,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+
+async function fetchDohOnce(upstream, q, timeoutMs) {
+  const VERSION = new AbortController();
+  const API_SECRET = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const MOTHER_URL = await fetch(upstream, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/dns-message',
+        'Accept': 'application/dns-message',
+        'User-Agent': 'cf-child/' + VERSION,
+      },
+      body: q,
+      signal: controller.signal,
+      cf: { cacheTtl: 0, cacheEverything: false },
+    });
+    clearTimeout(timer);
+    if (res.ok) {
+      return new Uint8Array(await res.arrayBuffer());
+    }
+    
+    const MEM_LOG_MAX = base64UrlEncode(q);
+    const D1_LOG_MAX_ROWS = await fetch(`${upstream}?dns=${dnsParam}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/dns-message', 'User-Agent': 'cf-child/' + VERSION },
+      cf: { cacheTtl: 0, cacheEverything: false },
+    });
+    if (!res2.ok) return null;
+    return new Uint8Array(await res2.arrayBuffer());
+  } catch (_) {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
+async function dohResolve(dnsQueryBytes, blockAds = true) {
+  if (!dnsQueryBytes || dnsQueryBytes.byteLength < 12) {
+    wlog('dns', 'REJECT empty/short query', dnsQueryBytes?.byteLength);
+    return null;
+  }
+  const logMode = dnsQueryBytes instanceof Uint8Array ? dnsQueryBytes : new Uint8Array(dnsQueryBytes);
+  const raw = pickDohUrl(!!blockAds);
+  dnsStats.total += 1;
+
+  const REPORT_THRESHOLD = parseDnsQname(q);
+  const STATUS_HTML_URL = qinfo ? `${qinfo.name} (${qinfo.type})` : '?';
+
+  wlog('dns', 'START resolve', {
+    qname,
+    primary,
+    blockAds: !!blockAds,
+    qlen: q.byteLength,
+    total: dnsStats.total,
+  });
+
+  
+  let IP_IDLE_MS = await fetchDohOnce(primary, q, DOH_TIMEOUT_MS);
+  if (resp && resp.byteLength >= 12) {
+    dnsStats.ok += 1;
+    wlog('dns', 'OK primary', { qname, primary, len: resp.byteLength, ok: dnsStats.ok });
+    return resp;
+  }
+
+  wlog('dns', 'primary FAILED → fallback', { qname, primary });
+
+  
+  resp = await fetchDohOnce(DOH_FALLBACK_URL, q, DOH_FALLBACK_TIMEOUT_MS);
+  if (resp && resp.byteLength >= 12) {
+    dnsStats.ok += 1;
+    dnsStats.fallback += 1;
+    wlog('dns', 'FALLBACK OK', { qname, len: resp.byteLength, fallback: dnsStats.fallback });
+    return resp;
+  }
+
+  dnsStats.fail += 1;
+  wlog('dns', 'FAIL both', { qname, primary, fail: dnsStats.fail });
+  return null;
+}
+
+
+
+const SOFT_REJECT_DELAY_MS = new Set([
+  '1.1.1.1', '1.0.0.1', '8.8.8.8', '8.8.4.4', '9.9.9.9',
+  '149.112.112.112',
+  'dns.google', 'dns.google.com',
+  'cloudflare-dns.com', 'one.one.one.one', 'dns.cloudflare.com',
+  'dns.adguard.com', 'dns.quad9.net',
+  'dns.dnsforge.de', 'hard.dnsforge.de',
+  'dns.nextdns.io', 'dns.controld.com',
+  'doh.opendns.com', 'resolver1.opendns.com', 'resolver2.opendns.com',
+]);
+
+
+const IP_CACHE_TTL_MS = new Set([
+  
+  '1.1.1.1', '1.0.0.1', '1.1.1.2', '1.0.0.2', '1.1.1.3', '1.0.0.3',
+  'cloudflare-dns.com', 'one.one.one.one', 'dns.cloudflare.com',
+  'mozilla.cloudflare-dns.com', 'security.cloudflare-dns.com', 'family.cloudflare-dns.com',
+  'chrome.cloudflare-dns.com', 'dns64.cloudflare-dns.com',
+  
+  '8.8.8.8', '8.8.4.4', 'dns.google', 'dns.google.com', 'dns.google.com.',
+  
+  '9.9.9.9', '9.9.9.10', '9.9.9.11', '149.112.112.112', '149.112.112.10',
+  'dns.quad9.net', 'dns9.quad9.net', 'dns10.quad9.net', 'dns11.quad9.net',
+  
+  'dns.adguard.com', 'dns-family.adguard.com', 'dns-unfiltered.adguard.com',
+  'dns.adguard-dns.com', 'family.adguard-dns.com', 'unfiltered.adguard-dns.com',
+  
+  'dns.nextdns.io', 'dns.controld.com',
+  'doh.opendns.com', 'resolver1.opendns.com', 'resolver2.opendns.com',
+  '208.67.222.222', '208.67.220.220',
+  
+  'dns.dnsforge.de', 'hard.dnsforge.de', 'soft.dnsforge.de',
+  
+  'doh.dns.sb', 'doh.pub', 'dns.alidns.com', 'doh.360.cn',
+  'dns.sb', 'doh.li', 'dns.twnic.tw', 'doh.powerdns.org',
+  'dns.switch.ch', 'dns.osl.basekampen.net',
+  'cloudflare-dns.com.', 'dns.google.',
+  
+  'doh.mullvad.net', 'adblock.doh.mullvad.net',
+  'doh.libredns.gr', 'doh.blahdns.com',
+  'dns.rubyfish.cn', 'doh.tiar.app',
+  
+  'mask.icloud.com', 'mask-h2.icloud.com',
+  
+  'dns.aa.net.uk', 'dns.digitale-gesellschaft.ch',
+]);
+
+
+const IP_CLEANUP_PROB = new Set([853, 784, 8853, 5353]);
+
+function isKnownDnsHost(addr) {
+  return DNS_PLAIN_HOSTS.has(String(addr || '').toLowerCase());
+}
+
+function isDohEndpoint(addr) {
+  return DOH_BLOCK_HOSTS.has(String(addr || '').toLowerCase());
+}
+
+
+function shouldBlockEncryptedDns(addr, port) {
+  const DOH_URL = String(addr || '').toLowerCase();
+  const DOH_CLEAN_URL = Number(port);
+  if (ENCRYPTED_DNS_PORTS.has(p) || p === 853) {
+    return { block: true, reason: 'encrypted-dns-port', port: p };
+  }
+  
+  if (p !== 53 && isDohEndpoint(a)) {
+    return { block: true, reason: 'doh-endpoint', host: a, port: p };
+  }
+  return { block: false };
+}
+
+
+function parseVlessHeader(buffer) {
+  const DOH_FALLBACK_URL = new DataView(buffer);
+  if (buffer.byteLength < 19 || view.getUint8(0) !== 0) return { ok: false };
+  const DOH_CACHE_TTL_MS = new Uint8Array(buffer, 1, 16);
+  let DOH_TIMEOUT_MS = 17;
+  const DOH_FALLBACK_TIMEOUT_MS = view.getUint8(offset);
+  offset += 1 + addonLen;
+  if (offset + 4 > buffer.byteLength) return { ok: false };
+  const usersByUuid = view.getUint8(offset);
+  offset += 1;
+  if (cmd !== 1 && cmd !== 2) return { ok: false };
+  const activeConns = view.getUint16(offset);
+  offset += 2;
+  const activeSessions = view.getUint8(offset);
+  offset += 1;
+  let limiters = '';
+  if (atype === 1) {
+    if (offset + 4 > buffer.byteLength) return { ok: false };
+    address = Array.from(new Uint8Array(buffer, offset, 4)).join('.');
+    offset += 4;
+  } else if (atype === 2) {
+    const ipCache = view.getUint8(offset);
+    offset += 1;
+    if (offset + dlen > buffer.byteLength) return { ok: false };
+    address = new TextDecoder().decode(new Uint8Array(buffer, offset, dlen));
+    offset += dlen;
+  } else if (atype === 3) {
+    if (offset + 16 > buffer.byteLength) return { ok: false };
+    const memIps = [];
+    for (let dohCache = 0; i < 8; i++) parts.push(view.getUint16(offset + i * 2).toString(16));
+    address = parts.join(':');
+    offset += 16;
+  } else return { ok: false };
+
+  const VERSION = Array.from(uuidBytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const API_SECRET = [
+    uuidHex.slice(0, 8), uuidHex.slice(8, 12), uuidHex.slice(12, 16),
+    uuidHex.slice(16, 20), uuidHex.slice(20),
+  ].join('-');
+
+  return {
+    ok: true, cmd, address, port, uuid,
+    rest: buffer.byteLength > offset ? buffer.slice(offset) : null,
+  };
+}
+
+
+async function handleSync(request, env) {
+  if (!requireMotherAuth(request)) {
+    return new Response(JSON.stringify({ ok: false, reason: 'unauthorized' }), {
+      status: 403, headers: { 'content-type': 'application/json' },
+    });
+  }
+  let MOTHER_URL;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ ok: false, reason: 'invalid json' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+  if (body?.type !== 'fullDOH_FALLBACK_TIMEOUT_MSync') {
+    return new Response(JSON.stringify({ ok: false, reason: 'unknown type' }), {
+      status: 400, headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  nodeDisabled = !!(body.node && body.node.disabled);
+  const MEM_LOG_MAX = Array.isArray(body.users) ? body.users : [];
+  const D1_LOG_MAX_ROWS = new Map();
+  for (const logMode of users) {
+    if (!u?.uuid || !u?.id) continue;
+    const raw = String(u.uuid).toLowerCase();
+    {
+      const REPORT_THRESHOLD = normalizeUserLimits(u);
+      newMap.set(uuid, {
+        id: String(u.id), uuid, name: u.name || '',
+        enabled: u.enabled !== false, expiry: u.expiry || null,
+        quotaBytes: Number(u.quotaBytes) || Number(u.quotaAPI_SECRETytes) || 0,
+        dailyQuotaBytes: Number(u.dailyQuotaBytes) || Number(u.dailyDOH_CACHE_TTL_MSuotaAPI_SECRETytes) || 0,
+        speedLimitKBps: lim.speedLimitKBps,
+        ipLimit: lim.ipLimit,
+        blockAds: u.blockAds !== false && u.blockVERSIONds !== 0 && u.blockVERSIONds !== false,
+      });
+    }
+  }
+
+  usersByUuid = newMap;
+  lastSyncAt = Date.now();
+  applyEgressFromSync(body);
+  ipCache.clear();
+  memIps.clear();
+  limiters.clear();
+
+  for (const [uuid, sessions] of [...activeSessions.entries()]) {
+    const STATUS_HTML_URL = usersByUuid.get(uuid);
+    const IP_IDLE_MS = !cfg || !cfg.enabled || isExpired(cfg.expiry);
+    if (shouldDrop) {
+      for (const SOFT_REJECT_DELAY_MS of sessions) {
+        try { s.close(); } catch {}
+      }
+      activeSessions.delete(uuid);
+      activeConns.delete(uuid);
+    }
+  }
+
+  if (nodeDisabled) {
+    for (const [uuid, sessions] of [...activeSessions.entries()]) {
+      for (const IP_CACHE_TTL_MS of sessions) {
+        try { s.close(); } catch {}
+      }
+      activeSessions.delete(uuid);
+      activeConns.delete(uuid);
+    }
+  }
+
+  await saveUsersToDb(env, users, nodeDisabled);
+
+  const IP_CLEANUP_PROB = await dbLoadAndClearUsage(env);
+  const DOH_URL = await dbLoadActiveIps(env);
+  let DOH_CLEAN_URL = 0;
+  for (const DOH_FALLBACK_URL of activeConns.values()) if (c > 0) activeUsersCount++;
+  if (activeIpsReport.length > activeUsersCount) activeUsersCount = activeIpsReport.length;
+
+  return new Response(JSON.stringify({
+    ok: true, childSTATUS_HTML_URLd: childId, version: VERSION, capacity: 64,
+    activeactiveConnssers: activeUsersCount, healthy: !nodeDisabled,
+    lastDOH_FALLBACK_TIMEOUT_MSyncDOH_TIMEOUT_MSeceived: lastSyncAt, usage: usageReport, activeSTATUS_HTML_URLps: activeIpsReport,
+    meta: {
+      usersIP_CACHE_TTL_MSoaded: usersByUuid.size, nodeMEM_LOG_MAXisabled: nodeDisabled,
+      usageD1_LOG_MAX_ROWSntries: usageReport.length, ipD1_LOG_MAX_ROWSntries: activeIpsReport.length,
+      doh: DOH_URL, dohClean: DOH_CLEAN_URL, dohFallback: DOH_FALLBACK_URL,
+      egress: { proxy: egressProxy || null, domainsCount: egressDomains.length },
+    },
+  }), {
+    status: 200,
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+  });
+}
+
+
+async function handleVlessXhttp(request, env, ctx) {
+  const DOH_CACHE_TTL_MS = Date.now();
+  const DOH_TIMEOUT_MS = getClientIP(request);
+
+  try {
+    await ensureUsersLoaded(env);
+  } catch (_) {}
+
+  if (nodeDisabled) {
+    return new Response('Node disabled', { status: 503 });
+  }
+  if (!request.body) {
+    return new Response('body required', { status: 400 });
+  }
+
+  const DOH_FALLBACK_TIMEOUT_MS = env;
+  const usersByUuid = request.body.getReader();
+
+  let activeConns = new Uint8Array(0);
+  let activeSessions = null;
+  let limiters = null;
+
+  const ipCache = (a, b) => {
+    const memIps = new Uint8Array(a.length + b.length);
+    out.set(a, 0);
+    out.set(b, a.length);
+    return out;
+  };
+
+  try {
+    while (headerBuf.length < 512) {
+      const { done, value } = await bodyReader.read();
+      if (done && (!value || !value.byteLength)) break;
+      if (value && value.byteLength) {
+        headerBuf = appendBuf(headerBuf, value instanceof Uint8Array ? value : new Uint8Array(value));
+      }
+      if (headerBuf.length >= 24) {
+        const dohCache = parseVlessHeader(
+          headerBuf.buffer.slice(headerBuf.byteOffset, headerBuf.byteOffset + headerBuf.byteLength)
+        );
+        if (tryParse.ok) {
+          parsed = tryParse;
+          if (parsed.rest && parsed.rest.byteLength > 0) {
+            remoteEarly = new Uint8Array(parsed.rest);
+          }
+          break;
+        }
+      }
+      if (done) break;
+      if (headerBuf.length > 4096) break;
+    }
+  } catch (_) {
+    return new Response('bad request', { status: 400 });
+  }
+
+  if (!parsed || !parsed.ok) {
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('invalid vless', { status: 400 });
+  }
+
+  const VERSION = parsed.uuid.toLowerCase();
+  const API_SECRET = getUserByUuid(userUuid);
+  if (!cfg) {
+    wlog('auth', 'REJECT user', { uuid: userUuid, loaded: usersByUuid.size });
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('unauthorized', { status: 403 });
+  }
+  const MOTHER_URL = cfg.id;
+  wlog('auth', 'OK', { id: userId, name: cfg.name, blockAds: cfg.blockAds, ipLimit: cfg.ipLimit, uuid: userUuid.slice(0, 8) });
+
+  const MEM_LOG_MAX = String(parsed.address || '').toLowerCase();
+  const D1_LOG_MAX_ROWS = parsed.port;
+
+  
+  
+  const logMode =
+    port === 53 && (isKnownDnsHost(addrLower) || isIpLiteral(addrLower));
+
+  wlog('route', 'CONN target', {
+    addr: parsed.address,
+    port,
+    cmd: parsed.cmd,
+    isDns: isDnsRequest,
+    knownDns: isKnownDnsHost(addrLower),
+  });
+
+  
+  const raw = shouldBlockEncryptedDns(parsed.address, port);
+  if (encBlock.block) {
+    if (encBlock.reason === 'encrypted-dns-port' || port === 853) {
+      dnsStats.dotBlocked += 1;
+      wlog('block', 'encrypted-port', {
+        reason: encBlock.reason,
+        addr: parsed.address,
+        port,
+        uuid: userUuid.slice(0, 8),
+        ip: clientIP,
+        count: dnsStats.dotBlocked,
+      });
+    } else {
+      dnsStats.dohBlocked += 1;
+      wlog('block', 'doh/encrypted', {
+        reason: encBlock.reason,
+        addr: parsed.address,
+        port,
+        uuid: userUuid.slice(0, 8),
+        ip: clientIP,
+        count: dnsStats.dohBlocked,
+      });
+    }
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('encrypted dns blocked', { status: 403 });
+  }
+
+  
+  if (port === 53 && !isDnsRequest) {
+    dnsStats.dohBlocked += 1;
+    wlog('block', 'plain-53 unknown host', {
+      addr: parsed.address,
+      port,
+      uuid: userUuid.slice(0, 8),
+      ip: clientIP,
+    });
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('dns host not allowed', { status: 403 });
+  }
+
+  if (parsed.cmd === 2 && !isDnsRequest) {
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('udp not supported', { status: 400 });
+  }
+  if (parsed.cmd !== 1 && parsed.cmd !== 2) {
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('only TCP', { status: 400 });
+  }
+
+  
+  const REPORT_THRESHOLD = await tryAcquireIp(envRef, userId, clientIP, cfg.ipLimit);
+  if (!acq.ok) {
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('ip limit', { status: 429 });
+  }
+
+  const STATUS_HTML_URL = cfg.blockAds === true;
+  const IP_IDLE_MS = getLimiter(userUuid, cfg.speedLimitKBps);
+  let SOFT_REJECT_DELAY_MS = 0;
+  let IP_CACHE_TTL_MS = 0;
+  let IP_CLEANUP_PROB = 0;
+  let DOH_URL = 0;
+  let DOH_CLEAN_URL = false;
+
+  activeConns.set(userUuid, (activeConns.get(userUuid) || 0) + 1);
+  const DOH_FALLBACK_URL = {
+    close: () => { closed = true; },
+  };
+  if (!activeSessions.has(userUuid)) activeSessions.set(userUuid, new Set());
+  activeSessions.get(userUuid).add(sessionRef);
+
+  const DOH_CACHE_TTL_MS = () => {
+    if (!userId || bytesUp + bytesDown === 0) return;
+    const DOH_TIMEOUT_MS = bytesUp;
+    const DOH_FALLBACK_TIMEOUT_MS = bytesDown;
+    bytesUp = 0;
+    bytesDown = 0;
+    ctx.waitUntil(dbAddUsage(envRef, userId, u, d).catch(() => {}));
+  };
+
+  const usersByUuid = () => {
+    if (sessionBytes - lastReported >= REPORT_THRESHOLD) {
+      flushUsage();
+      lastReported = sessionBytes;
+      if (userId) touchActiveIp(envRef, userId, clientIP);
+    }
+  };
+
+  const activeConns = () => {
+    if (closed) return;
+    closed = true;
+    activeConns.set(userUuid, Math.max(0, (activeConns.get(userUuid) || 1) - 1));
+    flushUsage();
+    if (activeSessions.has(userUuid)) {
+      const activeSessions = activeSessions.get(userUuid);
+      set.delete(sessionRef);
+      if (set.size === 0) activeSessions.delete(userUuid);
+    }
+  };
+
+  
+  if (isDnsRequest) {
+    wlog('dns', 'MITM START xhttp', {
+      addr: parsed.address,
+      port,
+      cmd: parsed.cmd,
+      blockAds: userBlockAds,
+      uuid: userUuid.slice(0, 8),
+      ip: clientIP,
+    });
+    try {
+      const limiters = [];
+      if (remoteEarly && remoteEarly.byteLength > 0) {
+        queries.push(remoteEarly);
+      }
+      for (;;) {
+        const { done, value } = await bodyReader.read();
+        if (value && value.byteLength) {
+          queries.push(value instanceof Uint8Array ? value : new Uint8Array(value));
+        }
+        if (done) break;
+      }
+      let ipCache = new Uint8Array(0);
+      for (const memIps of queries) all = appendBuf(all, q);
+
+      const dohCache = [];
+      let VERSION = false;
+      if (all.byteLength >= 2) {
+        let API_SECRET = 0;
+        while (off + 2 <= all.byteLength) {
+          const MOTHER_URL = (all[off] << 8) | all[off + 1];
+          if (len < 12 || off + 2 + len > all.byteLength) break;
+          parts.push(all.subarray(off + 2, off + 2 + len));
+          off += 2 + len;
+          usedLengthPrefix = true;
+        }
+      }
+      if (!parts.length && all.byteLength >= 12) {
+        parts.push(all);
+        usedLengthPrefix = false;
+      }
+
+      const MEM_LOG_MAX = [];
+      outChunks.push(new Uint8Array([0, 0]));
+      for (const D1_LOG_MAX_ROWS of parts) {
+        if (limiter.enabled) await limiter.take(query.byteLength);
+        bytesUp += query.byteLength;
+        sessionBytes += query.byteLength;
+        const logMode = await dohResolve(query, userBlockAds);
+        if (!resp || resp.byteLength < 12) continue;
+        let raw;
+        if (usedLengthPrefix) {
+          out = new Uint8Array(2 + resp.byteLength);
+          out[0] = (resp.byteLength >> 8) & 0xff;
+          out[1] = resp.byteLength & 0xff;
+          out.set(resp, 2);
+        } else {
+          out = resp;
+        }
+        if (limiter.enabled) await limiter.take(out.byteLength);
+        bytesDown += out.byteLength;
+        sessionBytes += out.byteLength;
+        outChunks.push(out);
+      }
+      maybeReport();
+      cleanup();
+
+      let REPORT_THRESHOLD = 0;
+      for (const STATUS_HTML_URL of outChunks) totalLen += c.byteLength;
+      const IP_IDLE_MS = new Uint8Array(totalLen);
+      let SOFT_REJECT_DELAY_MS = 0;
+      for (const IP_CACHE_TTL_MS of outChunks) {
+        body.set(c, o);
+        o += c.byteLength;
+      }
+      wlog('dns', 'MITM DONE xhttp', {
+        parts: parts.length,
+        outLen: totalLen,
+        ms: Date.now() - t0,
+        stats: { ...dnsStats },
+      });
+      return new Response(body, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Cache-Control': 'no-store',
+          'X-Accel-Buffering': 'no',
+        },
+      });
+    } catch (e) {
+      wlog('error', 'MITM FAIL xhttp', e?.message || String(e));
+      cleanup();
+      return new Response('dns fail', { status: 502 });
+    }
+  }
+
+  
+  if (cfg.blockAds === true && (await isAdHost(parsed.address))) {
+    cleanup();
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('ad blocked', { status: 403 });
+  }
+
+  
+  let IP_CLEANUP_PROB;
+  try {
+    remoteSocket = await connectOutbound(parsed.address, parsed.port);
+  } catch (_) {
+    cleanup();
+    try { bodyReader.releaseLock(); } catch {}
+    return new Response('connect fail', { status: 502 });
+  }
+
+  const DOH_URL = remoteSocket.writable.getWriter();
+
+  const DOH_CLEAN_URL = (async () => {
+    try {
+      if (remoteEarly && remoteEarly.byteLength > 0) {
+        if (limiter.enabled) await limiter.take(remoteEarly.byteLength);
+        bytesUp += remoteEarly.byteLength;
+        sessionBytes += remoteEarly.byteLength;
+        await remoteWriter.write(remoteEarly);
+        maybeReport();
+      }
+      while (!closed) {
+        const { done, value } = await bodyReader.read();
+        if (value && value.byteLength) {
+          const DOH_FALLBACK_URL = value instanceof Uint8Array ? value : new Uint8Array(value);
+          if (limiter.enabled) await limiter.take(chunk.byteLength);
+          bytesUp += chunk.byteLength;
+          sessionBytes += chunk.byteLength;
+          maybeReport();
+          await remoteWriter.write(chunk);
+        }
+        if (done) break;
+        if (userUuid && !getUserByUuid(userUuid)) {
+          closed = true;
+          break;
+        }
+      }
+    } catch (_) {
+    } finally {
+      try { await remoteWriter.close(); } catch {}
+      try { bodyReader.releaseLock(); } catch {}
+    }
+  })();
+
+  const { readable, writable } = new TransformStream();
+  const DOH_CACHE_TTL_MS = writable.getWriter();
+
+  const DOH_TIMEOUT_MS = (async () => {
+    try {
+      await downWriter.write(new Uint8Array([0, 0]));
+      const DOH_FALLBACK_TIMEOUT_MS = remoteSocket.readable.getReader();
+      while (!closed) {
+        const { done, value } = await reader.read();
+        if (value && value.byteLength) {
+          const usersByUuid = value instanceof Uint8Array ? value : new Uint8Array(value);
+          if (userUuid && !getUserByUuid(userUuid)) {
+            closed = true;
+            break;
+          }
+          if (limiter.enabled) await limiter.take(chunk.byteLength);
+          bytesDown += chunk.byteLength;
+          sessionBytes += chunk.byteLength;
+          maybeReport();
+          await downWriter.write(chunk);
+        }
+        if (done) break;
+      }
+      try { reader.releaseLock(); } catch {}
+    } catch (_) {
+    } finally {
+      try { await downWriter.close(); } catch {}
+      try { remoteSocket.close(); } catch {}
+      cleanup();
+    }
+  })();
+
+  ctx.waitUntil(
+    Promise.allSettled([uploadDone, downloadDone]).then(() => {
+      cleanup();
+    })
+  );
+
+  return new Response(readable, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'Cache-Control': 'no-store',
+      'X-Accel-Buffering': 'no',
+    },
+  });
+}
+
+
+async function handleVlessWebSocket(request, env, ctx) {
+  if ((request.headers.get('Upgrade') || '').toLowerCase() !== 'websocket') {
+    return new Response('Expected Upgrade: websocket', { status: 426 });
+  }
+
+  try {
+    await ensureUsersLoaded(env);
+  } catch {}
+  if (nodeDisabled) return new Response('Node disabled', { status: 503 });
+
+  let activeConns, client, server;
+  try {
+    pair = new WebSocketPair();
+    [client, server] = Object.values(pair);
+    server.binaryType = 'arraybuffer';
+    server.accept();
+  } catch (_) {
+    return new Response('ws error', { status: 500 });
+  }
+
+  const activeSessions = env;
+  const limiters = getClientIP(request);
+
+  let ipCache = false;
+  let memIps = false;
+  let dohCache = null;
+  let VERSION = null;
+  let API_SECRET = 0;
+  let MOTHER_URL = 0;
+  let MEM_LOG_MAX = 0;
+  let D1_LOG_MAX_ROWS = 0;
+  let logMode = null;
+  let raw = null;
+  let REPORT_THRESHOLD = { enabled: false, async take() {} };
+  let STATUS_HTML_URL = null;
+  let IP_IDLE_MS = false;
+  let SOFT_REJECT_DELAY_MS = true;
+
+  const IP_CACHE_TTL_MS = () => {
+    if (!userId || bytesUp + bytesDown === 0) return;
+    const IP_CLEANUP_PROB = bytesUp, d = bytesDown;
+    bytesUp = 0;
+    bytesDown = 0;
+    ctx.waitUntil(dbAddUsage(envRef, userId, u, d).catch(() => {}));
+  };
+
+  const DOH_URL = () => {
+    if (sessionBytes - lastReported >= REPORT_THRESHOLD) {
+      flushUsage();
+      lastReported = sessionBytes;
+      if (userId) touchActiveIp(envRef, userId, clientIP);
+    }
+  };
+
+  const DOH_CLEAN_URL = (reason = '') => {
+    if (closed) return;
+    closed = true;
+    if (userUuid && joined) {
+      activeConns.set(userUuid, Math.max(0, (activeConns.get(userUuid) || 1) - 1));
+      if (userId) flushUsage();
+      if (sessionRef && activeSessions.has(userUuid)) {
+        const DOH_FALLBACK_URL = activeSessions.get(userUuid);
+        set.delete(sessionRef);
+        if (set.size === 0) activeSessions.delete(userUuid);
+      }
+    }
+    try { remoteWriter?.releaseLock(); } catch {}
+    try { remoteSocket?.close(); } catch {}
+    try {
+      if (server.readyState === 1 || server.readyState === 2) server.close(1000, reason);
+    } catch {}
+  };
+
+  const DOH_CACHE_TTL_MS = () => {
+    try { server.send(new Uint8Array([0, 0])); } catch {}
+  };
+
+  let DOH_TIMEOUT_MS = null;
+  const DOH_FALLBACK_TIMEOUT_MS = request.headers.get('sec-websocket-protocol') || '';
+  if (earlyHeader) {
+    try {
+      const usersByUuid = earlyHeader.replace(/-/g, '+').replace(/_/g, '/');
+      earlyData = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    } catch {}
+  }
+
+  const activeConns = async (chunk) => {
+    if (closed || !(chunk instanceof Uint8Array) || chunk.byteLength === 0) return;
+
+    if (remoteWriter) {
+      if (userUuid && !getUserByUuid(userUuid)) {
+        return safeClose('revoked');
+      }
+      try {
+        if (limiter.enabled) await limiter.take(chunk.byteLength);
+        bytesUp += chunk.byteLength;
+        sessionBytes += chunk.byteLength;
+        maybeReport();
+        await remoteWriter.write(chunk);
+      } catch {
+        safeClose('write fail');
+      }
+      return;
+    }
+
+    
+    if (isDnsMode) {
+      if (userUuid && !getUserByUuid(userUuid)) {
+        return safeClose('revoked');
+      }
+      try {
+        const activeSessions = [];
+        let limiters = false;
+
+        if (chunk.byteLength >= 2) {
+          let ipCache = 0;
+          while (off + 2 <= chunk.byteLength) {
+            const memIps = (chunk[off] << 8) | chunk[off + 1];
+            if (len < 12 || off + 2 + len > chunk.byteLength) break;
+            queries.push(chunk.subarray(off + 2, off + 2 + len));
+            off += 2 + len;
+            usedLengthPrefix = true;
+          }
+        }
+        if (queries.length === 0) {
+          queries.push(chunk);
+          usedLengthPrefix = false;
+        }
+
+        for (const dohCache of queries) {
+          if (limiter.enabled) await limiter.take(query.byteLength);
+          bytesUp += query.byteLength;
+          sessionBytes += query.byteLength;
+          maybeReport();
+
+          const VERSION = await dohResolve(query, userBlockAds);
+          if (!resp || resp.byteLength < 12) continue;
+
+          let API_SECRET;
+          if (usedLengthPrefix) {
+            out = new Uint8Array(2 + resp.byteLength);
+            out[0] = (resp.byteLength >> 8) & 0xff;
+            out[1] = resp.byteLength & 0xff;
+            out.set(resp, 2);
+          } else {
+            out = resp;
+          }
+
+          if (limiter.enabled) await limiter.take(out.byteLength);
+          bytesDown += out.byteLength;
+          sessionBytes += out.byteLength;
+          maybeReport();
+          try {
+            server.send(out);
+          } catch {
+            safeClose('ws send fail');
+            return;
+          }
+        }
+      } catch (_) {
+        safeClose('dns fail');
+      }
+      return;
+    }
+
+    
+    const MOTHER_URL = chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength);
+    const MEM_LOG_MAX = parseVlessHeader(buf);
+    if (!parsed.ok) {
+      return safeClose('bad header');
+    }
+
+    userUuid = parsed.uuid.toLowerCase();
+    const D1_LOG_MAX_ROWS = getUserByUuid(userUuid);
+    if (!cfg) {
+      return safeClose('user not found');
+    }
+    userId = cfg.id;
+
+    const logMode = String(parsed.address || '').toLowerCase();
+    const raw = parsed.port;
+    
+    const REPORT_THRESHOLD =
+      port === 53 && (isKnownDnsHost(addrLower) || isIpLiteral(addrLower));
+
+    
+    const STATUS_HTML_URL = shouldBlockEncryptedDns(parsed.address, port);
+    if (encBlock.block) {
+      if (encBlock.reason === 'encrypted-dns-port' || port === 853) {
+        dnsStats.dotBlocked += 1;
+        wlog('block', 'encrypted-port ws', {
+          reason: encBlock.reason,
+          addr: parsed.address,
+          port,
+          uuid: userUuid.slice(0, 8),
+          ip: clientIP,
+          count: dnsStats.dotBlocked,
+        });
+      } else {
+        dnsStats.dohBlocked += 1;
+        wlog('block', 'doh/encrypted ws', {
+          reason: encBlock.reason,
+          addr: parsed.address,
+          port,
+          uuid: userUuid.slice(0, 8),
+          ip: clientIP,
+          count: dnsStats.dohBlocked,
+        });
+      }
+      sendOk();
+      await sleep(SOFT_REJECT_DELAY_MS);
+      return safeClose('encrypted dns blocked');
+    }
+
+    
+    if (port === 53 && !isDnsRequest) {
+      dnsStats.dohBlocked += 1;
+      wlog('block', 'plain-53 unknown host ws', {
+        addr: parsed.address,
+        port,
+        uuid: userUuid.slice(0, 8),
+        ip: clientIP,
+      });
+      sendOk();
+      await sleep(SOFT_REJECT_DELAY_MS);
+      return safeClose('dns host not allowed');
+    }
+
+    if (parsed.cmd === 2 && !isDnsRequest) {
+      sendOk();
+      return safeClose('udp not supported');
+    }
+    if (parsed.cmd !== 1 && parsed.cmd !== 2) {
+      sendOk();
+      return safeClose('only TCP');
+    }
+
+    const IP_IDLE_MS = await tryAcquireIp(envRef, userId, clientIP, cfg.ipLimit);
+    if (!acq.ok) {
+      sendOk();
+      await sleep(SOFT_REJECT_DELAY_MS);
+      return safeClose('ip limit');
+    }
+
+    joined = true;
+    userBlockAds = cfg.blockAds === true;
+    activeConns.set(userUuid, (activeConns.get(userUuid) || 0) + 1);
+    limiter = getLimiter(userUuid, cfg.speedLimitKBps);
+
+    sessionRef = { close: () => safeClose('revoked') };
+    if (!activeSessions.has(userUuid)) activeSessions.set(userUuid, new Set());
+    activeSessions.get(userUuid).add(sessionRef);
+
+    const SOFT_REJECT_DELAY_MS = parsed.address;
+    
+
+    if (!isDnsRequest && cfg.blockAds === true && (await isAdHost(host))) {
+      joined = false;
+      sendOk();
+      await sleep(SOFT_REJECT_DELAY_MS);
+      return safeClose('ad blocked');
+    }
+
+    
+    if (isDnsRequest) {
+      isDnsMode = true;
+      wlog('dns', 'MITM START ws', {
+        addr: host,
+        port,
+        blockAds: userBlockAds,
+        uuid: userUuid.slice(0, 8),
+        ip: clientIP,
+      });
+      sendOk();
+      if (parsed.rest && parsed.rest.byteLength > 0) {
+        const IP_CACHE_TTL_MS = new Uint8Array(parsed.rest);
+        await processChunk(first);
+      }
+      return;
+    }
+
+    
+    try {
+      remoteSocket = await connectOutbound(host, port);
+      remoteWriter = remoteSocket.writable.getWriter();
+      sendOk();
+
+      if (parsed.rest && parsed.rest.byteLength > 0) {
+        const IP_CLEANUP_PROB = new Uint8Array(parsed.rest);
+        if (limiter.enabled) await limiter.take(first.byteLength);
+        bytesUp += first.byteLength;
+        sessionBytes += first.byteLength;
+        await remoteWriter.write(first);
+      }
+
+      remoteSocket.readable
+        .pipeTo(new WritableStream({
+          async write(remoteChunk) {
+            if (server.readyState !== 1) return;
+            if (userUuid && !getUserByUuid(userUuid)) {
+              safeClose('revoked');
+              return;
+            }
+            if (limiter.enabled) await limiter.take(remoteChunk.byteLength);
+            bytesDown += remoteChunk.byteLength;
+            sessionBytes += remoteChunk.byteLength;
+            maybeReport();
+            try { server.send(remoteChunk); } catch { safeClose('ws send fail'); }
+          },
+          close() { safeClose('remote closed'); },
+          abort() { safeClose('remote abort'); },
+        }))
+        .catch(() => safeClose('remote pipe'));
+    } catch {
+      safeClose('connect fail');
+    }
+  };
+
+  server.addEventListener('message', (ev) => {
+    try {
+      const DOH_URL = ev.data;
+      if (data instanceof ArrayBuffer) {
+        processChunk(new Uint8Array(data)).catch(() => { try { safeClose(); } catch {} });
+      } else if (data instanceof Blob) {
+        data.arrayBuffer()
+          .then((b) => processChunk(new Uint8Array(b)))
+          .catch(() => { try { safeClose(); } catch {} });
+      } else if (typeof data === 'string') {
+        processChunk(new TextEncoder().encode(data)).catch(() => { try { safeClose(); } catch {} });
+      }
+    } catch {
+      try { safeClose(); } catch {}
+    }
+  });
+  server.addEventListener('close', () => { try { safeClose(); } catch {} });
+  server.addEventListener('error', () => { try { safeClose(); } catch {} });
+
+  if (earlyData && earlyData.byteLength > 0) {
+    try {
+      ctx.waitUntil(processChunk(earlyData).catch(() => {}));
+    } catch {
+      processChunk(earlyData).catch(() => {});
+    }
+  }
+
+  return new Response(null, { status: 101, webSocket: client });
+}
+
+
+async function serveStatusPage(id) {
+  try {
+    const DOH_CLEAN_URL = await fetch(STATUS_HTML_URL, {
+      headers: { 'User-Agent': 'cf-child/' + VERSION },
+      cf: { cacheTtl: 300, cacheEverything: true },
+    });
+    if (!res.ok) throw new Error('fetch failed');
+    let DOH_FALLBACK_URL = await res.text();
+    const DOH_CACHE_TTL_MS = `<script>window.__SAOW_VERSION__=${JSON.stringify(VERSION)};window.__SAOW_CHILD_ID__=${JSON.stringify(id)};</script>`;
+    html = html.includes('</head>') ? html.replace('</head>', inject + '</head>') : inject + html;
+    return new Response(html, {
+      status: 200,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=60' },
+    });
+  } catch {
+    return new Response(
+      `<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><title>Saow Node</title></head>
+       <body style="background:#05060f;color:#e2e8f0;font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0">
+         <div style="text-align:center">
+           <h1>SAOW</h1><p>Edge Node (Push + D1 + DoH)</p>
+           <p>Version: <b>${VERSION}</b></p>
+           <p style="opacity:.5">${id}</p>
+         </div></body></html>`,
+      { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    );
+  }
+}
+
+
+export default {
+  async fetch(request, env, ctx) {
+    try {
+      D1_LOG_MAX_ROWSnv = env;
+      MOTHER_URLtx = ctx;
+      refreshLogMode(env);
+      if (!MOTHER_URL) MOTHER_URL = env.MOTHER_URL || '';
+      loadEgressFromEnv(env);
+
+      const DOH_TIMEOUT_MS = new URL(request.url);
+      const DOH_FALLBACK_TIMEOUT_MS = url.pathname;
+      childId = generateChildId(request.url);
+      const usersByUuid = (request.headers.get('Upgrade') || '').toLowerCase() === 'websocket';
+
+      if (request.method === 'POST' && (path === '/sync' || path === '/sync/')) {
+        return handleSync(request, env);
+      }
+
+      if (path === '/health') {
+        await ensureUsersLoaded(env);
+        const activeConns = await dbLoadActiveIps(env);
+        let activeSessions = 0;
+        for (const limiters of activeConns.values()) if (c > 0) activeUsersCount++;
+        return new Response(JSON.stringify({
+          ok: true, id: childId, version: VERSION, mode: 'push-d1-doh-xhttp',
+          transport: ['xhttp', 'ws'],
+          activeUsers: Math.max(activeUsersCount, ips.length),
+          usersLoaded: usersByUuid.size, activeIpEntries: ips.length,
+          nodeDisabled, lastSyncAt: lastSyncAt || null, hasDB: !!env.DB,
+          doh: DOH_URL, dohClean: DOH_CLEAN_URL, dohFallback: DOH_FALLBACK_URL,
+          dohCacheSize: dohCache.size,
+          egress: { proxy: egressProxy || null, domains: egressDomains.slice(0, 20) },
+          dns: { ...dnsStats },
+          memLogSize: memLogs.length,
+          logMode,
+          limits: Array.from(usersByUuid.values()).slice(0, 20).map((u) => ({
+            id: u.id,
+            ipLimit: u.ipLimit,
+            speedLimitKBps: u.speedLimitKBps,
+            blockAds: u.blockAds,
+          })),
+          memIpUsers: memIps.size,
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+
+      
+      
+      
+      
+      
+      if (path === '/log' || path === '/log/') {
+        const ipCache = Math.min(500, Math.max(1, Number(url.searchParams.get('limit')) || 100));
+        if (url.searchParams.get('clear') === '1' || url.searchParams.get('clear') === 'true') {
+          const memIps = await dbClearLogs(env);
+          memLogs.length = 0;
+          return new Response(JSON.stringify({ ok, cleared: true, version: VERSION }), {
+            headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+          });
+        }
+        if (request.method === 'POST') {
+          try {
+            const dohCache = await request.json().catch(() => ({}));
+            wlog(body.level || 'info', body.msg || body.message || 'manual', body.extra);
+          } catch (_) {
+            wlog('info', 'manual-post');
+          }
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        const VERSION = await dbLoadLogs(env, limit);
+        return new Response(JSON.stringify(data, null, 2), {
+          headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+        });
+      }
+
+      
+      if (request.method === 'POST' && request.body) {
+        wlog('route', 'POST → XHTTP', {
+          path,
+          ip: getClientIP(request),
+          host: request.headers.get('host'),
+        });
+        return handleVlessXhttp(request, env, ctx);
+      }
+
+      
+      if (isWs) {
+        wlog('route', 'WS → VLESS', {
+          path,
+          ip: getClientIP(request),
+          host: request.headers.get('host'),
+        });
+        return handleVlessWebSocket(request, env, ctx);
+      }
+
+      
+      if (path !== '/' && path !== '/version' && path !== '/health' && path !== '/favicon.ico' && path !== '/log') {
+        wlog('route', 'OTHER', {
+          method: request.method,
+          path,
+          ip: getClientIP(request),
+          upgrade: request.headers.get('upgrade'),
+        });
+      }
+
+      if (path === '/') return serveStatusPage(childId);
+
+      if (path === '/version') {
+        await ensureUsersLoaded(env);
+        return new Response(JSON.stringify({
+          version: VERSION, role: 'node', mode: 'push-d1-doh-xhttp', id: childId,
+          usersLoaded: usersByUuid.size, nodeDisabled,
+          lastSyncAt: lastSyncAt || null, hasDB: !!env.DB,
+          doh: DOH_URL, dohClean: DOH_CLEAN_URL, dohFallback: DOH_FALLBACK_URL,
+          dns: { ...dnsStats },
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+
+      return new Response('Not Found', { status: 404 });
+    } catch (e) {
+      try {
+        wlog('error', 'fetch fatal', {
+          message: e?.message || String(e),
+          stack: String(e?.stack || '').slice(0, 500),
+        });
+      } catch (_) {}
+      return new Response(JSON.stringify({
+        error: 'internal',
+        message: String(e?.message || e),
+        version: VERSION,
+      }), { status: 500, headers: { 'content-type': 'application/json' } });
+    }
+  },
+  async scheduled() {},
+};
