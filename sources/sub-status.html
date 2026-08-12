@@ -134,48 +134,45 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 .brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
 #saowBoot{
   position:fixed;inset:0;z-index:9999;background:#050505;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-  transition:opacity .75s ease,visibility .75s ease;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  transition:opacity .65s ease,visibility .65s ease;
 }
 #saowBoot.hide{opacity:0;visibility:hidden;pointer-events:none}
 #saowBoot .logo{
-  width:80px;height:80px;border-radius:20px;
-  animation:logoBreathe 2.2s ease-in-out infinite;
-  filter:drop-shadow(0 0 26px rgba(125,211,252,.3));
+  width:72px;height:72px;border-radius:18px;
+  animation:logoBreathe 2.4s ease-in-out infinite;
+  filter:drop-shadow(0 0 22px rgba(125,211,252,.28));
 }
-#saowBoot .logo img{
-  width:100%;height:100%;object-fit:contain;
-  animation:logoGlow 2.2s ease-in-out infinite;
+#saowBoot .logo img{width:100%;height:100%;object-fit:contain}
+#saowBoot .boot-row{
+  display:flex;align-items:center;gap:10px;
 }
 #saowBoot .pct{
-  font-size:16px;font-weight:600;color:#7dd3fc;
-  min-height:1.3em;letter-spacing:.03em;
+  font-size:11px;font-weight:500;color:#71717a;min-width:2.4em;text-align:left;
+  font-variant-numeric:tabular-nums;direction:ltr;
 }
 #saowBoot .bar{
-  width:148px;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;
+  width:120px;height:2px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;
 }
 #saowBoot .bar>i{
   display:block;height:100%;width:0%;border-radius:99px;
-  background:linear-gradient(90deg,#38bdf8,#818cf8,#c084fc);
-  transition:width .12s linear;
+  background:linear-gradient(90deg,#38bdf8,#818cf8);
+  transition:width .08s linear;
 }
 @keyframes logoBreathe{
-  0%,100%{transform:scale(1) rotate(0deg)}
-  40%{transform:scale(1.07) rotate(-2deg)}
-  70%{transform:scale(1.03) rotate(2deg)}
-}
-@keyframes logoGlow{
-  0%,100%{opacity:1;filter:brightness(1)}
-  50%{opacity:.75;filter:brightness(1.2)}
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.06);opacity:.88}
 }
 
 </style>
 </head>
 <body>
 <div id="saowBoot" aria-hidden="true">
-  <div class="logo"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="" width="80" height="80" /></div>
-  <div class="pct" id="bootPct">۰٪</div>
-  <div class="bar"><i id="bootBarFill"></i></div>
+  <div class="logo"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="" width="72" height="72" /></div>
+  <div class="boot-row">
+    <div class="bar"><i id="bootBarFill"></i></div>
+    <span class="pct" id="bootPct">۰٪</span>
+  </div>
 </div>
 
   <div class="wrap">
@@ -304,27 +301,20 @@ try {
       return { lab, cls };
     }
     document.getElementById("name").textContent = DATA.name || "—";
-    const hint = document.getElementById("userHint");
-    if (hint) {
+    const userHintEl = document.getElementById("userHint");
+    if (userHintEl) {
+      const stLabel = ({ active: "حساب فعال است", disabled: "حساب غیرفعال است", expired: "منقضی شده", "quota-exceeded": "حجم تمام شده", locked: "پنل قفل شده" })[DATA.status] || "";
       const bits = [];
       if (DATA.name) bits.push("کاربر «" + DATA.name + "»");
+      if (stLabel) bits.push(stLabel);
       if (DATA.expiryText) bits.push(DATA.expiryText);
-      hint.textContent = bits.join(" · ");
+      if (DATA.ipLimit) bits.push("سقف IP: " + DATA.ipLimit);
+      userHintEl.textContent = bits.join(" · ") || "";
     }
     const lockBanner = document.getElementById("lockBanner");
     if (lockBanner && (DATA.locked || DATA.status === "locked")) {
       lockBanner.style.display = "block";
       lockBanner.textContent = DATA.lockMessage || "پنل قفل شده — سرویس موقتاً در دسترس نیست";
-    }
-
-    const hint = document.getElementById("userHint");
-    if (hint) {
-      const stLabel = ({ active: "حساب فعال است", disabled: "حساب غیرفعال است", expired: "منقضی شده", "quota-exceeded": "حجم تمام شده" })[DATA.status] || "";
-      const bits = [];
-      if (DATA.name) bits.push("کاربر: " + DATA.name);
-      if (stLabel) bits.push(stLabel);
-      if (DATA.ipLimit) bits.push("سقف IP: " + DATA.ipLimit);
-      hint.textContent = bits.join(" · ") || "";
     }
     const st = statusBadge(DATA.status);
     const stEl = document.getElementById("status");
@@ -810,27 +800,32 @@ try {
       const boot = document.getElementById("saowBoot");
       const fill = document.getElementById("bootBarFill");
       const pctEl = document.getElementById("bootPct");
-      const toFa = (n) => String(n).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+      const toFa = (n) => String(Math.max(0, Math.min(100, n|0))).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
       if (boot) {
         const minMs = 3000;
         const t0 = performance.now();
-        const tick = () => {
-          const p = Math.min(100, Math.round(((performance.now() - t0) / minMs) * 100));
+        let done = false;
+        const apply = (p) => {
           if (fill) fill.style.width = p + "%";
           if (pctEl) pctEl.textContent = toFa(p) + "٪";
-          if (p < 100) requestAnimationFrame(tick);
-          else {
-            if (pctEl) pctEl.textContent = "۱۰۰٪";
-            if (fill) fill.style.width = "100%";
+        };
+        apply(0);
+        const iv = setInterval(() => {
+          if (done) return;
+          const p = Math.min(100, Math.round(((performance.now() - t0) / minMs) * 100));
+          apply(p);
+          if (p >= 100) {
+            done = true;
+            clearInterval(iv);
+            apply(100);
             setTimeout(() => {
               boot.classList.add("hide");
-              setTimeout(() => { try { boot.remove(); } catch (e) {} }, 750);
-            }, 200);
+              setTimeout(() => { try { boot.remove(); } catch (e) {} }, 700);
+            }, 180);
           }
-        };
-        requestAnimationFrame(tick);
+        }, 40);
       }
-    }catch(e){}
+    }catch(e){ console.warn("boot loader", e); }
 
   } catch(e){ console.error('[SAOW] boot', e); document.body&&(document.body.innerHTML='<pre style="color:#f87171;padding:2rem;font-family:sans-serif">خطای بارگذاری صفحه ساب\n'+e+'</pre>'); }
 </script>
