@@ -288,6 +288,51 @@ try {
       t.textContent = msg; t.classList.add("show");
       clearTimeout(t._x); t._x = setTimeout(() => t.classList.remove("show"), 2200);
     }
+
+    async function copyTextRobust(text) {
+      text = String(text == null ? "" : text);
+      if (!text) return false;
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {}
+      }
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.setAttribute("aria-hidden", "true");
+        ta.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;padding:0;border:0;outline:none;";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, text.length);
+        var ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (ok) return true;
+      } catch (e2) {}
+      return false;
+    }
+    function showManualCopy(text, title) {
+      var old = document.getElementById("manualCopyModal");
+      if (old) old.remove();
+      var wrap = document.createElement("div");
+      wrap.id = "manualCopyModal";
+      wrap.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;padding:12px;";
+      wrap.innerHTML = '<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px 16px 12px 12px;width:100%;max-width:480px;padding:14px;max-height:70vh;display:flex;flex-direction:column;gap:10px">'
+        + '<div style="font-size:14px;font-weight:600">' + (title || "کپی دستی") + '</div>'
+        + '<p style="font-size:12px;color:var(--text-muted);margin:0">متن را نگه دارید و Copy را بزنید</p>'
+        + '<textarea id="manualCopyTa" readonly style="width:100%;min-height:160px;flex:1;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);padding:10px;font-size:11px;direction:ltr;text-align:left;font-family:ui-monospace,monospace"></textarea>'
+        + '<button type="button" id="manualCopyClose" class="btn btn-primary" style="width:100%">بستن</button></div>';
+      document.body.appendChild(wrap);
+      var ta = document.getElementById("manualCopyTa");
+      ta.value = text;
+      setTimeout(function(){ try { ta.focus(); ta.select(); } catch(e){} }, 50);
+      document.getElementById("manualCopyClose").onclick = function(){ wrap.remove(); };
+      wrap.addEventListener("click", function(e){ if (e.target === wrap) wrap.remove(); });
+    }
+
     function statusBadge(s) {
       const map = {
         active: ["فعال", "badge-ok"],
@@ -491,8 +536,9 @@ try {
     document.getElementById("btnV2ray").href = "v2rayng://install-config?url=" + encodeURIComponent(subUrl);
     document.getElementById("btnHiddify").href = "hiddify://import/" + encodeURIComponent(subUrl);
     document.getElementById("btnStreisand").href = "streisand://import/" + encodeURIComponent(subUrl);
-    document.getElementById("btnCopy").addEventListener("click", () => {
-      navigator.clipboard.writeText(subUrl).then(() => toast("لینک کپی شد")).catch(() => toast("کپی نشد"));
+    document.getElementById("btnCopy").addEventListener("click", async () => {
+      const ok = await copyTextRobust(subUrl);
+      toast(ok ? "لینک کپی شد" : "کپی نشد");
     });
     const fullUrl = DATA.fullJsonUrl || (subUrl + (subUrl.indexOf("?") >= 0 ? "&" : "?") + "format=full");
     document.getElementById("btnCopyFull").addEventListener("click", async () => {
@@ -506,10 +552,14 @@ try {
         const text = await res.text();
         if (/^\s*</.test(text)) throw new Error("HTML instead of JSON");
         JSON.parse(text);
-        await navigator.clipboard.writeText(text);
-        toast("JSON کانفیگ کپی شد");
+        const ok = await copyTextRobust(text);
+        if (ok) toast("JSON کانفیگ کپی شد");
+        else {
+          showManualCopy(text, "کانفیگ JSON");
+          toast("کپی خودکار ممکن نشد — دستی کپی کنید");
+        }
       } catch (e) {
-        toast("کپی JSON ناموفق — مادر را آپدیت کنید");
+        toast("دریافت JSON ناموفق");
         console.warn(e);
       }
       btn.disabled = false;
@@ -688,7 +738,7 @@ try {
           e.preventDefault();
           e.stopPropagation();
           var t = decodeURIComponent(btn.getAttribute("data-v") || "");
-          navigator.clipboard.writeText(t).then(function () { toast("کانفیگ کپی شد"); });
+          copyTextRobust(t).then(function (ok) { toast(ok ? "کانفیگ کپی شد" : "کپی نشد"); });
         });
       });
       box.querySelectorAll(".btn-qr").forEach(function (btn) {
