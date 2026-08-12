@@ -1134,12 +1134,13 @@ table tbody tr{height:auto}
       <div class="setting-block" style="margin-top:14px">
         <h4>پروکسی خروجی (دور زدن محدودیت CF→CF)</h4>
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">
-          بعضی سایت‌ها پشت کلودفلر اجازهٔ درخواست از شبکهٔ Worker را نمی‌دهند.
-          دامنه‌های زیر از مسیر پروکسی (مشابه edgetunnel) هدایت می‌شوند.
+          بعضی سایت‌ها پشت کلودفلر از شبکهٔ Worker درخواست را رد می‌کنند (مثل speedtest).<br>
+          <b>ProxyIP</b> (مثلاً <code dir="ltr">host:443</code>) فقط برای مسیر خروجی <b>ورکر</b> است — مثل edgetunnel.<br>
+          برای مسیر کلاینت (کانفیگ JSON) باید <code dir="ltr">socks5://IP:port</code> واقعی بدهید؛ وگرنه Connection refused می‌گیرید.
         </p>
         <div class="field">
           <label>آدرس پروکسی</label>
-          <input type="text" id="egressProxy" placeholder="proxyip.example.com:443 یا socks5://host:1080" dir="ltr" style="text-align:left" />
+          <input type="text" id="egressProxy" placeholder="proxyip.host:443  یا  socks5://1.2.3.4:1080" dir="ltr" style="text-align:left" />
         </div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
           <button type="button" class="btn btn-primary" id="btnTestProxy">تست پروکسی (پینگ)</button>
@@ -1846,7 +1847,7 @@ function openMapProvince(provinceName){
       const add=(src,ip)=>{if(isPub(ip))sources.push({src,ip:ip.trim()});};
       const tasks=[
         (async()=>{try{const t=await fetch("https://www.cloudflare.com/cdn-cgi/trace",{cache:"no-store"}).then(r=>r.text());const m=t.match(/\bip=([0-9a-fA-F.:]+)/);if(m)add("cf-trace",m[1]);}catch{}})(),
-        (async()=>{try{const j=await fetch("https://api.ipify.org?format=json",{cache:"no-store"}).then(r=>r.json());add("ipify",j.ip);}catch{}})(),
+        (async()=>{try{const j=await fetch("https://api4.ipify.org?format=json",{cache:"no-store"}).then(r=>r.json());add("ipify",j.ip);}catch{}})(),
         (async()=>{try{const t=await fetch("https://ipapi.co/ip/",{cache:"no-store"}).then(r=>r.text());add("ipapi",t.trim());}catch{}})(),
         (async()=>{try{const j=await fetch("https://api.seeip.org/jsonip",{cache:"no-store"}).then(r=>r.json());add("seeip",j.ip);}catch{}})(),
         new Promise((resolve)=>{
@@ -1865,9 +1866,10 @@ function openMapProvince(provinceName){
       ];
       await Promise.all(tasks);
       // وزن: cf-trace/webrtc/seeip قابل‌اعتمادتر از ipify/ipapi (گاهی IP لبه CF می‌دهند)
+      const isV4=ip=>/^(?:\d{1,3}\.){3}\d{1,3}$/.test(String(ip||"").trim()) && String(ip).split(".").every(o=>{const n=+o;return n>=0&&n<=255;});
       const weight=s=>({ "cf-trace":3,"webrtc":2,"seeip":2,"ipify":1,"ipapi":1,"ifconfig":1,"icanhazip":1}[s]||1);
       const counts={};
-      for(const s of sources) counts[s.ip]=(counts[s.ip]||0)+weight(s.src);
+      for(const s of sources){ if(!isV4(s.ip)) continue; counts[s.ip]=(counts[s.ip]||0)+weight(s.src); }
       let best=null,bestN=0;
       for(const [ip,n] of Object.entries(counts)){if(n>bestN){best=ip;bestN=n;}}
       if(!best||bestN<1)return null;
@@ -3070,8 +3072,14 @@ function openMapProvince(provinceName){
         proxy:document.getElementById("egressProxy")?.value?.trim()||""
       })});
       if(r&&r.ok){
-        if(el) el.textContent="✓ "+(r.ms!=null?r.ms+" ms":"ok")+" · "+(r.host||"");
-        toast("پینگ پروکسی: "+(r.ms??"—")+" ms","ok");
+        const kind=r.kind==="socks"?"SOCKS5":(r.kind==="proxyip"?"ProxyIP/TCP":(r.protocol||""));
+        const note=r.note?(" · "+r.note):"";
+        if(el) el.textContent="✓ "+(r.ms!=null?r.ms+" ms":"ok")+" · "+kind+" · "+(r.host||"");
+        if(r.kind==="proxyip"){
+          toast("TCP باز شد ("+(r.ms??"—")+"ms) — این ProxyIP است نه SOCKS؛ برای کلاینت کافی نیست","warn");
+        } else {
+          toast("SOCKS OK · "+(r.ms??"—")+" ms","ok");
+        }
       } else {
         if(el) el.textContent="✗ "+(r.err||"ناموفق");
         toast(r.err||"تست ناموفق","err");
