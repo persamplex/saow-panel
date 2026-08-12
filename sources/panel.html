@@ -907,10 +907,10 @@ table tbody tr{height:auto}
             <div class="pager" id="ordersPager" style="display:none"></div>
           </div>
         </div>
-        <div class="feat-lock-overlay">
+        <div class="feat-lock-overlay" id="shopLockOverlay">
           <div class="lock-ico">🔒</div>
-          <p>برای استفاده از فروشگاه، ابتدا ربات تلگرام را فعال کنید</p>
-          <button type="button" class="btn btn-primary" data-go-sec="telegram">اتصال ربات تلگرام</button>
+          <p id="shopLockMsg">برای استفاده از فروشگاه، ابتدا ربات تلگرام را فعال کنید</p>
+          <button type="button" class="btn btn-primary" id="shopLockTgBtn" data-go-sec="telegram">اتصال ربات تلگرام</button>
         </div>
       </div>
     </section>
@@ -1334,18 +1334,24 @@ table tbody tr{height:auto}
     } else {
       root.classList.remove("panel-locked");
     }
-    // قفل فروشگاه از لایسنس — اولویت روی feature gate
+    // قفل فروشگاه: لایسنس جدا از نیاز به ربات تلگرام
+    const shop=document.getElementById("shopLockedArea");
+    const shopMsg=document.getElementById("shopLockMsg");
+    const shopTgBtn=document.getElementById("shopLockTgBtn");
     if(r.lock_shop){
       setFeatureGate("shop", false);
-      const shop=document.getElementById("shopLockedArea");
-      if(shop){
-        shop.classList.add("is-locked");
-        const ov=shop.querySelector(".feat-lock-overlay p");
-        if(ov) ov.textContent=r.message||"فروشگاه توسط لایسنس قفل شده است";
-      }
-    } else if(FEATURE_GATES.telegram_bot){
-      // اگر لایسنس فروشگاه را قفل نکرده و ربات هست، فروشگاه را باز کن
+      if(shop) shop.classList.add("is-locked");
+      if(shopMsg) shopMsg.textContent = r.message || "فروشگاه توسط لایسنس قفل شده است";
+      if(shopTgBtn) shopTgBtn.style.display = "none"; // ربطی به تلگرام ندارد
+    } else if(!FEATURE_GATES.telegram_bot){
+      setFeatureGate("shop", false);
+      if(shop) shop.classList.add("is-locked");
+      if(shopMsg) shopMsg.textContent = "برای استفاده از فروشگاه، ابتدا ربات تلگرام را فعال کنید";
+      if(shopTgBtn) shopTgBtn.style.display = "";
+    } else {
       setFeatureGate("shop", true);
+      if(shop) shop.classList.remove("is-locked");
+      if(shopTgBtn) shopTgBtn.style.display = "none";
     }
   }
 
@@ -2704,8 +2710,20 @@ function openMapProvince(provinceName){
         <td data-label="وضعیت">${st}</td>
         <td class="row-actions" data-label="">${actions}</td></tr>`;
     }).join("");
-    ob.querySelectorAll("[data-oact]").forEach(btn=>btn.addEventListener("click",async()=>{
-      try{await api("/api/shop/orders/"+encodeURIComponent(btn.dataset.oid)+"/"+btn.dataset.oact,{method:"POST"});toast("انجام شد","ok");loadShop();}catch(e){toast(e.message,"err");}
+    ob.querySelectorAll("[data-oact]").forEach(btn=>btn.addEventListener("click",async(ev)=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      const oid=btn.getAttribute("data-oid");
+      const act=btn.getAttribute("data-oact");
+      if(!oid||!act) return;
+      btn.disabled=true;
+      try{
+        const r=await api("/api/shop/orders/"+encodeURIComponent(oid)+"/"+act,{method:"POST",body:"{}"});
+        if(r&&r.ok===false) throw new Error(r.err||"ناموفق");
+        toast(act==="approve"?"سفارش تأیید شد":"سفارش رد شد","ok");
+        await loadShop();
+      }catch(e){toast(e.message||"خطا در تأیید/رد","err");}
+      finally{btn.disabled=false;}
     }));
     const pager=document.getElementById("ordersPager");
     if(pager){
@@ -2877,6 +2895,23 @@ function openMapProvince(provinceName){
     }
   });
   document.getElementById("btnReloadShop").addEventListener("click",()=>loadShop());
+  // delegation پایدار برای تأیید/رد سفارش
+  document.getElementById("ordersBody")?.addEventListener("click", async (ev)=>{
+    const btn = ev.target.closest("[data-oact]");
+    if(!btn || !document.getElementById("ordersBody").contains(btn)) return;
+    const oid=btn.getAttribute("data-oid");
+    const act=btn.getAttribute("data-oact");
+    if(!oid||!act) return;
+    ev.preventDefault();
+    btn.disabled=true;
+    try{
+      const r=await api("/api/shop/orders/"+encodeURIComponent(oid)+"/"+act,{method:"POST",body:"{}"});
+      if(r&&r.ok===false) throw new Error(r.err||"ناموفق");
+      toast(act==="approve"?"سفارش تأیید شد":"سفارش رد شد","ok");
+      await loadShop();
+    }catch(e){toast(e.message||"خطا","err");}
+    finally{btn.disabled=false;}
+  });
   document.getElementById("btnSaveShopPay")?.addEventListener("click", async ()=>{
     try{
       await api("/api/shop/settings", { method:"POST", body: JSON.stringify({
@@ -2951,11 +2986,13 @@ function openMapProvince(provinceName){
     const body={lock_panel:document.getElementById("swLockPanel").classList.contains("on"),lock_create_user:document.getElementById("swLockCreateUser").classList.contains("on"),lock_create_node:document.getElementById("swLockCreateNode").classList.contains("on"),lock_shop:document.getElementById("swLockShop").classList.contains("on"),lock_sub:document.getElementById("swLockSub").classList.contains("on"),lock_connect:document.getElementById("swLockConnect").classList.contains("on"),max_users:Number(document.getElementById("rulesMaxUsers").value)||0,max_nodes:Number(document.getElementById("rulesMaxNodes").value)||0,message:document.getElementById("rulesMessage").value.trim()};
     // اعمال فوری سمت کلاینت قبل از پاسخ سرور
     PANEL_RULES=Object.assign({}, PANEL_RULES, body);
+    try{ localStorage.setItem("saow_panel_rules", JSON.stringify(PANEL_RULES)); }catch{}
     applyPanelLocksFromRules();
     try{
       const r=await api("/api/rules",{method:"POST",body:JSON.stringify(body)});
       if(r&&r.rules) PANEL_RULES=r.rules;
       else PANEL_RULES=Object.assign({}, PANEL_RULES, body);
+      try{ localStorage.setItem("saow_panel_rules", JSON.stringify(PANEL_RULES)); }catch{}
       applyPanelLocksFromRules();
       refreshFeatureGates().then(()=>applyPanelLocksFromRules()).catch(()=>{});
       toast("قوانین ذخیره شد","ok");
@@ -3190,12 +3227,18 @@ function openMapProvince(provinceName){
   function boot(){
     let sec="dash";
     try{sec=localStorage.getItem("saow_panel_sec")||"dash";}catch{}
-    // فوری بخش را نشان بده — قفل‌ها و فیچرها در پس‌زمینه
+    // اعمال فوری قفل از کش — بدون تأخیر
+    try{
+      const cached=JSON.parse(localStorage.getItem("saow_panel_rules")||"null");
+      if(cached && typeof cached==="object"){ PANEL_RULES=cached; applyPanelLocksFromRules(); }
+    }catch{}
     if(sec&&sec!=="dash"&&document.getElementById(sec)) goSection(sec,true);
     else loadDashboard(true);
     startDashPoll();
-    // موازی و غیرمسدودکننده
-    refreshRulesLocal().then(()=>applyPanelLocksFromRules()).catch(()=>{});
+    refreshRulesLocal().then(()=>{
+      try{ localStorage.setItem("saow_panel_rules", JSON.stringify(PANEL_RULES||{})); }catch{}
+      applyPanelLocksFromRules();
+    }).catch(()=>{});
     refreshFeatureGates().then(()=>applyPanelLocksFromRules()).catch(()=>{});
     loadAutoBackupSettings().catch(()=>{});
     api("/api/users").then(d=>{usersCache=d.users||[];document.getElementById("navUsersCount").textContent=faNum(usersCache.length);}).catch(()=>{});
