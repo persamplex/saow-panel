@@ -821,7 +821,7 @@ table tbody tr{height:auto}
     <div id="globalLockBanner"><span class="lock-ico">🔒</span><span id="globalLockMsg">پنل توسط لایسنس قفل شده است</span></div>
     <section class="section active" id="dash">
       <div class="map-card">
-        <div class="map-head"><h2><span class="live-indicator"></span> نقشه کاربران متصل — ایران</h2><div class="map-hint">نقاط = مراکز استان با کاربران آنلاین</div></div>
+        <div class="map-head"><h2><span class="live-indicator"></span> نقشه کاربران متصل — ایران</h2><div class="map-hint">نقاط = تعداد IP آنلاین هر استان</div></div>
         <div class="map-body map-wrap">
           <div id="iranMapContainer"></div>
           <div class="map-pop-backdrop" id="mapPopBackdrop"></div>
@@ -839,9 +839,9 @@ table tbody tr{height:auto}
       </div>
       <div class="stats">
         <div class="stat" id="stOnlineCard">
-          <div class="stat-label">کاربران متصل الان</div>
+          <div class="stat-label">IPهای متصل الان</div>
           <div class="stat-value" id="stOnline">—</div>
-          <div class="stat-meta" id="stOnlineMeta">از active_ips</div>
+          <div class="stat-meta" id="stOnlineMeta">اکانت‌های فعال: —</div>
           <div class="stat-pct-bar"><i id="stOnlineBar" style="width:0%"></i></div>
         </div>
         <div class="stat" id="stNodesCard">
@@ -1130,6 +1130,26 @@ table tbody tr{height:auto}
           <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnUpdateMother" type="button">بروزرسانی پنل از GitHub</button>
           <button class="btn" style="width:100%;margin-top:8px" id="btnLogout" type="button">خروج</button>
         </div>
+      </div>
+      <div class="setting-block" style="margin-top:14px">
+        <h4>پروکسی خروجی (دور زدن محدودیت CF→CF)</h4>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">
+          بعضی سایت‌ها پشت کلودفلر اجازهٔ درخواست از شبکهٔ Worker را نمی‌دهند.
+          دامنه‌های زیر از مسیر پروکسی (مشابه edgetunnel) هدایت می‌شوند.
+        </p>
+        <div class="field">
+          <label>آدرس پروکسی</label>
+          <input type="text" id="egressProxy" placeholder="proxyip.example.com:443 یا socks5://host:1080" dir="ltr" style="text-align:left" />
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button type="button" class="btn btn-primary" id="btnTestProxy">تست پروکسی (پینگ)</button>
+          <span id="proxyTestResult" style="font-size:12px;color:var(--text-muted);align-self:center"></span>
+        </div>
+        <div class="field">
+          <label>دامنه‌ها (با کاما جدا کنید)</label>
+          <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnSaveProxy">ذخیره پروکسی</button>
       </div>
     </section>
   </main>
@@ -1740,19 +1760,22 @@ function openMapProvince(provinceName){
     const sub=document.getElementById("mapPopSub");
     if(!pop||!body)return;
     const list=(mapDevicesCache||[]).filter(d=>d.province===provinceName);
-    const byUser=new Map();
+    // هر IP یک ردیف — نه یکتا بر اساس اکانت
+    const rows=[];
+    const accountSet=new Set();
     for(const d of list){
-      const key=String(d.user_id||d.ip||"");
-      if(!key)continue;
-      if(!byUser.has(key)) byUser.set(key,{name:d.user_name||d.user_id||"—",ip:d.ip,city:d.geo?.city,last_seen:d.last_seen});
+      if(!d||!d.ip) continue;
+      rows.push({name:d.user_name||d.user_id||"—",ip:d.ip,city:d.geo?.city,last_seen:d.last_seen,user_id:d.user_id});
+      if(d.user_id) accountSet.add(String(d.user_id));
     }
-    const users=[...byUser.values()];
     title.textContent=provinceName||"—";
-    sub.textContent=users.length?(faNum(users.length)+" کاربر آنلاین"):"بدون کاربر آنلاین";
-    if(!users.length){
-      body.innerHTML='<div class="map-pop-empty">کاربری در این استان آنلاین نیست</div>';
+    sub.textContent=rows.length
+      ? (faNum(rows.length)+" IP آنلاین · "+faNum(accountSet.size)+" اکانت")
+      : "بدون اتصال آنلاین";
+    if(!rows.length){
+      body.innerHTML='<div class="map-pop-empty">IP آنلاینی در این استان نیست</div>';
     } else {
-      body.innerHTML=users.map(u=>`<div class="map-pop-user"><div><strong>${esc(u.name)}</strong>${u.city?`<br><small style="direction:rtl;color:var(--text-muted)">${esc(u.city)}</small>`:""}</div><small>${esc(u.ip||"")}</small></div>`).join("");
+      body.innerHTML=rows.map(u=>`<div class="map-pop-user"><div><strong>${esc(u.name)}</strong>${u.city?`<br><small style="direction:rtl;color:var(--text-muted)">${esc(u.city)}</small>`:""}</div><small style="direction:ltr">${esc(u.ip||"")}</small></div>`).join("");
     }
     body.scrollTop=0;
     pop.classList.add("open");
@@ -1872,11 +1895,11 @@ function openMapProvince(provinceName){
     try{
       const data=await api("/api/dashboard");lastDashAt=Date.now();if(!data.ok)return;
       const st=data.stats||{};
-      const online=st.onlineUsers??0, nodes=st.nodes??0, healthy=st.healthyNodes??0, activeU=st.activeUsers??0;
+      const online=st.onlineIps??st.onlineUsers??0, onlineAcc=st.onlineAccounts??0, nodes=st.nodes??0, healthy=st.healthyNodes??0, activeU=st.activeUsers??0;
       bumpVal("stOnline",faNum(online));
       const elOnlineMeta=document.getElementById("stOnlineMeta");
-      if(elOnlineMeta) elOnlineMeta.textContent=faNum(activeU)+" کاربر فعال در سیستم";
-      const onlinePct=activeU>0?Math.min(100,Math.round(online/Math.max(activeU,1)*100)):(online>0?40:0);
+      if(elOnlineMeta) elOnlineMeta.textContent="اکانت‌های فعال: "+faNum(onlineAcc);
+      const onlinePct=onlineAcc>0?Math.min(100,Math.round(online/Math.max(onlineAcc,1)*100)):(online>0?40:0);
       setPctBar("stOnlineBar", online>0?Math.max(12,onlinePct):0);
       setHealth("stOnlineCard", online>0?15:0);
       const elNodesVal=document.getElementById("stNodesVal");
@@ -3019,6 +3042,46 @@ function openMapProvince(provinceName){
       refreshRulesLocal();
     }
   });
+  
+  async function loadProxySettings(){
+    try{
+      const r=await api("/api/proxy-settings");
+      if(!r||!r.ok) return;
+      const pe=document.getElementById("egressProxy");
+      const de=document.getElementById("egressDomains");
+      if(pe) pe.value=r.proxy||"";
+      if(de) de.value=r.domains||"";
+    }catch{}
+  }
+  document.getElementById("btnSaveProxy")?.addEventListener("click",async()=>{
+    try{
+      await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
+        proxy:document.getElementById("egressProxy")?.value?.trim()||"",
+        domains:document.getElementById("egressDomains")?.value?.trim()||""
+      })});
+      toast("پروکسی ذخیره شد","ok");
+    }catch(e){toast(e.message||"خطا","err");}
+  });
+  document.getElementById("btnTestProxy")?.addEventListener("click",async()=>{
+    const el=document.getElementById("proxyTestResult");
+    if(el) el.textContent="در حال تست…";
+    try{
+      const r=await api("/api/proxy-test",{method:"POST",body:JSON.stringify({
+        proxy:document.getElementById("egressProxy")?.value?.trim()||""
+      })});
+      if(r&&r.ok){
+        if(el) el.textContent="✓ "+(r.ms!=null?r.ms+" ms":"ok")+" · "+(r.host||"");
+        toast("پینگ پروکسی: "+(r.ms??"—")+" ms","ok");
+      } else {
+        if(el) el.textContent="✗ "+(r.err||"ناموفق");
+        toast(r.err||"تست ناموفق","err");
+      }
+    }catch(e){
+      if(el) el.textContent="✗ "+(e.message||"خطا");
+      toast(e.message||"خطا","err");
+    }
+  });
+
   document.getElementById("btnLogout").addEventListener("click",logout);
   document.getElementById("btnUpdateMother")?.addEventListener("click",async()=>{
     if(!confirm("بروزرسانی مادر از GitHub؟ ممکن است چند ثانیه طول بکشد."))return;
@@ -3241,7 +3304,7 @@ function openMapProvince(provinceName){
   });
   // remove old swShopEnable handler if any - replaced by feature gate only
 
-  function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="telegram")loadTelegram();else if(sec==="settings")loadRules();}
+  function onSectionEnter(sec){if(sec==="dash")loadDashboard(true);else if(sec==="users")loadUsers();if(sec==="logs")loadLogs();else if(sec==="nodes")loadNodes();else if(sec==="shop")loadShop();else if(sec==="telegram")loadTelegram();else if(sec==="settings"){loadRules();loadProxySettings();}}
   function boot(){
     let sec="dash";
     try{sec=localStorage.getItem("saow_panel_sec")||"dash";}catch{}
