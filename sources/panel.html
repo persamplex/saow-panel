@@ -1134,13 +1134,12 @@ table tbody tr{height:auto}
       <div class="setting-block" style="margin-top:14px">
         <h4>پروکسی خروجی (دور زدن محدودیت CF→CF)</h4>
         <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.6">
-          بعضی سایت‌ها پشت کلودفلر از شبکهٔ Worker درخواست را رد می‌کنند (مثل speedtest).<br>
-          <b>ProxyIP</b> (مثلاً <code dir="ltr">host:443</code>) فقط برای مسیر خروجی <b>ورکر</b> است — مثل edgetunnel.<br>
-          برای مسیر کلاینت (کانفیگ JSON) باید <code dir="ltr">socks5://IP:port</code> واقعی بدهید؛ وگرنه Connection refused می‌گیرید.
+          مثل edgetunnel: وقتی کلاینت به نود وصل است، <b>خود ورکر</b> برای دامنه‌های لیست‌شده به‌جای اتصال مستقیم از <b>ProxyIP</b> خارج می‌شود.
+          کلاینت و کانفیگ JSON نیازی به SOCKS ندارند — فقط ذخیره کنید تا روی همه نودها اعمال شود.
         </p>
         <div class="field">
-          <label>آدرس پروکسی</label>
-          <input type="text" id="egressProxy" placeholder="proxyip.host:443  یا  socks5://1.2.3.4:1080" dir="ltr" style="text-align:left" />
+          <label>آدرس ProxyIP</label>
+          <input type="text" id="egressProxy" placeholder="مثال: 1.2.3.4:443 یا proxyip.example.com:443" dir="ltr" style="text-align:left" />
         </div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
           <button type="button" class="btn btn-primary" id="btnTestProxy">تست پروکسی (پینگ)</button>
@@ -3059,11 +3058,13 @@ function openMapProvince(provinceName){
   }
   document.getElementById("btnSaveProxy")?.addEventListener("click",async()=>{
     try{
-      await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
+      const r=await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
         proxy:document.getElementById("egressProxy")?.value?.trim()||"",
         domains:document.getElementById("egressDomains")?.value?.trim()||""
       })});
-      toast("پروکسی ذخیره شد","ok");
+      const pu=r&&r.nodes_updated;
+      const msg=pu?("پروکسی ذخیره و روی "+faNum(pu.ok||0)+"/"+faNum(pu.total||0)+" نود اعمال شد"):"پروکسی ذخیره شد";
+      toast(msg,"ok");
     }catch(e){toast(e.message||"خطا","err");}
   });
   
