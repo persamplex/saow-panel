@@ -134,52 +134,48 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
 .brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
 #saowBoot{
   position:fixed;inset:0;z-index:9999;background:#050505;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
-  transition:opacity .55s ease, visibility .55s ease;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transition:opacity .75s ease,visibility .75s ease;
 }
 #saowBoot.hide{opacity:0;visibility:hidden;pointer-events:none}
-#saowBoot .logo-wrap{
-  position:relative;width:88px;height:88px;display:grid;place-items:center;
-}
-#saowBoot .logo-ring{
-  position:absolute;inset:0;border-radius:24px;
-  border:1.5px solid transparent;
-  background:linear-gradient(#050505,#050505) padding-box,
-             linear-gradient(135deg,#38bdf8,#818cf8,#c084fc) border-box;
-  animation:bootSpin 2.4s linear infinite;
-  opacity:.85;
-}
 #saowBoot .logo{
-  position:relative;width:64px;height:64px;border-radius:16px;
-  animation:bootFloat 2.2s ease-in-out infinite;
-  filter:drop-shadow(0 0 20px rgba(125,211,252,.3));
+  width:80px;height:80px;border-radius:20px;
+  animation:logoBreathe 2.2s ease-in-out infinite;
+  filter:drop-shadow(0 0 26px rgba(125,211,252,.3));
 }
-#saowBoot .logo img{width:100%;height:100%;object-fit:contain}
+#saowBoot .logo img{
+  width:100%;height:100%;object-fit:contain;
+  animation:logoGlow 2.2s ease-in-out infinite;
+}
+#saowBoot .pct{
+  font-size:16px;font-weight:600;color:#7dd3fc;
+  min-height:1.3em;letter-spacing:.03em;
+}
 #saowBoot .bar{
-  width:112px;height:3px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;
+  width:148px;height:4px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;
 }
 #saowBoot .bar>i{
-  display:block;height:100%;width:40%;border-radius:99px;
+  display:block;height:100%;width:0%;border-radius:99px;
   background:linear-gradient(90deg,#38bdf8,#818cf8,#c084fc);
-  background-size:200% 100%;
-  animation:bootBar 1.5s ease-in-out infinite;
+  transition:width .12s linear;
 }
-@keyframes bootFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-5px) scale(1.04)}}
-@keyframes bootSpin{to{transform:rotate(360deg)}}
-@keyframes bootBar{
-  0%{transform:translateX(-120%);background-position:0% 50%}
-  100%{transform:translateX(280%);background-position:100% 50%}
+@keyframes logoBreathe{
+  0%,100%{transform:scale(1) rotate(0deg)}
+  40%{transform:scale(1.07) rotate(-2deg)}
+  70%{transform:scale(1.03) rotate(2deg)}
+}
+@keyframes logoGlow{
+  0%,100%{opacity:1;filter:brightness(1)}
+  50%{opacity:.75;filter:brightness(1.2)}
 }
 
 </style>
 </head>
 <body>
 <div id="saowBoot" aria-hidden="true">
-  <div class="logo-wrap">
-    <div class="logo-ring"></div>
-    <div class="logo"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="" width="72" height="72" /></div>
-  </div>
-  <div class="bar"><i></i></div>
+  <div class="logo"><img src="https://github.com/persamplex/saow-panel/raw/refs/heads/main/sources/saow-logo.png" alt="" width="80" height="80" /></div>
+  <div class="pct" id="bootPct">۰٪</div>
+  <div class="bar"><i id="bootBarFill"></i></div>
 </div>
 
   <div class="wrap">
@@ -194,6 +190,8 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
       <div class="card-title">اطلاعات حساب</div>
       <div class="row"><span class="k">نام</span><span class="v" id="name">—</span></div>
       <div class="row"><span class="k">وضعیت</span><span class="v" id="statusWrap"><span class="badge badge-info" id="status">—</span></span></div>
+      <p id="userHint" style="margin:10px 0 0;font-size:12px;color:var(--text-muted);line-height:1.6"></p>
+      <div id="lockBanner" style="display:none;margin-top:12px;padding:12px 14px;border-radius:12px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.28);color:#fca5a5;font-size:13px;line-height:1.65"></div>
       <div class="row"><span class="k">انقضا</span><span class="v" id="expiry">—</span></div>
       <div class="row"><span class="k">IP همزمان</span><span class="v" id="ips">—</span></div>
       <div class="bar-wrap">
@@ -247,6 +245,7 @@ body{font-family:Vazirmatn,Tahoma,system-ui,sans-serif;background:var(--bg);colo
     <div class="card" id="linksCard" style="display:none">
       <div class="card-title">لینک‌های اتصال</div>
       <div class="links" id="linksList"></div>
+      <p id="linksEmpty" style="display:none;font-size:12px;color:var(--text-muted);margin-top:8px">هنوز نود فعالی برای ساخت لینک نیست. از پنل یک نود بسازید یا همگام‌سازی کنید.</p>
     </div>
 
     <p class="foot">Powered by SAOW · <span id="footVer"></span></p>
@@ -295,6 +294,7 @@ try {
     function statusBadge(s) {
       const map = {
         active: ["فعال", "badge-ok"],
+        locked: ["قفل شده", "badge-off"],
         disabled: ["غیرفعال", "badge-off"],
         expired: ["منقضی", "badge-off"],
         "quota-exceeded": ["حجم تمام", "badge-warn"],
@@ -304,6 +304,28 @@ try {
       return { lab, cls };
     }
     document.getElementById("name").textContent = DATA.name || "—";
+    const hint = document.getElementById("userHint");
+    if (hint) {
+      const bits = [];
+      if (DATA.name) bits.push("کاربر «" + DATA.name + "»");
+      if (DATA.expiryText) bits.push(DATA.expiryText);
+      hint.textContent = bits.join(" · ");
+    }
+    const lockBanner = document.getElementById("lockBanner");
+    if (lockBanner && (DATA.locked || DATA.status === "locked")) {
+      lockBanner.style.display = "block";
+      lockBanner.textContent = DATA.lockMessage || "پنل قفل شده — سرویس موقتاً در دسترس نیست";
+    }
+
+    const hint = document.getElementById("userHint");
+    if (hint) {
+      const stLabel = ({ active: "حساب فعال است", disabled: "حساب غیرفعال است", expired: "منقضی شده", "quota-exceeded": "حجم تمام شده" })[DATA.status] || "";
+      const bits = [];
+      if (DATA.name) bits.push("کاربر: " + DATA.name);
+      if (stLabel) bits.push(stLabel);
+      if (DATA.ipLimit) bits.push("سقف IP: " + DATA.ipLimit);
+      hint.textContent = bits.join(" · ") || "";
+    }
     const st = statusBadge(DATA.status);
     const stEl = document.getElementById("status");
     stEl.textContent = st.lab;
@@ -524,8 +546,16 @@ try {
     });
     if (DATA.version) document.getElementById("footVer").textContent = "v" + DATA.version;
     const links = Array.isArray(DATA.links) ? DATA.links : [];
+    if (!links.length) {
+      const card = document.getElementById("linksCard");
+      if (card) { card.style.display = ""; }
+      const emptyEl = document.getElementById("linksEmpty");
+      if (emptyEl) emptyEl.style.display = "block";
+    }
     if (links.length) {
       document.getElementById("linksCard").style.display = "";
+      const emptyEl = document.getElementById("linksEmpty");
+      if (emptyEl) emptyEl.style.display = "none";
       const list = document.getElementById("linksList");
       list.innerHTML = links.slice(0, 12).map((L, i) => {
         const text = typeof L === "string" ? L : (L.link || L.url || "");
@@ -777,20 +807,28 @@ try {
   })();
   
     try{
-      const boot=document.getElementById("saowBoot");
-      if(boot){
-        // حداقل ~1.6s نمایش لودینگ تا حس کامل‌شدن بدهد
+      const boot = document.getElementById("saowBoot");
+      const fill = document.getElementById("bootBarFill");
+      const pctEl = document.getElementById("bootPct");
+      const toFa = (n) => String(n).replace(/[0-9]/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+      if (boot) {
         const minMs = 3000;
         const t0 = performance.now();
-        const finish = () => {
-          const left = Math.max(0, minMs - (performance.now() - t0));
-          setTimeout(() => {
-            boot.classList.add("hide");
-            setTimeout(() => { try { boot.remove(); } catch(e) {} }, 500);
-          }, left);
+        const tick = () => {
+          const p = Math.min(100, Math.round(((performance.now() - t0) / minMs) * 100));
+          if (fill) fill.style.width = p + "%";
+          if (pctEl) pctEl.textContent = toFa(p) + "٪";
+          if (p < 100) requestAnimationFrame(tick);
+          else {
+            if (pctEl) pctEl.textContent = "۱۰۰٪";
+            if (fill) fill.style.width = "100%";
+            setTimeout(() => {
+              boot.classList.add("hide");
+              setTimeout(() => { try { boot.remove(); } catch (e) {} }, 750);
+            }, 200);
+          }
         };
-        if (document.fonts && document.fonts.ready) document.fonts.ready.then(finish).catch(finish);
-        else finish();
+        requestAnimationFrame(tick);
       }
     }catch(e){}
 
