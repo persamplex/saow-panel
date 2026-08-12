@@ -4,7 +4,7 @@
  * فروش + اطلاع‌رسانی + پروکسی ساب تست
  * Bindings: BOT_TOKEN, MOTHER_URL, MOTHER_SECRET, ADMIN_CHAT_ID (optional)
  */
-const VERSION = "1.2.3-tg";
+const VERSION = "1.2.4-tg";
 
 async function tg(token, method, body, isForm) {
   const opts = { method: "POST" };
@@ -265,7 +265,12 @@ async function showShopCategory(token, chatId, env, settings, msgId, catName, li
     const kb = [[{ text: "🔙 فروشگاه", callback_data: "user_shop" }]];
     return msgId ? edit(token, chatId, msgId, t, kb) : send(token, chatId, t, kb);
   }
-  let text = `📁 <b>${esc(catName)}</b>\nیک پلن انتخاب کنید:`;
+  let text = `📁 <b>${esc(catName)}</b>
+
+از لیست زیر یک پلن را انتخاب کنید.
+پس از انتخاب، مبلغ و شماره کارت نمایش داده می‌شود؛ واریز کنید و اسکرین‌شات رسید را برای تأیید ارسال نمایید.
+
+👇 پلن مورد نظر را لمس کنید:`;
   const kb = [];
   for (const p of list) {
     const price = fa(String(Math.round(Number(p.price) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ","));
