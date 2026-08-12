@@ -1629,6 +1629,8 @@ table tbody tr{height:auto}
       [/unreachable|rejected payload/i,"نود در دسترس نیست یا رمز API را رد کرد — دکمه «آپدیت نود» را بزنید"],
       [/unauthorized/i,"دسترسی رد شد — معمولاً API_SECRET مادر و نود یکی نیست؛ نود را آپدیت کنید"],
       [/HTTP 403/i,"دسترسی رد شد (۴۰۳) — نود را از دکمه «آپدیت نود» به‌روز کنید"],
+      [/Authentication error/i,"توکن کلودفلر نامعتبر یا منقضی است. یک API Token جدید بسازید و هنگام بروزرسانی وارد کنید"],
+      [/auth.*error|invalid.*token|token.*invalid/i,"توکن کلودفلر نامعتبر است — توکن جدید بسازید"],
     ];
     for(const [re,fa] of map){ if(re.test(m)) return fa; }
     // if already Persian-ish keep
@@ -3205,14 +3207,26 @@ function openMapProvince(provinceName){
 
   document.getElementById("btnLogout").addEventListener("click",logout);
   document.getElementById("btnUpdateMother")?.addEventListener("click",async()=>{
-    if(!confirm("بروزرسانی مادر از GitHub؟ ممکن است چند ثانیه طول بکشد."))return;
+    if(!confirm("بروزرسانی مادر از GitHub؟\nاگر توکن CF منقضی شده باشد بعداً از شما پرسیده می‌شود."))return;
+    const btn=document.getElementById("btnUpdateMother");
+    const prev=btn?btn.textContent:"";
+    if(btn){btn.disabled=true;btn.textContent="در حال بروزرسانی…";}
     try{
-      toast("در حال بروزرسانی…","ok");
-      const r=await api("/api/update",{method:"POST",body:"{}"});
-      if(!r||!r.ok)throw new Error((r&&r.err)||"ناموفق");
+      toast("در حال بروزرسانی از GitHub…","ok");
+      let r=await api("/api/update",{method:"POST",body:"{}"});
+      if(!r||!r.ok){
+        const err=String((r&&r.err)||"");
+        if(/توکن|Authentication|auth/i.test(err)){
+          const tok=prompt("توکن کلودفلر منقضی/نامعتبر است.\nیک API Token جدید با دسترسی Workers Edit بسازید و اینجا بچسبانید:");
+          if(!tok||!tok.trim())throw new Error(err||"توکن لازم است");
+          r=await api("/api/update",{method:"POST",body:JSON.stringify({token:tok.trim()})});
+        }
+        if(!r||!r.ok)throw new Error((r&&r.err)||"ناموفق");
+      }
       toast("بروزرسانی انجام شد · v"+(r.v||""),"ok");
-      setTimeout(()=>location.reload(),1200);
+      setTimeout(()=>location.reload(),1500);
     }catch(e){toast(e.message||"خطا","err");}
+    finally{if(btn){btn.disabled=false;btn.textContent=prev||"بروزرسانی پنل از GitHub";}}
   });
 
 
