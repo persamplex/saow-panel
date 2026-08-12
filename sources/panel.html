@@ -874,8 +874,7 @@ table tbody tr{height:auto}
               <div class="field"><label>صاحب کارت</label>
                 <input type="text" id="shopCardHolder" placeholder="نام و نام خانوادگی" />
               </div>
-              <div class="row" style="margin:8px 0 10px"><span>فروش فعال</span><div class="switch" id="swShopSales"></div></div>
-              <button type="button" class="btn btn-primary" id="btnSaveShopPay" style="width:100%">ذخیره</button>
+              <button type="button" class="btn btn-primary" id="btnSaveShopPay" style="width:100%">ذخیره کارت</button>
             </div>
             <div class="rev-card" id="shopRevCard">
               <div class="rev-card-top">
@@ -1069,7 +1068,9 @@ table tbody tr{height:auto}
           <div class="field"><label>کانال</label>
             <input type="text" id="shopSponsor" placeholder="@channel یا t.me/..." style="direction:ltr;text-align:left" />
           </div>
-          <button type="button" class="btn btn-primary" id="btnSaveTgSponsor" style="width:100%;margin-top:8px">ذخیره کانال</button>
+          <div class="row" style="margin:12px 0 8px"><span>فروش فعال (ربات)</span><div class="switch" id="swShopSales"></div></div>
+          <p style="font-size:11px;color:var(--text-muted);margin:0 0 8px">خاموش = خرید کانفیگ در ربات بسته می‌شود</p>
+          <button type="button" class="btn btn-primary" id="btnSaveTgSponsor" style="width:100%;margin-top:8px">ذخیره کانال و فروش</button>
         </div>
         <div class="setting-block" style="margin:0">
           <h4>گزارش‌های اعلان</h4>
@@ -1376,7 +1377,7 @@ table tbody tr{height:auto}
     if(activeNodes<=0){
       return {
         ok:false,
-        msg:"هنوز هیچ نود فعالی ندارید.\nابتدا از بخش «نودها» یک نود بسازید تا معماری نود‌بیس آماده شود، بعد کاربر اضافه کنید."
+        msg:"بدون نود فعال نمی‌توان کاربر ساخت.\n\nمعماری این پنل نود‌بیس است: هر کلاینت VPN به یک «نود فرزند» (Worker) وصل می‌شود و مادر فقط مدیریت و ساب را انجام می‌دهد. بدون حداقل یک نود سالم، لینک ساب خالی می‌ماند و اتصال برقرار نمی‌شود.\n\nاز منوی «نودها» یک نود بسازید (با API Token کلودفلر)، صبر کنید آنلاین شود، بعد کاربر اضافه کنید."
       };
     }
     return {ok:true};
@@ -2876,27 +2877,27 @@ function openMapProvince(provinceName){
     }
   });
   document.getElementById("btnReloadShop").addEventListener("click",()=>loadShop());
+  document.getElementById("btnSaveShopPay")?.addEventListener("click", async ()=>{
+    try{
+      await api("/api/shop/settings", { method:"POST", body: JSON.stringify({
+        shop_card_number: document.getElementById("shopCardNumber")?.value?.trim()||"",
+        shop_card_holder: document.getElementById("shopCardHolder")?.value?.trim()||""
+      })});
+      toast("اطلاعات کارت ذخیره شد","ok");
+    }catch(e){ toast(e.message||"خطا","err"); }
+  });
   document.getElementById("swShopSales")?.addEventListener("click", function(){
     const on = !(this.dataset.on==="1");
     this.dataset.on = on ? "1" : "0";
     this.classList.toggle("on", on);
   });
-  document.getElementById("btnSaveShopPay")?.addEventListener("click", async ()=>{
-    try{
-      await api("/api/shop/settings", { method:"POST", body: JSON.stringify({
-        shop_card_number: document.getElementById("shopCardNumber")?.value?.trim()||"",
-        shop_card_holder: document.getElementById("shopCardHolder")?.value?.trim()||"",
-        shop_sales_enabled: document.getElementById("swShopSales")?.dataset?.on === "1" ? "1" : "0"
-      })});
-      toast("تنظیمات فروش ذخیره شد","ok");
-    }catch(e){ toast(e.message||"خطا","err"); }
-  });
   document.getElementById("btnSaveTgSponsor")?.addEventListener("click", async ()=>{
     try{
       await api("/api/shop/settings", { method:"POST", body: JSON.stringify({
-        shop_sponsor_channel: document.getElementById("shopSponsor")?.value?.trim()||""
+        shop_sponsor_channel: document.getElementById("shopSponsor")?.value?.trim()||"",
+        shop_sales_enabled: document.getElementById("swShopSales")?.dataset?.on === "1" ? "1" : "0"
       })});
-      toast("کانال ذخیره شد","ok");
+      toast("تنظیمات ربات ذخیره شد","ok");
     }catch(e){ toast(e.message||"خطا","err"); }
   });
   document.getElementById("btnTgMsgSave")?.addEventListener("click", async ()=>{
@@ -3026,6 +3027,8 @@ function openMapProvince(provinceName){
         const j=document.getElementById("tgMsgJoin"); if(j) j.value=s.tg_msg_join||"";
         const so=document.getElementById("tgMsgSalesOff"); if(so) so.value=s.tg_msg_sales_off||"";
         const ch=document.getElementById("shopSponsor"); if(ch) ch.value=s.shop_sponsor_channel||"";
+        const sws=document.getElementById("swShopSales");
+        if(sws){ const on=String(s.shop_sales_enabled||"1")!=="0"; sws.classList.toggle("on", on); sws.dataset.on=on?"1":"0"; }
       }catch{}
       const r=await api("/api/telegram/config");
       if(!r||!r.ok)return;
