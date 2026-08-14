@@ -1097,7 +1097,7 @@ table tbody tr{height:auto}
               <button type="button" class="btn btn-danger-soft" id="btnTgDelete">حذف</button>
             </div>
             <button type="button" class="btn" style="width:100%;margin-top:8px" id="btnTgResetAdmin">ریست ادمین (نفر بعدی /start)</button>
-            <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgUpdateBot">آپدیت ربات از GitHub</button>
+            <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgUpdateBot">آپدیت ربات</button>
             <p id="tgStatus2" style="font-size:11px;color:var(--text-muted);margin-top:6px"></p>
           </div>
         </div>
@@ -1148,11 +1148,11 @@ table tbody tr{height:auto}
         <div class="setting-block"><h4>سیستم</h4>
           <div class="row"><span>نسخه مادر</span><span id="sysVersion" style="color:var(--accent)">—</span></div>
           <div class="row"><span>حالت</span><span class="badge badge-info">Push</span></div>
-          <div class="row"><span>آخرین مادر (GitHub)</span><span id="sysMotherRemote" style="font-size:12px">—</span></div>
-          <div class="row"><span>آخرین نود (GitHub)</span><span id="sysChildRemote" style="font-size:12px">—</span></div>
+          <div class="row"><span>آخرین نسخه مادر</span><span id="sysMotherRemote" style="font-size:12px">—</span></div>
+          <div class="row"><span>آخرین نسخه نود</span><span id="sysChildRemote" style="font-size:12px">—</span></div>
           <p id="sysUpdateHint" style="font-size:12px;color:var(--warning);margin:8px 0 0;line-height:1.55;display:none"></p>
-          <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnUpdateMother" type="button">بروزرسانی پنل از GitHub</button>
-          <button class="btn" style="width:100%;margin-top:8px" id="btnCheckVersions" type="button">بررسی آپدیت GitHub</button>
+          <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnUpdateMother" type="button">بروزرسانی پنل</button>
+          <button class="btn" style="width:100%;margin-top:8px" id="btnCheckVersions" type="button">بررسی آپدیت</button>
           <button class="btn" style="width:100%;margin-top:8px" id="btnLogout" type="button">خروج</button>
         </div>
         <div class="setting-block" style="margin:0">
@@ -3242,10 +3242,10 @@ function openMapProvince(provinceName){
       if(sv) sv.textContent=m.local;
     }
     const hints=[];
-    if(m.update_available) hints.push("آپدیت مادر موجود است: "+(m.local||"?")+" → "+(m.remote||"?"));
-    if(c.update_available){
+    if(m.update_available && m.remote) hints.push("آپدیت مادر موجود است: "+(m.local||"?")+" → "+m.remote);
+    if(c.update_available && c.remote){
       const nodes=(c.outdated_nodes||[]).slice(0,5).join("، ");
-      hints.push("نسخه جدید نود روی GitHub: "+(c.remote||"?")+(nodes?(" — قدیمی: "+nodes):""));
+      hints.push("نسخه جدید نود: "+c.remote+(nodes?(" — قدیمی: "+nodes):""));
     }
     if(elH){
       if(hints.length){
@@ -3276,20 +3276,20 @@ function openMapProvince(provinceName){
       if(!r||!r.ok) throw new Error((r&&r.err)||"بررسی ناموفق");
       applyVersionCheck(r);
       if(r.mother&&r.mother.update_available) toast("آپدیت مادر موجود: "+r.mother.remote,"warn");
-      else if(r.child&&r.child.update_available) toast("نسخه جدید نود روی GitHub: "+r.child.remote,"warn");
+      else if(r.child&&r.child.update_available) toast("نسخه جدید نود: "+r.child.remote,"warn");
       else toast("نسخه‌ها بررسی شد","ok");
     }catch(e){toast(e.message||"خطا","err");}
-    finally{if(btn){btn.disabled=false;btn.textContent=prev||"بررسی آپدیت GitHub";}}
+    finally{if(btn){btn.disabled=false;btn.textContent=prev||"بررسی آپدیت";}}
   }
   document.getElementById("btnCheckVersions")?.addEventListener("click",()=>checkVersions());
   document.getElementById("btnLogout").addEventListener("click",logout);
   document.getElementById("btnUpdateMother")?.addEventListener("click",async()=>{
-    if(!confirm("بروزرسانی مادر از GitHub؟\nاگر توکن CF منقضی شده باشد بعداً از شما پرسیده می‌شود."))return;
+    if(!confirm("بروزرسانی پنل؟\nاگر توکن CF منقضی شده باشد بعداً از شما پرسیده می‌شود."))return;
     const btn=document.getElementById("btnUpdateMother");
     const prev=btn?btn.textContent:"";
     if(btn){btn.disabled=true;btn.textContent="در حال بروزرسانی…";}
     try{
-      toast("در حال بروزرسانی از GitHub…","ok");
+      toast("در حال بروزرسانی…","ok");
       let r=await api("/api/update",{method:"POST",body:"{}"});
       if(!r||!r.ok){
         const err=String((r&&r.err)||"");
@@ -3303,7 +3303,7 @@ function openMapProvince(provinceName){
       toast("بروزرسانی انجام شد · v"+(r.v||""),"ok");
       setTimeout(()=>location.reload(),1500);
     }catch(e){toast(e.message||"خطا","err");}
-    finally{if(btn){btn.disabled=false;btn.textContent=prev||"بروزرسانی پنل از GitHub";}}
+    finally{if(btn){btn.disabled=false;btn.textContent=prev||"بروزرسانی پنل";}}
   });
 
 
@@ -3512,7 +3512,7 @@ function openMapProvince(provinceName){
       }
       loadTelegram();
     }catch(e){toast(e.message||"خطا","err");}
-    finally{if(btn){btn.disabled=false;btn.textContent=prev||"آپدیت ربات از GitHub";}}
+    finally{if(btn){btn.disabled=false;btn.textContent=prev||"آپدیت ربات";}}
   });
   document.getElementById("btnSendBackupNow")?.addEventListener("click",async()=>{
     toast("در حال ارسال بکاپ…");
