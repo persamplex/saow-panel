@@ -1170,9 +1170,16 @@ table tbody tr{height:auto}
               <button type="button" class="btn" id="btnTestProxy" style="white-space:nowrap;flex-shrink:0">تست پروکسی</button>
             </div>
           </div>
-          <div class="field" style="margin-top:8px">
+          <div class="field" style="margin-top:10px">
+            <label style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer">
+              <input type="checkbox" id="egressFallback" style="width:18px;height:18px;accent-color:var(--accent)" />
+              <span>Fallback Proxy</span>
+              <span class="stat-warn" data-tip="اگر فعال باشد، ابتدا اتصال مستقیم امتحان می‌شود؛ اگر سایت (مثلاً پشت کلودفلر) باز نشد، خودکار از پروکسی خروجی رد می‌شود.&#10;با فعال بودن این گزینه، لیست دامنه مخفی می‌شود و برای همه مقصدها (به‌جز استثناها) اعمال می‌گردد.">!</span>
+            </label>
+          </div>
+          <div id="egressDomainsWrap" class="field" style="margin-top:8px;overflow:hidden;transition:max-height .28s ease,opacity .28s ease,margin .28s ease">
             <label style="display:flex;align-items:center;gap:6px">دامنه‌ها (با کاما جدا کنید)
-              <span class="stat-warn" data-tip="این دامنه‌ها از طریق پروکسی تنظیم‌شده رد می‌شوند. بقیه ترافیک مستقیم است.&#10;از وایلدکارد مثل *.chatgpt.com پشتیبانی می‌شود.&#10;مثال: *.openai.com, speedtest.net, chatgpt.com">!</span>
+              <span class="stat-warn" data-tip="این دامنه‌ها از طریق پروکسی تنظیم‌شده رد می‌شوند. بقیه ترافیک مستقیم است.&#10;از وایلدکارد مثل *.chatgpt.com پشتیبانی می‌شود.">!</span>
             </label>
             <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
           </div>
@@ -1302,8 +1309,25 @@ table tbody tr{height:auto}
       <button class="btn" type="button" id="nodeDetailSync">همگام‌سازی</button>
       <button class="btn btn-warn-soft" type="button" id="nodeDetailExclude">خارج از ساب</button>
       <button class="btn btn-ok-soft" type="button" id="nodeDetailToggle">قفل / باز</button>
-      <button class="btn" type="button" id="nodeDetailUpdate" title="نصب مجدد از گیت‌هاب">آپدیت نود</button>
+      <button class="btn" type="button" id="nodeDetailLiveLog" title="لاگ زنده نود (حداکثر ۵ دقیقه)">لاگ زنده</button>
+      <button class="btn" type="button" id="nodeDetailUpdate" title="فقط آپدیت کد — بدون حذف D1 و بایندینگ">آپدیت نود</button>
       <button class="btn" type="button" id="nodeDetailClose2">بستن</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="liveLogOverlay">
+  <div class="modal" style="max-width:min(720px,96vw);max-height:90vh;display:flex;flex-direction:column">
+    <div class="modal-h">
+      <h3 id="liveLogTitle" style="margin:0">لاگ زنده نود</h3>
+      <button class="icon-btn" type="button" id="liveLogClose">✕</button>
+    </div>
+    <div class="modal-b" style="flex:1;overflow:auto;padding-top:8px">
+      <p id="liveLogStatus" style="font-size:12px;color:var(--text-muted);margin:0 0 8px">در حال اتصال…</p>
+      <pre id="liveLogBody" dir="ltr" style="text-align:left;font-size:11px;line-height:1.45;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:55vh;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:0"></pre>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" type="button" id="liveLogRefresh">تازه‌سازی</button>
+      <button class="btn btn-primary" type="button" id="liveLogClose2">بستن و خاموش کردن لاگ</button>
     </div>
   </div>
 </div>
@@ -2726,6 +2750,12 @@ function openMapProvince(provinceName){
         ["خارج از ساب",n.exclude_sub===1?"بله (در ساب نمی‌آید)":"خیر (در ساب هست)"],
         ["Account ID",n.account_id||"—"],
         ["DB",n.db_name||n.db_id||"—"],
+        ["ردیف‌های D1", (function(){
+          const d=n.d1_rows;
+          if(!d) return "—";
+          if(typeof d.total==="number") return faNum(d.total)+" (users "+faNum(d.users||0)+" · ips "+faNum(d.active_ips||0)+" · logs "+faNum(d.logs||0)+")";
+          return String(d);
+        })()],
         ["ایجاد",n.created_at?new Date(Number(n.created_at)).toLocaleString("fa-IR"):"—"],
       ];
       const exclBtn=document.getElementById("nodeDetailExclude");
@@ -2795,14 +2825,76 @@ function openMapProvince(provinceName){
   });
   document.getElementById("nodeDetailUpdate").addEventListener("click",async()=>{
     if(!selectedNodeId)return;
-    if(!confirm("آپدیت/نصب مجدد این نود؟ ممکن است چند دقیقه طول بکشد."))return;
-    toast("در حال آپدیت نود...","ok");
+    if(!confirm("فقط کد ورکر به آخرین نسخه آپدیت می‌شود.\nD1 و بایندینگ‌ها حفظ می‌شوند."))return;
+    toast("در حال آپدیت کد نود...","ok");
     try{
       const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/update",{method:"POST"});
-      toast(r.ok?("آپدیت شد → "+(r.new||"")):(r.err||"ناموفق"),r.ok?"ok":"err");
-      closeNodeDetail();loadNodes();
+      toast(r.ok?("کد آپدیت شد"+(r.version?(" · v"+r.version):"")):(r.err||"ناموفق"),r.ok?"ok":"err");
+      openNodeDetail(selectedNodeId);loadNodes();
     }catch(e){toast(e.message,"err");}
   });
+
+  let _liveLogTimer=null,_liveLogNodeId=null,_liveLogDeadline=0;
+  async function stopLiveLog(nodeId){
+    if(_liveLogTimer){clearInterval(_liveLogTimer);_liveLogTimer=null;}
+    const id=nodeId||_liveLogNodeId;
+    _liveLogNodeId=null;
+    if(!id) return;
+    try{
+      await api("/api/nodes/"+encodeURIComponent(id)+"/live-log",{method:"POST",body:JSON.stringify({enable:false})});
+    }catch{}
+  }
+  async function refreshLiveLogBody(){
+    if(!_liveLogNodeId) return;
+    if(_liveLogDeadline && Date.now()>_liveLogDeadline){
+      document.getElementById("liveLogStatus").textContent="زمان لاگ زنده تمام شد (۵ دقیقه) — خاموش شد";
+      await stopLiveLog(_liveLogNodeId);
+      return;
+    }
+    try{
+      const r=await api("/api/nodes/"+encodeURIComponent(_liveLogNodeId)+"/live-log?limit=100");
+      const lines=(r.mem||[]).map(x=>{
+        const t=x.ts?new Date(x.ts).toISOString().slice(11,19):"";
+        return `[${t}] ${x.level||"info"} ${x.msg||""} ${x.extra||""}`;
+      });
+      const pre=document.getElementById("liveLogBody");
+      if(pre){ pre.textContent=lines.length?lines.join("\n"):"(هنوز لاگی نیست — ترافیک بفرستید)"; pre.scrollTop=pre.scrollHeight; }
+      const left=_liveLogDeadline?Math.max(0,Math.floor((_liveLogDeadline-Date.now())/1000)):0;
+      document.getElementById("liveLogStatus").textContent="زنده · باقی‌مانده "+left+"s · فقط mem (بدون فشار D1)";
+    }catch(e){
+      document.getElementById("liveLogStatus").textContent="خطا: "+(e.message||e);
+    }
+  }
+  async function openLiveLog(nodeId, title){
+    _liveLogNodeId=nodeId;
+    _liveLogDeadline=Date.now()+5*60*1000;
+    document.getElementById("liveLogTitle").textContent="لاگ زنده — "+(title||nodeId);
+    document.getElementById("liveLogStatus").textContent="در حال فعال‌سازی لاگ…";
+    document.getElementById("liveLogBody").textContent="";
+    document.getElementById("liveLogOverlay").classList.add("open");
+    try{
+      await api("/api/nodes/"+encodeURIComponent(nodeId)+"/live-log",{method:"POST",body:JSON.stringify({enable:true,ttl_sec:300})});
+      document.getElementById("liveLogStatus").textContent="متصل شد";
+      await refreshLiveLogBody();
+      if(_liveLogTimer) clearInterval(_liveLogTimer);
+      _liveLogTimer=setInterval(refreshLiveLogBody, 2500);
+    }catch(e){
+      document.getElementById("liveLogStatus").textContent="اتصال ناموفق: "+(e.message||e);
+    }
+  }
+  function closeLiveLogUI(){
+    document.getElementById("liveLogOverlay")?.classList.remove("open");
+    stopLiveLog(_liveLogNodeId);
+  }
+  document.getElementById("nodeDetailLiveLog")?.addEventListener("click",()=>{
+    if(!selectedNodeId)return;
+    const n=(window._nodesCache||[]).find(x=>String(x.id)===String(selectedNodeId));
+    openLiveLog(selectedNodeId, n?.script_name||selectedNodeId);
+  });
+  document.getElementById("liveLogClose")?.addEventListener("click",closeLiveLogUI);
+  document.getElementById("liveLogClose2")?.addEventListener("click",closeLiveLogUI);
+  document.getElementById("liveLogRefresh")?.addEventListener("click",()=>refreshLiveLogBody());
+  document.getElementById("liveLogOverlay")?.addEventListener("click",e=>{ if(e.target.id==="liveLogOverlay") closeLiveLogUI(); });
   document.getElementById("btnUpdateAllNodes").addEventListener("click",async()=>{
     const list=nodesCache.managed||[];
     if(!list.length){toast("نودی نیست","err");return;}
@@ -3200,6 +3292,26 @@ function openMapProvince(provinceName){
     }
   });
   
+  function setEgressDomainsVisible(show){
+    const wrap=document.getElementById("egressDomainsWrap");
+    if(!wrap) return;
+    if(show){
+      wrap.style.maxHeight=wrap.scrollHeight+80+"px";
+      wrap.style.opacity="1";
+      wrap.style.marginTop="8px";
+      wrap.style.pointerEvents="auto";
+    }else{
+      wrap.style.maxHeight="0px";
+      wrap.style.opacity="0";
+      wrap.style.marginTop="0";
+      wrap.style.pointerEvents="none";
+    }
+  }
+  function syncEgressFallbackUI(){
+    const on=!!document.getElementById("egressFallback")?.checked;
+    setEgressDomainsVisible(!on);
+  }
+  document.getElementById("egressFallback")?.addEventListener("change",syncEgressFallbackUI);
   async function loadProxySettings(){
     try{
       const r=await api("/api/proxy-settings");
@@ -3214,6 +3326,10 @@ function openMapProvince(provinceName){
       }
       const de=document.getElementById("egressDomains");
       if(de) de.value=r.domains||"";
+      const fb=document.getElementById("egressFallback");
+      if(fb) fb.checked=!!r.fallback;
+      // بعد از layout
+      requestAnimationFrame(()=>syncEgressFallbackUI());
     }catch{}
   }
   document.getElementById("btnSaveProxy")?.addEventListener("click",async()=>{
@@ -3225,7 +3341,8 @@ function openMapProvince(provinceName){
       }
       const r=await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
         proxy:proxyVal,
-        domains:document.getElementById("egressDomains")?.value?.trim()||""
+        domains:document.getElementById("egressDomains")?.value?.trim()||"",
+        fallback:!!document.getElementById("egressFallback")?.checked
       })});
       const pu=r&&r.nodes_updated;
       if(pu&&pu.errors&&pu.errors.length){
