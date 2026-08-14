@@ -1173,12 +1173,37 @@ table tbody tr{height:auto}
             </label>
             <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
           </div>
-          <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnSaveProxy">ذخیره پروکسی</button>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button type="button" class="btn btn-primary" style="flex:1" id="btnSaveProxy">ذخیره پروکسی</button>
+            <button type="button" class="btn" style="flex:1" id="btnProxyStore">فروشگاه پروکسی</button>
+          </div>
           <p id="proxyTestResult" style="font-size:11px;color:var(--text-muted);margin-top:6px;min-height:0"></p>
         </div>
       </div>
     </section>
   </main>
+</div>
+<div class="overlay" id="proxyStoreOverlay">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-h"><h3>فروشگاه پروکسی</h3><button class="icon-btn" type="button" id="proxyStoreClose">✕</button></div>
+    <div class="modal-b" style="padding-top:14px">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <select id="proxyStoreSource" style="flex:1;min-width:120px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
+          <option value="both">همه (رایگان + VIP)</option>
+          <option value="free">فقط رایگان</option>
+          <option value="vip">فقط VIP</option>
+        </select>
+        <button type="button" class="btn" id="btnProxyStoreRefresh" style="white-space:nowrap">بروزرسانی کشورها</button>
+      </div>
+      <div id="proxyStoreCountries" style="display:flex;flex-wrap:wrap;gap:6px;max-height:140px;overflow:auto;margin-bottom:12px;padding:2px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">
+        <div id="proxyStoreListTitle" style="font-size:12px;color:var(--text-muted)">یک کشور را انتخاب کنید</div>
+        <button type="button" class="btn" id="btnProxyStorePingAll" style="display:none;white-space:nowrap;font-size:12px;padding:6px 10px">پینگ همه</button>
+      </div>
+      <div id="proxyStoreList" style="max-height:42vh;overflow:auto;display:flex;flex-direction:column;gap:6px"></div>
+      <p id="proxyStoreStatus" style="font-size:11px;color:var(--text-muted);margin-top:10px;min-height:16px"></p>
+    </div>
+  </div>
 </div>
 <div class="overlay" id="userOverlay">
   <div class="modal">
@@ -3228,6 +3253,186 @@ function openMapProvince(provinceName){
       toast(e.message||"خطا","err");
     }
   });
+
+  // ── فروشگاه پروکسی ──
+  let _proxyStoreCountries=[];
+  let _proxyStoreItems=[];
+  let _proxyStoreCc="";
+  function maskProxy(p){
+    try{
+      return String(p||"").replace(/:\/\/([^:@/]+):([^@/]+)@/,"://$1:***@");
+    }catch{return p;}
+  }
+  function openProxyStore(){
+    const ov=document.getElementById("proxyStoreOverlay");
+    if(ov) ov.classList.add("open");
+    if(!_proxyStoreCountries.length) loadProxyStoreCountries();
+  }
+  function closeProxyStore(){
+    const ov=document.getElementById("proxyStoreOverlay");
+    if(ov) ov.classList.remove("open");
+  }
+  async function loadProxyStoreCountries(){
+    const box=document.getElementById("proxyStoreCountries");
+    const st=document.getElementById("proxyStoreStatus");
+    if(st) st.textContent="در حال دریافت کشورها…";
+    if(box) box.innerHTML='<span style="font-size:12px;color:var(--text-muted)">…</span>';
+    try{
+      const r=await api("/api/proxy-store/countries");
+      if(!r||!r.ok) throw new Error((r&&r.err)||"ناموفق");
+      _proxyStoreCountries=r.countries||[];
+      renderProxyStoreCountries();
+      if(st) st.textContent="کشورها: "+faNum(_proxyStoreCountries.length)+" · رایگان: "+faNum(r.free_count||0)+" · VIP: "+faNum(r.vip_count||0);
+    }catch(e){
+      if(box) box.innerHTML="";
+      if(st) st.textContent=e.message||"خطا";
+      toast(e.message||"خطا در دریافت کشورها","err");
+    }
+  }
+  function renderProxyStoreCountries(){
+    const box=document.getElementById("proxyStoreCountries");
+    if(!box) return;
+    if(!_proxyStoreCountries.length){box.innerHTML='<span style="font-size:12px;color:var(--text-muted)">کشوری نیست</span>';return;}
+    box.innerHTML=_proxyStoreCountries.map(c=>{
+      const active=_proxyStoreCc===c.cc?'outline:2px solid var(--accent);':'';
+      const badge=c.vip&&c.free?' · F+V':(c.vip?' · VIP':(c.free?' · F':''));
+      return `<button type="button" class="btn" data-cc="${esc(c.cc)}" style="padding:6px 10px;font-size:12px;${active}">${c.flag||""} ${esc(c.cc)}${badge}</button>`;
+    }).join("");
+    box.querySelectorAll("button[data-cc]").forEach(btn=>{
+      btn.addEventListener("click",()=>loadProxyStoreList(btn.getAttribute("data-cc")));
+    });
+  }
+  async function loadProxyStoreList(cc){
+    _proxyStoreCc=cc;
+    renderProxyStoreCountries();
+    const list=document.getElementById("proxyStoreList");
+    const title=document.getElementById("proxyStoreListTitle");
+    const st=document.getElementById("proxyStoreStatus");
+    const pingBtn=document.getElementById("btnProxyStorePingAll");
+    const source=document.getElementById("proxyStoreSource")?.value||"both";
+    if(title) title.textContent=(countryFlagEmojiClient(cc)||"")+" "+cc+" — در حال بارگذاری…";
+    if(list) list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px">…</div>';
+    if(pingBtn) pingBtn.style.display="none";
+    try{
+      const r=await api("/api/proxy-store/list?cc="+encodeURIComponent(cc)+"&source="+encodeURIComponent(source)+"&limit=40");
+      if(!r||!r.ok) throw new Error((r&&r.err)||"ناموفق");
+      _proxyStoreItems=(r.proxies||[]).map(p=>({...p, ms:null, ok:null, pinging:false}));
+      if(title) title.textContent=(r.flag||"")+" "+cc+" · "+faNum(_proxyStoreItems.length)+" پروکسی";
+      renderProxyStoreList();
+      if(pingBtn) pingBtn.style.display=_proxyStoreItems.length?"inline-flex":"none";
+      if(st) st.textContent="برای پینگ روی «پینگ همه» بزنید یا تک‌تک تست کنید";
+    }catch(e){
+      if(list) list.innerHTML="";
+      if(title) title.textContent=cc;
+      if(st) st.textContent=e.message||"خطا";
+      toast(e.message||"خطا","err");
+    }
+  }
+  function countryFlagEmojiClient(cc){
+    const code=String(cc||"").toUpperCase();
+    if(!/^[A-Z]{2}$/.test(code)||code==="AA") return "🌐";
+    const A=0x1F1E6;
+    return String.fromCodePoint(A+code.charCodeAt(0)-65,A+code.charCodeAt(1)-65);
+  }
+  function renderProxyStoreList(){
+    const list=document.getElementById("proxyStoreList");
+    if(!list) return;
+    if(!_proxyStoreItems.length){
+      list.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px">پروکسی‌ای پیدا نشد</div>';
+      return;
+    }
+    list.innerHTML=_proxyStoreItems.map((it,idx)=>{
+      let pingHtml='<span style="color:var(--text-muted);font-size:11px;min-width:52px;text-align:left" dir="ltr">—</span>';
+      if(it.pinging) pingHtml='<span style="color:var(--text-muted);font-size:11px;min-width:52px" dir="ltr">…</span>';
+      else if(it.ok===true) pingHtml='<span style="color:var(--success);font-size:11px;min-width:52px;font-weight:600" dir="ltr">'+(it.ms!=null?it.ms+"ms":"ok")+'</span>';
+      else if(it.ok===false) pingHtml='<span style="color:var(--danger);font-size:11px;min-width:52px" dir="ltr">fail</span>';
+      const src=it.source==="vip"?'<span class="badge badge-info" style="font-size:10px">VIP</span>':'<span class="badge" style="font-size:10px;opacity:.7">Free</span>';
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg)">
+        <span style="font-size:16px">${it.flag||""}</span>
+        ${src}
+        <code style="flex:1;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:ltr;text-align:left" title="${esc(it.proxy)}">${esc(maskProxy(it.proxy))}</code>
+        ${pingHtml}
+        <button type="button" class="btn" data-ping="${idx}" style="padding:5px 8px;font-size:11px">پینگ</button>
+        <button type="button" class="btn btn-primary" data-add="${idx}" style="padding:5px 10px;font-size:11px">افزودن</button>
+      </div>`;
+    }).join("");
+    list.querySelectorAll("button[data-add]").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const i=Number(btn.getAttribute("data-add"));
+        const it=_proxyStoreItems[i];
+        if(!it) return;
+        const inp=document.getElementById("egressProxy");
+        if(inp) inp.value=it.proxy;
+        toast("پروکسی به باکس اضافه شد — ذخیره را بزنید","ok");
+        closeProxyStore();
+      });
+    });
+    list.querySelectorAll("button[data-ping]").forEach(btn=>{
+      btn.addEventListener("click",()=>pingProxyStoreOne(Number(btn.getAttribute("data-ping"))));
+    });
+  }
+  async function pingProxyStoreOne(idx){
+    const it=_proxyStoreItems[idx];
+    if(!it) return;
+    it.pinging=true; it.ok=null; it.ms=null;
+    renderProxyStoreList();
+    try{
+      const r=await api("/api/proxy-store/ping",{method:"POST",body:JSON.stringify({proxies:[it.proxy]})});
+      const row=(r&&r.results&&r.results[0])||null;
+      it.pinging=false;
+      if(row){ it.ok=!!row.ok; it.ms=row.ms; }
+      else { it.ok=false; }
+    }catch{
+      it.pinging=false; it.ok=false;
+    }
+    renderProxyStoreList();
+  }
+  async function pingProxyStoreAll(){
+    if(!_proxyStoreItems.length) return;
+    const st=document.getElementById("proxyStoreStatus");
+    const btn=document.getElementById("btnProxyStorePingAll");
+    if(btn){btn.disabled=true;btn.textContent="در حال پینگ…";}
+    // batch 10 at a time
+    for(let i=0;i<_proxyStoreItems.length;i+=10){
+      const chunk=_proxyStoreItems.slice(i,i+10);
+      chunk.forEach(it=>{it.pinging=true;});
+      renderProxyStoreList();
+      try{
+        const r=await api("/api/proxy-store/ping",{method:"POST",body:JSON.stringify({proxies:chunk.map(x=>x.proxy)})});
+        const results=(r&&r.results)||[];
+        results.forEach((row,j)=>{
+          const it=chunk[j];
+          if(!it) return;
+          it.pinging=false;
+          it.ok=!!row.ok;
+          it.ms=row.ms;
+        });
+      }catch{
+        chunk.forEach(it=>{it.pinging=false;it.ok=false;});
+      }
+      renderProxyStoreList();
+      if(st){
+        const ok=_proxyStoreItems.filter(x=>x.ok===true).length;
+        const fail=_proxyStoreItems.filter(x=>x.ok===false).length;
+        st.textContent="پینگ: "+faNum(ok)+" موفق · "+faNum(fail)+" ناموفق · "+faNum(_proxyStoreItems.length)+" کل";
+      }
+    }
+    // sort ok first by ms
+    _proxyStoreItems.sort((a,b)=>{
+      if(a.ok===true && b.ok!==true) return -1;
+      if(b.ok===true && a.ok!==true) return 1;
+      if(a.ok===true && b.ok===true) return (a.ms||99999)-(b.ms||99999);
+      return 0;
+    });
+    renderProxyStoreList();
+    if(btn){btn.disabled=false;btn.textContent="پینگ همه";}
+  }
+  document.getElementById("btnProxyStore")?.addEventListener("click",openProxyStore);
+  document.getElementById("proxyStoreClose")?.addEventListener("click",closeProxyStore);
+  document.getElementById("proxyStoreOverlay")?.addEventListener("click",e=>{if(e.target&&e.target.id==="proxyStoreOverlay")closeProxyStore();});
+  document.getElementById("btnProxyStoreRefresh")?.addEventListener("click",()=>loadProxyStoreCountries());
+  document.getElementById("btnProxyStorePingAll")?.addEventListener("click",()=>pingProxyStoreAll());
+  document.getElementById("proxyStoreSource")?.addEventListener("change",()=>{if(_proxyStoreCc) loadProxyStoreList(_proxyStoreCc);});
 
   function applyVersionCheck(r){
     if(!r||!r.ok) return;
