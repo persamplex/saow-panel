@@ -792,6 +792,24 @@ table tbody tr{height:auto}
   .nodes-head-hint{order:-1}
 }
 
+
+.push-toggle{position:relative;display:inline-flex;align-items:center;gap:10px;min-width:112px;height:40px;padding:4px 14px 4px 6px;border-radius:999px;border:1px solid var(--border);cursor:pointer;font-size:13px;font-weight:600;transition:background .2s,border-color .2s,box-shadow .2s;user-select:none}
+.push-toggle .push-toggle-knob{width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:transform .22s ease}
+.push-toggle.off{background:rgba(255,255,255,.06);color:var(--text-muted)}
+.push-toggle.off .push-toggle-knob{transform:translateX(0);background:#94a3b8}
+.push-toggle.on{background:linear-gradient(135deg,#0ea5e9,#6366f1);border-color:transparent;color:#fff;box-shadow:0 0 0 1px rgba(14,165,233,.35),0 8px 20px rgba(14,165,233,.25)}
+.push-toggle.on .push-toggle-knob{transform:translateX(4px);background:#fff}
+.push-toggle-label{min-width:48px;text-align:center}
+.ch-ratio{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;direction:ltr}
+.ch-ratio.ok{background:rgba(34,197,94,.15);color:#4ade80}
+.ch-ratio.mid{background:rgba(234,179,8,.15);color:#facc15}
+.ch-ratio.bad{background:rgba(239,68,68,.15);color:#f87171}
+.ch-ratio.na{background:rgba(255,255,255,.06);color:var(--text-muted)}
+.ch-bars{display:flex;gap:3px;align-items:flex-end;height:28px;margin-top:10px;flex-wrap:nowrap;overflow-x:auto}
+.ch-bars span{flex:1;min-width:8px;max-width:14px;border-radius:3px 3px 1px 1px;background:rgba(255,255,255,.12)}
+.ch-bars span.on{background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.4)}
+.ch-bars span.off{background:rgba(248,113,113,.35)}
+
 </style>
 </head>
 <body>
@@ -815,6 +833,7 @@ table tbody tr{height:auto}
       <div class="nav-item active" data-sec="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>داشبورد</div>
       <div class="nav-item" data-sec="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>کاربران<span class="count" id="navUsersCount">—</span></div>
       <div class="nav-item" data-sec="nodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>نودها<span class="count" id="navNodesCount">—</span></div>
+      <div class="nav-item" data-sec="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>مانیتور</div>
       <div class="nav-section">عملیات</div>
       <div class="nav-item" data-sec="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>فروشگاه</div>
       <div class="nav-item" data-sec="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>بکاپ</div>
@@ -903,6 +922,7 @@ table tbody tr{height:auto}
           <div class="nodes-head-actions">
             <span class="nodes-head-hint">سالم = همگام‌سازی موفق اخیر</span>
             <div class="nodes-head-btns">
+              <button class="btn" type="button" id="btnCheckHostAll">بررسی دسترسی ایران</button>
               <button class="btn" type="button" id="btnUpdateAllNodes">آپدیت همه نودها</button>
               <a class="btn" id="btnCfTokenCreate" href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Saow%20Node" target="_blank" rel="noopener">ساخت توکن کلودفلر</a>
             </div>
@@ -911,6 +931,12 @@ table tbody tr{height:auto}
         <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>نسخه</th><th>کاربران</th><th>ریکوست امروز</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
         <tbody id="nodesBody"><tr><td colspan="7" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
         <div class="pager" id="nodesPager" style="display:none"></div>
+      </div>
+    </section>
+    <section class="section" id="monitor">
+      <div class="page-head"><div><h2>مانیتور</h2><p class="page-desc">به‌زودی — مانیتورینگ زنده نودها</p></div></div>
+      <div class="card" style="padding:48px 20px;text-align:center">
+        <p class="empty-msg" style="margin:0;font-size:15px;color:var(--text-muted)">این بخش به‌زودی فعال می‌شود</p>
       </div>
     </section>
     <section class="section" id="shop">
@@ -1171,11 +1197,14 @@ table tbody tr{height:auto}
             </div>
           </div>
           <div class="field" style="margin-top:10px">
-            <label style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer">
-              <input type="checkbox" id="egressFallback" style="width:18px;height:18px;accent-color:var(--accent)" />
+            <label style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
               <span>Fallback Proxy</span>
               <span class="stat-warn" data-tip="اگر فعال باشد، ترافیک همه سایت‌ها (به‌جز استثناهایی مثل گوگل) از پروکسی خروجی رد می‌شود تا ERR_CONNECTION_CLOSED روی IP کلودفلر پیش نیاید.&#10;لیست دامنه مخفی می‌شود.">!</span>
             </label>
+            <button type="button" id="egressFallback" class="push-toggle off" aria-pressed="false">
+              <span class="push-toggle-knob"></span>
+              <span class="push-toggle-label" data-on="روشن" data-off="خاموش">خاموش</span>
+            </button>
           </div>
           <div id="egressDomainsWrap" class="field" style="margin-top:8px;overflow:hidden;transition:max-height .28s ease,opacity .28s ease,margin .28s ease">
             <label style="display:flex;align-items:center;gap:6px">دامنه‌ها (با کاما جدا کنید)
@@ -1311,7 +1340,22 @@ table tbody tr{height:auto}
       <button class="btn btn-ok-soft" type="button" id="nodeDetailToggle">قفل / باز</button>
       <button class="btn" type="button" id="nodeDetailLiveLog" title="لاگ زنده نود (حداکثر ۵ دقیقه)">لاگ زنده</button>
       <button class="btn" type="button" id="nodeDetailUpdate" title="فقط آپدیت کد — بدون حذف D1 و بایندینگ">آپدیت نود</button>
+      <button class="btn btn-warn-soft" type="button" id="nodeDetailReinstall" title="حذف ورکر و D1 قبلی و ساخت آدرس جدید">نصب مجدد</button>
       <button class="btn" type="button" id="nodeDetailClose2">بستن</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="chDetailOverlay">
+  <div class="modal" style="max-width:min(420px,94vw)">
+    <div class="modal-h">
+      <h3 id="chDetailTitle" style="margin:0">دسترسی از ایران</h3>
+      <button class="icon-btn" type="button" id="chDetailClose">✕</button>
+    </div>
+    <div class="modal-b">
+      <p id="chDetailRatio" style="margin:0 0 8px;font-size:14px;font-weight:600"></p>
+      <div id="chDetailBars" class="ch-bars"></div>
+      <div id="chDetailList" style="margin-top:14px;display:grid;gap:6px;font-size:12.5px"></div>
+      <p id="chDetailLink" style="margin-top:12px;font-size:11px;color:var(--text-muted)"></p>
     </div>
   </div>
 </div>
@@ -2691,9 +2735,14 @@ function openMapProvince(provinceName){
         const disabled=n.is_disabled===1;
         const online=n.online===true||!!alive;
         let statusHtml;
+        const ch=n.check_host;
         if(disabled) statusHtml='<span class="badge badge-off">قفل</span>';
-        else if(online) statusHtml='<span class="badge badge-ok">سالم</span>';
-        else statusHtml='<span class="badge badge-off">آفلاین</span>';
+        else if(ch && ch.total){
+          const oc=Number(ch.ok_count||0), tot=Number(ch.total||0);
+          const cls=oc<=0?"bad":(oc>=tot?"ok":"mid");
+          statusHtml=`<span class="ch-ratio ${cls}" data-ch-id="${esc(id)}" title="دسترسی از ایران (check-host)">${oc}/${tot}</span>`;
+        } else if(online) statusHtml='<span class="ch-ratio na" data-ch-id="'+esc(id)+'" title="هنوز بررسی check-host نشده">—/۸</span>';
+        else statusHtml='<span class="ch-ratio bad" data-ch-id="'+esc(id)+'">۰/۸</span>';
         const activeUsers=online?(alive?.activeUsers??alive?.active_users??n.active_users??0):(n.active_users??"—");
         const lastSeenTs=alive?.lastSeen||alive?.last_seen||n.last_seen;
         const lastSeen=lastSeenTs?relTime(lastSeenTs):"—";
@@ -2723,7 +2772,34 @@ function openMapProvince(provinceName){
           </td></tr>`;
       }).join("");
     tbody.querySelectorAll("[data-nact]").forEach(btn=>btn.addEventListener("click",()=>onNodeAction(btn.dataset.nact,btn.dataset.nid)));
+    tbody.querySelectorAll("[data-ch-id]").forEach(el=>el.addEventListener("click",(e)=>{e.stopPropagation();openCheckHostDetail(el.getAttribute("data-ch-id"));}));
   }
+
+  function openCheckHostDetail(nodeId){
+    const n=(nodesCache.managed||[]).find(x=>String(x.id||x.script_name)===String(nodeId));
+    const ch=n&&n.check_host;
+    const ov=document.getElementById("chDetailOverlay");
+    document.getElementById("chDetailTitle").textContent="دسترسی ایران · "+(n?.script_name||nodeId);
+    if(!ch||!ch.details){
+      document.getElementById("chDetailRatio").textContent="هنوز بررسی نشده — «بررسی دسترسی ایران» یا «تست ارتباط» را بزنید";
+      document.getElementById("chDetailBars").innerHTML="";
+      document.getElementById("chDetailList").innerHTML="";
+      document.getElementById("chDetailLink").textContent="";
+      ov.classList.add("open");
+      return;
+    }
+    document.getElementById("chDetailRatio").textContent=(ch.ok_count||0)+" از "+(ch.total||0)+" سرور ایران در دسترس";
+    document.getElementById("chDetailBars").innerHTML=(ch.details||[]).map(d=>`<span class="${d.ok?"on":"off"}" title="${esc(d.city||"")}"></span>`).join("");
+    document.getElementById("chDetailList").innerHTML=(ch.details||[]).map(d=>{
+      const tms=d.time!=null?(Math.round(d.time*1000)+"ms"):"—";
+      return `<div class="row"><span>${esc(d.city||d.city_en||d.node)}</span><span style="direction:ltr">${d.ok?"✓ "+tms:"✗"}</span></div>`;
+    }).join("");
+    document.getElementById("chDetailLink").innerHTML=ch.permanent_link?`<a href="${esc(ch.permanent_link)}" target="_blank" rel="noopener">گزارش check-host</a>`:"";
+    ov.classList.add("open");
+  }
+  document.getElementById("chDetailClose")?.addEventListener("click",()=>document.getElementById("chDetailOverlay")?.classList.remove("open"));
+  document.getElementById("chDetailOverlay")?.addEventListener("click",e=>{if(e.target.id==="chDetailOverlay")e.currentTarget.classList.remove("open");});
+
 
   function closeNodeDetail(){document.getElementById("nodeDetailOverlay").classList.remove("open");selectedNodeId=null;}
   document.getElementById("nodeDetailClose").addEventListener("click",closeNodeDetail);
@@ -2785,7 +2861,11 @@ function openMapProvince(provinceName){
     try{
       const r=await api("/api/nodes/"+encodeURIComponent(id)+"/test",{method:"POST"});
       const ok=!!r.ok;
-      toast(ok?("متصل · "+(r.latency_ms||"?")+"ms"):("ناموفق: "+(r.err||"")),ok?"ok":"err");
+      const ratio=r.ratio||((r.ok_count!=null&&r.total!=null)?(r.ok_count+"/"+r.total):"");
+      toast(ok?("ایران "+ratio+" · "+(r.latency_ms||"?")+"ms"):("ناموفق: "+(r.err||ratio||"")),ok?"ok":"err");
+      // merge check_host into cache
+      const n=(nodesCache.managed||[]).find(x=>String(x.id||x.script_name)===String(id));
+      if(n && r.details){ n.check_host={ok:r.ok,ok_count:r.ok_count,total:r.total,ratio:r.ratio,details:r.details,at:Date.now(),permanent_link:r.permanent_link}; renderNodes(nodesPage); }
       if(box){
         box.innerHTML=`<div class="setting-block" style="padding:12px;margin-top:8px">
           <div class="row"><span>نتیجه</span><span class="badge ${ok?"badge-ok":"badge-off"}">${ok?"موفق":"ناموفق"}</span></div>
@@ -2833,6 +2913,35 @@ function openMapProvince(provinceName){
     toast("در حال آپدیت کد نود...","ok");
     try{
       const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/update",{method:"POST"});
+
+  document.getElementById("nodeDetailReinstall")?.addEventListener("click",async()=>{
+    if(!selectedNodeId)return;
+    if(!confirm("نصب مجدد؟\nورکر و D1 فعلی حذف و نود با آدرس جدید ساخته می‌شود.\nبرای دامنه فیلترشده استفاده کنید."))return;
+    toast("در حال نصب مجدد...","ok");
+    try{
+      const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/reinstall",{method:"POST"});
+      toast(r.ok?("نصب شد → "+(r.new||r.url||"")):(r.err||"ناموفق"),r.ok?"ok":"err");
+      closeNodeDetail();loadNodes();
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("btnCheckHostAll")?.addEventListener("click",async()=>{
+    const btn=document.getElementById("btnCheckHostAll");
+    if(btn){btn.disabled=true;btn.textContent="در حال بررسی...";}
+    toast("بررسی دسترسی از ایران (check-host)...","ok");
+    try{
+      const r=await api("/api/nodes/check-host",{method:"POST"});
+      if(r&&r.ok){
+        // merge into cache
+        for(const row of (r.results||[])){
+          const n=(nodesCache.managed||[]).find(x=>String(x.id)===String(row.id)||String(x.script_name)===String(row.script_name));
+          if(n) n.check_host={ok:row.ok,ok_count:row.ok_count,total:row.total,ratio:row.ratio,details:row.details,at:Date.now(),permanent_link:row.permanent_link};
+        }
+        renderNodes(nodesPage);
+        toast("بررسی شد: "+faNum((r.results||[]).length)+" نود","ok");
+      } else toast(r.err||"ناموفق","err");
+    }catch(e){toast(e.message,"err");}
+    if(btn){btn.disabled=false;btn.textContent="بررسی دسترسی ایران";}
+  });
       toast(r.ok?("کد آپدیت شد"+(r.version?(" · v"+r.version):"")):(r.err||"ناموفق"),r.ok?"ok":"err");
       openNodeDetail(selectedNodeId);loadNodes();
     }catch(e){toast(e.message,"err");}
@@ -3311,11 +3420,25 @@ function openMapProvince(provinceName){
       wrap.style.pointerEvents="none";
     }
   }
-  function syncEgressFallbackUI(){
-    const on=!!document.getElementById("egressFallback")?.checked;
-    setEgressDomainsVisible(!on);
+  function isEgressFallbackOn(){
+    return document.getElementById("egressFallback")?.classList.contains("on");
   }
-  document.getElementById("egressFallback")?.addEventListener("change",syncEgressFallbackUI);
+  function setEgressFallbackBtn(on){
+    const btn=document.getElementById("egressFallback");
+    if(!btn) return;
+    btn.classList.toggle("on",!!on);
+    btn.classList.toggle("off",!on);
+    btn.setAttribute("aria-pressed", on?"true":"false");
+    const lab=btn.querySelector(".push-toggle-label");
+    if(lab) lab.textContent=on?(lab.getAttribute("data-on")||"روشن"):(lab.getAttribute("data-off")||"خاموش");
+  }
+  function syncEgressFallbackUI(){
+    setEgressDomainsVisible(!isEgressFallbackOn());
+  }
+  document.getElementById("egressFallback")?.addEventListener("click",()=>{
+    setEgressFallbackBtn(!isEgressFallbackOn());
+    syncEgressFallbackUI();
+  });
   async function loadProxySettings(){
     try{
       const r=await api("/api/proxy-settings");
@@ -3330,9 +3453,7 @@ function openMapProvince(provinceName){
       }
       const de=document.getElementById("egressDomains");
       if(de) de.value=r.domains||"";
-      const fb=document.getElementById("egressFallback");
-      if(fb) fb.checked=!!r.fallback;
-      // بعد از layout
+      setEgressFallbackBtn(!!r.fallback);
       requestAnimationFrame(()=>syncEgressFallbackUI());
     }catch{}
   }
@@ -3346,7 +3467,7 @@ function openMapProvince(provinceName){
       const r=await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
         proxy:proxyVal,
         domains:document.getElementById("egressDomains")?.value?.trim()||"",
-        fallback:!!document.getElementById("egressFallback")?.checked
+        fallback:isEgressFallbackOn()
       })});
       const pu=r&&r.nodes_updated;
       if(pu&&pu.errors&&pu.errors.length){
