@@ -1185,9 +1185,17 @@ table tbody tr{height:auto}
 </div>
 <div class="overlay" id="proxyStoreOverlay">
   <div class="modal" style="max-width:560px">
-    <div class="modal-h"><h3>مخزن پروکسی</h3><button class="icon-btn" type="button" id="proxyStoreClose">✕</button></div>
+    <div class="modal-h">
+      <h3 style="display:flex;align-items:center;gap:8px;margin:0">مخزن پروکسی
+        <span class="stat-warn" id="proxyStoreCreditBtn" tabindex="0" style="position:relative">!
+          <span id="proxyStoreCreditTip" style="display:none;position:absolute;top:calc(100% + 8px);right:0;z-index:20;min-width:220px;max-width:280px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elevated);box-shadow:0 8px 24px rgba(0,0,0,.35);font-size:12px;font-weight:400;line-height:1.6;color:var(--text);text-align:right;white-space:normal">
+            لیست پروکسی‌ها جمع‌آوری‌شده از <a href="https://github.com/panel-zeus/Z-E-U-S/tree/main" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline">پنل زئوس</a> است.
+          </span>
+        </span>
+      </h3>
+      <button class="icon-btn" type="button" id="proxyStoreClose">✕</button>
+    </div>
     <div class="modal-b" style="padding-top:14px">
-      <p style="font-size:11px;color:var(--text-muted);margin:0 0 10px;line-height:1.55">تست واقعی از داخل پروکسی به <code dir="ltr">chatgpt.com:443</code> + TLS — فقط باز بودن پورت کافی نیست.</p>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
         <select id="proxyStoreSource" style="flex:1;min-width:120px;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text)">
           <option value="both">همه (رایگان + VIP)</option>
@@ -3346,7 +3354,7 @@ function openMapProvince(provinceName){
       if(title) title.innerHTML=flagImg(cc,16)+` <span style="margin-right:6px">${esc(cc)}</span> · ${faNum(_proxyStoreItems.length)} پروکسی`;
       renderProxyStoreList();
       if(pingBtn) pingBtn.style.display=_proxyStoreItems.length?"inline-flex":"none";
-      if(st) st.textContent="تست واقعی به chatgpt.com — «تست همه» یا تک‌تک";
+      if(st) st.textContent="برای پینگ روی «تست همه» بزنید یا تک‌تک تست کنید";
     }catch(e){
       if(list) list.innerHTML="";
       if(title) title.textContent=cc;
@@ -3364,7 +3372,7 @@ function openMapProvince(provinceName){
     list.innerHTML=_proxyStoreItems.map((it,idx)=>{
       let pingHtml='<span style="color:var(--text-muted);font-size:11px;min-width:56px;text-align:left" dir="ltr">—</span>';
       if(it.pinging) pingHtml='<span style="color:var(--text-muted);font-size:11px;min-width:56px" dir="ltr">…</span>';
-      else if(it.ok===true) pingHtml='<span style="color:var(--success);font-size:11px;min-width:56px;font-weight:600" dir="ltr" title="TLS به chatgpt.com">'+(it.ms!=null?it.ms+"ms":"ok")+'</span>';
+      else if(it.ok===true) pingHtml='<span style="color:var(--success);font-size:11px;min-width:56px;font-weight:600" dir="ltr" title="SOCKS/TCP OK">'+(it.ms!=null?it.ms+"ms":"ok")+'</span>';
       else if(it.ok===false) pingHtml='<span style="color:var(--danger);font-size:11px;min-width:56px" dir="ltr" title="'+esc(it.err||"fail")+'">fail</span>';
       const src=it.source==="vip"?'<span class="badge badge-info" style="font-size:10px">VIP</span>':'<span class="badge" style="font-size:10px;opacity:.7">Free</span>';
       return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg)">
@@ -3397,7 +3405,7 @@ function openMapProvince(provinceName){
     it.pinging=true; it.ok=null; it.ms=null; it.err=null;
     renderProxyStoreList();
     try{
-      const r=await api("/api/proxy-store/ping",{method:"POST",body:JSON.stringify({proxies:[it.proxy], target:"chatgpt.com"})});
+      const r=await api("/api/proxy-store/ping",{method:"POST",body:JSON.stringify({proxies:[it.proxy]})});
       const row=(r&&r.results&&r.results[0])||null;
       it.pinging=false;
       if(row){ it.ok=!!row.ok; it.ms=row.ms; it.err=row.err||null; }
@@ -3417,7 +3425,7 @@ function openMapProvince(provinceName){
       chunk.forEach(it=>{it.pinging=true;});
       renderProxyStoreList();
       try{
-        const r=await api("/api/proxy-store/ping",{method:"POST",body:JSON.stringify({proxies:chunk.map(x=>x.proxy), target:"chatgpt.com"})});
+        const r=await api("/api/proxy-store/ping",{method:"POST",body:JSON.stringify({proxies:chunk.map(x=>x.proxy)})});
         const results=(r&&r.results)||[];
         results.forEach((row,j)=>{
           const it=chunk[j];
@@ -3434,7 +3442,7 @@ function openMapProvince(provinceName){
       if(st){
         const ok=_proxyStoreItems.filter(x=>x.ok===true).length;
         const fail=_proxyStoreItems.filter(x=>x.ok===false).length;
-        st.textContent="تست chatgpt.com: "+faNum(ok)+" موفق · "+faNum(fail)+" ناموفق · "+faNum(_proxyStoreItems.length)+" کل";
+        st.textContent="پینگ: "+faNum(ok)+" موفق · "+faNum(fail)+" ناموفق · "+faNum(_proxyStoreItems.length)+" کل";
       }
     }
     _proxyStoreItems.sort((a,b)=>{
@@ -3446,6 +3454,26 @@ function openMapProvince(provinceName){
     renderProxyStoreList();
     if(btn){btn.disabled=false;btn.textContent="تست همه";}
   }
+  // اعتبار مخزن — آیکون !
+  (function(){
+    const btn=document.getElementById("proxyStoreCreditBtn");
+    const tip=document.getElementById("proxyStoreCreditTip");
+    if(!btn||!tip) return;
+    const show=()=>{tip.style.display="block";};
+    const hide=()=>{tip.style.display="none";};
+    btn.addEventListener("mouseenter",show);
+    btn.addEventListener("mouseleave",hide);
+    btn.addEventListener("focus",show);
+    btn.addEventListener("blur",hide);
+    btn.addEventListener("click",(e)=>{
+      e.stopPropagation();
+      tip.style.display = tip.style.display==="block" ? "none" : "block";
+    });
+    document.addEventListener("click",(e)=>{
+      if(!btn.contains(e.target)) hide();
+    });
+  })();
+
   document.getElementById("btnProxyStore")?.addEventListener("click",openProxyStore);
   document.getElementById("proxyStoreClose")?.addEventListener("click",closeProxyStore);
   document.getElementById("proxyStoreOverlay")?.addEventListener("click",e=>{if(e.target&&e.target.id==="proxyStoreOverlay")closeProxyStore();});
