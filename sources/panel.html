@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -1156,12 +1157,17 @@ table tbody tr{height:auto}
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.55">فقط دامنه‌های لیست زیر از پروکسی می‌روند؛ بقیه (مثل google.com) مستقیم‌اند!</p>
           <div class="field">
             <label style="display:flex;align-items:center;gap:6px">آدرس پروکسی
-              <button type="button" class="icon-btn" id="btnProxyLockHelp" title="راهنما" style="width:22px;height:22px;font-size:12px;border-radius:50%">?</button>
+              <span class="stat-warn" data-tip="فرمت‌های قابل قبول:&#10;• proxyip.cmliussss.net (یا هر ProxyIP دامنه/IP)&#10;• socks5://user:pass@host:port&#10;• socks5://host:port&#10;• http://host:port&#10;&#10;SNI/Host هدف از پروکسی رد می‌شود (اتصال به مقصد با SNI اصلی).&#10;برای SOCKS5 احراز هویت user:pass پشتیبانی می‌شود.&#10;این پروکسی روی ورکر فرزند اعمال می‌شود و ترافیک دامنه‌های لیست را از آن عبور می‌دهد.">!</span>
             </label>
-            <input type="text" id="egressProxy" value="proxyip.cmliussss.net" readonly disabled dir="ltr" style="text-align:left;opacity:.75;cursor:not-allowed" />
+            <div style="display:flex;gap:8px;align-items:stretch">
+              <input type="text" id="egressProxy" value="" dir="ltr" style="text-align:left;flex:1" placeholder="socks5://user:pass@host:port یا proxyip.cmliussss.net" />
+              <button type="button" class="btn" id="btnTestProxy" style="white-space:nowrap;flex-shrink:0">تست پروکسی</button>
+            </div>
           </div>
           <div class="field" style="margin-top:8px">
-            <label>دامنه‌ها (با کاما جدا کنید)</label>
+            <label style="display:flex;align-items:center;gap:6px">دامنه‌ها (با کاما جدا کنید)
+              <span class="stat-warn" data-tip="این دامنه‌ها از طریق پروکسی تنظیم‌شده رد می‌شوند. بقیه ترافیک مستقیم است.&#10;از وایلدکارد مثل *.chatgpt.com پشتیبانی می‌شود.&#10;مثال: *.openai.com, speedtest.net, chatgpt.com">!</span>
+            </label>
             <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
           </div>
           <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnSaveProxy">ذخیره پروکسی</button>
@@ -3149,22 +3155,29 @@ function openMapProvince(provinceName){
   
   async function loadProxySettings(){
     try{
-      const LOCKED_PROXY = "proxyip.cmliussss.net";
-      const pe=document.getElementById("egressProxy");
-      if(pe){ pe.value=LOCKED_PROXY; pe.readOnly=true; pe.disabled=true; }
       const r=await api("/api/proxy-settings");
       if(!r||!r.ok) return;
+      const pe=document.getElementById("egressProxy");
+      if(pe){
+        pe.readOnly=false;
+        pe.disabled=false;
+        pe.style.opacity="";
+        pe.style.cursor="";
+        pe.value=r.proxy||"";
+      }
       const de=document.getElementById("egressDomains");
       if(de) de.value=r.domains||"";
     }catch{}
   }
-  document.getElementById("btnProxyLockHelp")?.addEventListener("click",()=>{
-    toast("فعلاً فقط با این دامنه کار می‌کند (proxyip.cmliussss.net)","ok");
-  });
   document.getElementById("btnSaveProxy")?.addEventListener("click",async()=>{
     try{
+      const proxyVal=(document.getElementById("egressProxy")?.value||"").trim();
+      if(!proxyVal){
+        toast("آدرس پروکسی خالی است","warn");
+        return;
+      }
       const r=await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
-        proxy:"proxyip.cmliussss.net",
+        proxy:proxyVal,
         domains:document.getElementById("egressDomains")?.value?.trim()||""
       })});
       const pu=r&&r.nodes_updated;
@@ -3182,18 +3195,25 @@ function openMapProvince(provinceName){
   document.getElementById("btnTestProxy")?.addEventListener("click",async()=>{
     const el=document.getElementById("proxyTestResult");
     if(el) el.textContent="در حال تست…";
+    const proxyVal=(document.getElementById("egressProxy")?.value||"").trim();
+    if(!proxyVal){
+      if(el) el.textContent="آدرس خالی است";
+      toast("آدرس پروکسی را وارد کنید","warn");
+      return;
+    }
     try{
-      const r=await api("/api/proxy-test",{method:"POST",body:JSON.stringify({
-        proxy:document.getElementById("egressProxy")?.value?.trim()||""
-      })});
+      const r=await api("/api/proxy-test",{method:"POST",body:JSON.stringify({ proxy:proxyVal })});
       if(r&&r.ok){
-        const kind=r.kind==="socks"?"SOCKS5":(r.kind==="proxyip"?"ProxyIP/TCP":(r.protocol||""));
-        const note=r.note?(" · "+r.note):"";
-        if(el) el.textContent="✓ "+(r.ms!=null?r.ms+" ms":"ok")+" · "+kind+" · "+(r.host||"");
-        if(r.kind==="proxyip"){
-          toast("TCP باز شد ("+(r.ms??"—")+"ms) — این ProxyIP است نه SOCKS؛ برای کلاینت کافی نیست","warn");
+        const proto=String(r.protocol||r.kind||"").toLowerCase();
+        const isSocks=/^socks/.test(proto)||r.kind==="socks";
+        const kind=isSocks?"SOCKS5":(r.kind==="proxyip"||proto==="proxyip"?"ProxyIP/TCP":(r.protocol||r.kind||""));
+        if(el) el.textContent="✓ "+(r.ms!=null?r.ms+" ms":"ok")+" · "+kind+" · "+(r.host||"")+(r.note?(" · "+r.note):"");
+        if(isSocks){
+          toast("SOCKS OK · "+(r.ms??"—")+" ms · "+(r.host||""),"ok");
+        } else if(r.probe==="tls-sni-speedtest"||r.tls){
+          toast("ProxyIP OK · TCP+TLS ("+(r.ms??"—")+"ms) — مناسب مسیر ورکر","ok");
         } else {
-          toast("SOCKS OK · "+(r.ms??"—")+" ms","ok");
+          toast("TCP باز شد ("+(r.ms??"—")+"ms) · "+kind,"ok");
         }
       } else {
         if(el) el.textContent="✗ "+(r.err||"ناموفق");
