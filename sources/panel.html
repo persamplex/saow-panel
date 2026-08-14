@@ -152,7 +152,8 @@ tbody tr:hover td.row-actions{background:transparent!important}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:12.5px;color:var(--text-muted);margin-bottom:6px}
 .field input,.field textarea{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;transition:border-color .15s,background .15s}
-.field textarea{resize:vertical;min-height:42px;line-height:1.55}
+.field textarea{resize:vertical;min-height:42px;line-height:1.55;white-space:pre-wrap;overflow:auto;word-break:break-word}
+.field textarea.tg-msg{min-height:96px;max-height:280px;rows:auto}
 .field input:focus,.field textarea:focus{border-color:rgba(125,211,252,.45);background:#0a0a0c}
 .field input::placeholder,.field textarea::placeholder{color:var(--text-muted);opacity:.85}
 /* ── Custom select ── */
@@ -1104,10 +1105,10 @@ table tbody tr{height:auto}
 
         <div class="setting-block" style="margin:0">
           <h4>پیام‌های ربات</h4>
-          <div class="field"><label>خوش‌آمدگویی</label><textarea id="tgMsgWelcome" rows="2" placeholder="متن /start"></textarea></div>
-          <div class="field"><label>پشتیبانی</label><textarea id="tgMsgSupport" rows="2"></textarea></div>
-          <div class="field"><label>عضویت کانال</label><textarea id="tgMsgJoin" rows="2"></textarea></div>
-          <div class="field"><label>فروش خاموش</label><textarea id="tgMsgSalesOff" rows="2"></textarea></div>
+          <div class="field"><label>خوش‌آمدگویی</label><textarea id="tgMsgWelcome" class="tg-msg" rows="5" placeholder="متن /start"></textarea></div>
+          <div class="field"><label>پشتیبانی</label><textarea id="tgMsgSupport" class="tg-msg" rows="5"></textarea></div>
+          <div class="field"><label>عضویت کانال</label><textarea id="tgMsgJoin" class="tg-msg" rows="4"></textarea></div>
+          <div class="field"><label>فروش خاموش</label><textarea id="tgMsgSalesOff" class="tg-msg" rows="4"></textarea></div>
           <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="btnTgMsgSave">ذخیره پیام‌ها</button>
         </div>
       </div>
@@ -1150,7 +1151,9 @@ table tbody tr{height:auto}
           <div class="row"><span>حالت</span><span class="badge badge-info">Push</span></div>
           <div class="row"><span>آخرین نسخه مادر</span><span id="sysMotherRemote" style="font-size:12px">—</span></div>
           <div class="row"><span>آخرین نسخه نود</span><span id="sysChildRemote" style="font-size:12px">—</span></div>
+          <div class="row"><span>آخرین نسخه ربات</span><span id="sysBotRemote" style="font-size:12px">—</span></div>
           <p id="sysUpdateHint" style="font-size:12px;color:var(--warning);margin:8px 0 0;line-height:1.55;display:none"></p>
+          <p id="sysUpdateActions" style="font-size:12px;color:var(--text-muted);margin:6px 0 0;line-height:1.55;display:none"></p>
           <button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnUpdateMother" type="button">بروزرسانی پنل</button>
           <button class="btn" style="width:100%;margin-top:8px" id="btnCheckVersions" type="button">بررسی آپدیت</button>
           <button class="btn" style="width:100%;margin-top:8px" id="btnLogout" type="button">خروج</button>
@@ -2041,6 +2044,12 @@ function openMapProvince(provinceName){
     if(!force&&Date.now()-lastDashAt<15000)return;
     try{
       const data=await api("/api/dashboard");lastDashAt=Date.now();if(!data.ok)return;
+      try{
+        const mt=data.mother_token;
+        if(mt && mt.ok===false && (mt.err==="invalid"||mt.err==="missing"||mt.status===401||mt.status===403)){
+          toast("توکن پنل مادر از کار افتاده — از یک اکانت جیمیل معتبر برای ساخت پنل جدید استفاده کنید و از بخش بکاپ اطلاعات فعلی را ایمپورت کنید","err");
+        }
+      }catch{}
       const st=data.stats||{};
       const online=st.onlineIps??st.onlineUsers??0, onlineAcc=st.onlineAccounts??0, nodes=st.nodes??0, healthy=st.healthyNodes??0, activeU=st.activeUsers??0;
       bumpVal("stOnline",faNum(online));
@@ -3474,6 +3483,12 @@ function openMapProvince(provinceName){
     });
   })();
 
+  document.addEventListener("input",e=>{
+    if(e.target&&e.target.matches&&e.target.matches("textarea.tg-msg")){
+      e.target.style.height="auto";
+      e.target.style.height=Math.min(280, Math.max(96, e.target.scrollHeight+4))+"px";
+    }
+  });
   document.getElementById("btnProxyStore")?.addEventListener("click",openProxyStore);
   document.getElementById("proxyStoreClose")?.addEventListener("click",closeProxyStore);
   document.getElementById("proxyStoreOverlay")?.addEventListener("click",e=>{if(e.target&&e.target.id==="proxyStoreOverlay")closeProxyStore();});
@@ -3493,33 +3508,51 @@ function openMapProvince(provinceName){
 
   function applyVersionCheck(r){
     if(!r||!r.ok) return;
-    const m=r.mother||{}, c=r.child||{};
+    const m=r.mother||{}, c=r.child||{}, b=r.bot||{};
     const elM=document.getElementById("sysMotherRemote");
     const elC=document.getElementById("sysChildRemote");
+    const elB=document.getElementById("sysBotRemote");
     const elH=document.getElementById("sysUpdateHint");
+    const elA=document.getElementById("sysUpdateActions");
     if(elM) elM.textContent=m.remote||(m.err?("خطا: "+m.err):"—");
     if(elC) elC.textContent=c.remote||(c.err?("خطا: "+c.err):"—");
+    if(elB) elB.textContent=b.remote||(b.err?("خطا: "+b.err):"—");
     if(m.local){
       const sv=document.getElementById("sysVersion");
       if(sv) sv.textContent=m.local;
     }
     const hints=[];
+    const actions=[];
     if(m.update_available && m.remote) hints.push("آپدیت مادر موجود است: "+(m.local||"?")+" → "+m.remote);
     if(c.update_available && c.remote){
       const nodes=(c.outdated_nodes||[]).slice(0,5).join("، ");
       hints.push("نسخه جدید نود: "+c.remote+(nodes?(" — قدیمی: "+nodes):""));
+      actions.push('<span class="stat-warn" style="display:inline-flex;margin-left:4px" data-tip="برای آپدیت نودها از بخش «نودها» → آپدیت همه نودها استفاده کنید">!</span> برای آپدیت نودها به بخش <b>نودها</b> بروید');
+    }
+    if(b.update_available && b.remote){
+      hints.push("آپدیت ربات موجود است: "+(b.local||"?")+" → "+b.remote);
+      actions.push('<span class="stat-warn" style="display:inline-flex;margin-left:4px" data-tip="برای آپدیت ربات به بخش ربات تلگرام بروید و «آپدیت ربات» را بزنید">!</span> برای آپدیت ربات به بخش <b>ربات تلگرام</b> بروید');
     }
     if(elH){
       if(hints.length){
         elH.style.display="";
         elH.textContent="🔔 "+hints.join(" · ");
         elH.style.color="var(--warning)";
-      } else if(m.remote||c.remote){
+      } else if(m.remote||c.remote||b.remote){
         elH.style.display="";
         elH.textContent="✓ آخرین نسخه نصب است";
         elH.style.color="var(--success)";
       } else {
         elH.style.display="none";
+      }
+    }
+    if(elA){
+      if(actions.length){
+        elA.style.display="";
+        elA.innerHTML=actions.join("<br>");
+      } else {
+        elA.style.display="none";
+        elA.innerHTML="";
       }
     }
   }
@@ -3539,6 +3572,7 @@ function openMapProvince(provinceName){
       applyVersionCheck(r);
       if(r.mother&&r.mother.update_available) toast("آپدیت مادر موجود: "+r.mother.remote,"warn");
       else if(r.child&&r.child.update_available) toast("نسخه جدید نود: "+r.child.remote,"warn");
+      else if(r.bot&&r.bot.update_available) toast("آپدیت ربات موجود: "+r.bot.remote,"warn");
       else toast("نسخه‌ها بررسی شد","ok");
     }catch(e){toast(e.message||"خطا","err");}
     finally{if(btn){btn.disabled=false;btn.textContent=prev||"بررسی آپدیت";}}
@@ -3629,6 +3663,10 @@ function openMapProvince(provinceName){
         const sp=document.getElementById("tgMsgSupport"); if(sp) sp.value=s.tg_msg_support||"";
         const j=document.getElementById("tgMsgJoin"); if(j) j.value=s.tg_msg_join||"";
         const so=document.getElementById("tgMsgSalesOff"); if(so) so.value=s.tg_msg_sales_off||"";
+        document.querySelectorAll("textarea.tg-msg").forEach(ta=>{
+          ta.style.height="auto";
+          ta.style.height=Math.min(280, Math.max(96, ta.scrollHeight+4))+"px";
+        });
         const ch=document.getElementById("shopSponsor"); if(ch) ch.value=s.shop_sponsor_channel||"";
         const sws=document.getElementById("swShopSales");
         if(sws){ const on=String(s.shop_sales_enabled||"1")!=="0"; sws.classList.toggle("on", on); sws.dataset.on=on?"1":"0"; }
