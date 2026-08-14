@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -795,7 +796,7 @@ try {
         const limit = THRESHOLDS[step];
         setScanUi("پله " + fa(step + 1) + " · سقف " + fa(limit) + "ms", (step / THRESHOLDS.length) * 100);
         let got = null;
-        const CONC = 4;
+        const CONC = 10;
         while (poolIdx < pool.length && !got && !abortScan) {
           const batch = pool.slice(poolIdx, poolIdx + CONC);
           poolIdx += CONC;
