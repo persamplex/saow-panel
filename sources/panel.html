@@ -1174,7 +1174,7 @@ table tbody tr{height:auto}
             <label style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer">
               <input type="checkbox" id="egressFallback" style="width:18px;height:18px;accent-color:var(--accent)" />
               <span>Fallback Proxy</span>
-              <span class="stat-warn" data-tip="اگر فعال باشد، ابتدا اتصال مستقیم امتحان می‌شود؛ اگر سایت (مثلاً پشت کلودفلر) باز نشد، خودکار از پروکسی خروجی رد می‌شود.&#10;با فعال بودن این گزینه، لیست دامنه مخفی می‌شود و برای همه مقصدها (به‌جز استثناها) اعمال می‌گردد.">!</span>
+              <span class="stat-warn" data-tip="اگر فعال باشد، ترافیک همه سایت‌ها (به‌جز استثناهایی مثل گوگل) از پروکسی خروجی رد می‌شود تا ERR_CONNECTION_CLOSED روی IP کلودفلر پیش نیاید.&#10;لیست دامنه مخفی می‌شود.">!</span>
             </label>
           </div>
           <div id="egressDomainsWrap" class="field" style="margin-top:8px;overflow:hidden;transition:max-height .28s ease,opacity .28s ease,margin .28s ease">
@@ -2750,11 +2750,15 @@ function openMapProvince(provinceName){
         ["خارج از ساب",n.exclude_sub===1?"بله (در ساب نمی‌آید)":"خیر (در ساب هست)"],
         ["Account ID",n.account_id||"—"],
         ["DB",n.db_name||n.db_id||"—"],
-        ["ردیف‌های D1", (function(){
-          const d=n.d1_rows;
-          if(!d) return "—";
-          if(typeof d.total==="number") return faNum(d.total)+" (users "+faNum(d.users||0)+" · ips "+faNum(d.active_ips||0)+" · logs "+faNum(d.logs||0)+")";
-          return String(d);
+        ["D1 خواندن امروز", (function(){
+          const m=n.d1_metrics;
+          if(!m||!m.ok) return m&&m.err?("خطا: "+m.err):"—";
+          return faNum(m.rowsRead)+" / "+faNum(m.readLimit)+" ("+faNum(m.readPct)+"%)";
+        })()],
+        ["D1 نوشتن امروز", (function(){
+          const m=n.d1_metrics;
+          if(!m||!m.ok) return "—";
+          return faNum(m.rowsWritten)+" / "+faNum(m.writeLimit)+" ("+faNum(m.writePct)+"%)";
         })()],
         ["ایجاد",n.created_at?new Date(Number(n.created_at)).toLocaleString("fa-IR"):"—"],
       ];
@@ -2860,7 +2864,7 @@ function openMapProvince(provinceName){
       const pre=document.getElementById("liveLogBody");
       if(pre){ pre.textContent=lines.length?lines.join("\n"):"(هنوز لاگی نیست — ترافیک بفرستید)"; pre.scrollTop=pre.scrollHeight; }
       const left=_liveLogDeadline?Math.max(0,Math.floor((_liveLogDeadline-Date.now())/1000)):0;
-      document.getElementById("liveLogStatus").textContent="زنده · باقی‌مانده "+left+"s · فقط mem (بدون فشار D1)";
+      document.getElementById("liveLogStatus").textContent="زنده · باقی‌مانده "+left+"s · لاگ کامل (D1 مشترک بین isolateها)";
     }catch(e){
       document.getElementById("liveLogStatus").textContent="خطا: "+(e.message||e);
     }
