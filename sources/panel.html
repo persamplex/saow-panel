@@ -923,7 +923,7 @@ table tbody tr{height:auto}
           <div class="nodes-head-actions">
             <span class="nodes-head-hint">سالم = همگام‌سازی موفق اخیر</span>
             <div class="nodes-head-btns">
-              <button class="btn" type="button" id="btnCheckHostAll">بررسی دسترسی ایران</button>
+              <button class="btn" type="button" id="btnCheckHostAll">وضعیت پروب ایران</button>
               <button class="btn" type="button" id="btnUpdateAllNodes">آپدیت همه نودها</button>
               <a class="btn" id="btnCfTokenCreate" href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Saow%20Node" target="_blank" rel="noopener">ساخت توکن کلودفلر</a>
             </div>
@@ -2726,9 +2726,7 @@ function openMapProvince(provinceName){
           if(n) n.check_host={ok:row.ok,ok_count:row.ok_count,total:row.total,ratio:row.ratio,details:row.details,at:Date.now(),permanent_link:row.permanent_link,err:row.err,status:row.status,via:row.via};
           if(row&&row.err&&!row.ok){
             // یک‌بار toast برای خطای سراسری مثل 403
-            if(/403|پروکسی|check-host/i.test(String(row.err))){
-              toast(String(row.err).slice(0,120),"err");
-            }
+            if(/گزارش پروب|پروب منطقه/i.test(String(row.err))) toast(String(row.err).slice(0,120),"err");
           }
         }
         renderNodes(nodesPage||1);
@@ -2736,7 +2734,7 @@ function openMapProvince(provinceName){
         toast(r.err,"err");
       }
     }catch(e){
-      toast("check-host: "+(e.message||e),"err");
+      toast("پروب ایران: "+(e.message||e),"err");
     }
     _nodesCheckHostRunning=false;
   }
@@ -2745,8 +2743,6 @@ function openMapProvince(provinceName){
       const data=await api("/api/nodes");nodesCache={managed:data.managed||[],alive:data.alive||[]};
       document.getElementById("navNodesCount").textContent=faNum(nodesCache.managed.length);
       renderNodes(1);
-      // هر بار باز شدن بخش نودها → بررسی خودکار از ایران
-      runCheckHostAllSilent();
     }catch(e){toast("خطا نودها: "+e.message,"err");}
   }
   function renderNodes(page){
@@ -2765,16 +2761,15 @@ function openMapProvince(provinceName){
         const id=n.id||n.script_name;
         const alive=matchAlive(n);
         const disabled=n.is_disabled===1;
-        const online=n.online===true||!!alive;
+        const online=n.health?.ok===true;
         let statusHtml;
-        const ch=n.check_host;
         if(disabled) statusHtml='<span class="badge badge-off">قفل</span>';
-        else if(ch && ch.total){
-          const oc=Number(ch.ok_count||0), tot=Number(ch.total||0);
-          const cls=oc<=0?"bad":(oc>=tot?"ok":"mid");
-          statusHtml=`<span class="ch-ratio ${cls}" data-ch-id="${esc(id)}" title="دسترسی از ایران (check-host)">${oc}/${tot}</span>`;
-        } else if(online) statusHtml='<span class="ch-ratio na" data-ch-id="'+esc(id)+'" title="هنوز بررسی check-host نشده">—/۸</span>';
-        else statusHtml='<span class="ch-ratio bad" data-ch-id="'+esc(id)+'">۰/۸</span>';
+        else if(online) statusHtml='<span class="badge badge-ok" title="نود و API کلودفلر در دسترس‌اند">سالم</span>';
+        else {
+          const nodeErr=n.health?.node?.err||"—";
+          const cfErr=n.health?.cloudflare?.err||"—";
+          statusHtml=`<span class="badge badge-off" title="نود: ${esc(nodeErr)} | Cloudflare: ${esc(cfErr)}">قطع</span>`;
+        }
         const activeUsers=online?(alive?.activeUsers??alive?.active_users??n.active_users??0):(n.active_users??"—");
         const lastSeenTs=alive?.lastSeen||alive?.last_seen||n.last_seen;
         const lastSeen=lastSeenTs?relTime(lastSeenTs):"—";
@@ -2804,7 +2799,6 @@ function openMapProvince(provinceName){
           </td></tr>`;
       }).join("");
     tbody.querySelectorAll("[data-nact]").forEach(btn=>btn.addEventListener("click",()=>onNodeAction(btn.dataset.nact,btn.dataset.nid)));
-    tbody.querySelectorAll("[data-ch-id]").forEach(el=>el.addEventListener("click",(e)=>{e.stopPropagation();openCheckHostDetail(el.getAttribute("data-ch-id"));}));
   }
 
   function openCheckHostDetail(nodeId){
@@ -2813,20 +2807,20 @@ function openMapProvince(provinceName){
     const ov=document.getElementById("chDetailOverlay");
     document.getElementById("chDetailTitle").textContent="دسترسی ایران · "+(n?.script_name||nodeId);
     if(!ch||!ch.details){
-      document.getElementById("chDetailRatio").textContent="هنوز بررسی نشده — «بررسی دسترسی ایران» یا «تست ارتباط» را بزنید";
+      document.getElementById("chDetailRatio").textContent="هنوز گزارش تازه‌ای از پروب ایران ثبت نشده است";
       document.getElementById("chDetailBars").innerHTML="";
       document.getElementById("chDetailList").innerHTML="";
       document.getElementById("chDetailLink").textContent="";
       ov.classList.add("open");
       return;
     }
-    document.getElementById("chDetailRatio").textContent=(ch.ok_count||0)+" از "+(ch.total||0)+" سرور ایران در دسترس";
+    document.getElementById("chDetailRatio").textContent=(ch.ok_count||0)+" از "+(ch.total||0)+" پروب منطقه‌ای موفق";
     document.getElementById("chDetailBars").innerHTML=(ch.details||[]).map(d=>`<span class="${d.ok?"on":"off"}" title="${esc(d.city||"")}"></span>`).join("");
     document.getElementById("chDetailList").innerHTML=(ch.details||[]).map(d=>{
       const tms=d.time!=null?(Math.round(d.time*1000)+"ms"):"—";
       return `<div class="row"><span>${esc(d.city||d.city_en||d.node)}</span><span style="direction:ltr">${d.ok?"✓ "+tms:"✗"}</span></div>`;
     }).join("");
-    document.getElementById("chDetailLink").innerHTML=ch.permanent_link?`<a href="${esc(ch.permanent_link)}" target="_blank" rel="noopener">گزارش check-host</a>`:"";
+    document.getElementById("chDetailLink").textContent="";
     ov.classList.add("open");
   }
   document.getElementById("chDetailClose")?.addEventListener("click",()=>document.getElementById("chDetailOverlay")?.classList.remove("open"));
@@ -2845,12 +2839,14 @@ function openMapProvince(provinceName){
     try{
       const data=await api("/api/nodes/"+encodeURIComponent(id));
       const n=data.node||{};
-      const online=!!n.online;
+      const online=!!n.health?.ok;
       const rows=[
         ["شناسه",n.id||"—"],
         ["نام اسکریپت",n.script_name||"—"],
         ["URL",n.url||"—"],
-        ["وضعیت",n.is_disabled===1?"🔒 قفل":(online?"✅ سالم / آنلاین":"⚠️ آفلاین")],
+        ["وضعیت",n.is_disabled===1?"🔒 قفل":(online?"✅ سالم":"🔴 قطع")],
+        ["پاسخ /health نود",n.health?.node?.ok?"✅ موفق":("🔴 "+(n.health?.node?.err||"ناموفق"))],
+        ["دسترسی API کلودفلر",n.health?.cloudflare?.ok?"✅ موفق":("🔴 "+(n.health?.cloudflare?.err||"ناموفق"))],
         ["آخرین دیده‌شدن",n.last_seen?relTime(n.last_seen)+` (${new Date(Number(n.last_seen)).toLocaleString("fa-IR")})`:"هنوز همگام‌سازی موفق نداشته"],
         ["نسخه فرزند",n.version||"—"],
         ["کاربران فعال",n.active_users??"—"],
@@ -2894,13 +2890,15 @@ function openMapProvince(provinceName){
       const r=await api("/api/nodes/"+encodeURIComponent(id)+"/test",{method:"POST"});
       const ok=!!r.ok;
       const ratio=r.ratio||((r.ok_count!=null&&r.total!=null)?(r.ok_count+"/"+r.total):"");
-      toast(ok?("ایران "+ratio+" · "+(r.latency_ms||"?")+"ms"):("ناموفق: "+(r.err||ratio||"")),ok?"ok":"err");
-      // merge check_host into cache
+      toast(ok?("کنترل مادر موفق · "+(r.latency_ms||"?")+"ms"):("ناموفق: "+(r.err||"")),ok?"ok":"err");
+      // نتیجهٔ کنترل مادر و آخرین گزارش منطقه‌ای را جدا نگه دار.
       const n=(nodesCache.managed||[]).find(x=>String(x.id||x.script_name)===String(id));
-      if(n && r.details){ n.check_host={ok:r.ok,ok_count:r.ok_count,total:r.total,ratio:r.ratio,details:r.details,at:Date.now(),permanent_link:r.permanent_link}; renderNodes(nodesPage); }
+      if(n && r.details){ n.check_host={ok:r.ok_count>0,ok_count:r.ok_count,total:r.total,ratio:r.ratio,details:r.details,at:Date.now()}; n.regional_probe=r.regional_probe||null; renderNodes(nodesPage); }
       if(box){
         box.innerHTML=`<div class="setting-block" style="padding:12px;margin-top:8px">
           <div class="row"><span>نتیجه</span><span class="badge ${ok?"badge-ok":"badge-off"}">${ok?"موفق":"ناموفق"}</span></div>
+          <div class="row"><span>کنترل از مادر</span><span>${r.sync_ok?"موفق":"ناموفق"}</span></div>
+          <div class="row"><span>پروب ایران</span><span>${r.regional_probe?.stale?"گزارش قدیمی":(r.regional_probe?.ok===true?"موفق":(r.regional_probe?.ok===false?"ناموفق":"ثبت نشده"))}</span></div>
           <div class="row"><span>تأخیر</span><span>${r.latency_ms!=null?faNum(r.latency_ms)+" ms":"—"}</span></div>
           <div class="row"><span>URL</span><span style="direction:ltr;font-size:12px">${esc(r.url||"—")}</span></div>
           <div class="row"><span>نسخه</span><span>${esc(r.version||"—")}</span></div>
@@ -2959,9 +2957,11 @@ function openMapProvince(provinceName){
     }catch(e){toast(e.message,"err");}
   });
   document.getElementById("btnCheckHostAll")?.addEventListener("click",async()=>{
+    await loadNodes();
+    return;
     const btn=document.getElementById("btnCheckHostAll");
-    if(btn){btn.disabled=true;btn.textContent="در حال بررسی...";}
-    toast("بررسی دسترسی از ایران (check-host)...","ok");
+    if(btn){btn.disabled=true;btn.textContent="در حال دریافت...";}
+    toast("خواندن آخرین گزارش پروب ایران...","ok");
     try{
       const r=await api("/api/nodes/check-host",{method:"POST"});
       if(r&&r.ok){
@@ -2971,10 +2971,10 @@ function openMapProvince(provinceName){
           if(n) n.check_host={ok:row.ok,ok_count:row.ok_count,total:row.total,ratio:row.ratio,details:row.details,at:Date.now(),permanent_link:row.permanent_link};
         }
         renderNodes(nodesPage);
-        toast("بررسی شد: "+faNum((r.results||[]).length)+" نود","ok");
+        toast("گزارش به‌روز شد: "+faNum((r.results||[]).length)+" نود","ok");
       } else toast(r.err||"ناموفق","err");
     }catch(e){toast(e.message,"err");}
-    if(btn){btn.disabled=false;btn.textContent="بررسی دسترسی ایران";}
+    if(btn){btn.disabled=false;btn.textContent="وضعیت پروب ایران";}
   });
       toast(r.ok?("کد آپدیت شد"+(r.version?(" · v"+r.version):"")):(r.err||"ناموفق"),r.ok?"ok":"err");
       openNodeDetail(selectedNodeId);loadNodes();
