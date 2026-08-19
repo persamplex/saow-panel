@@ -2699,11 +2699,31 @@ function openMapProvince(provinceName){
     }
     return null;
   }
+  let nodeHealthAutoRunning=false;
+  const nodeHealthAutoAt=new Map();
+  async function autoCheckNodeHealth(){
+    if(nodeHealthAutoRunning)return;
+    if(!(await verifyRailwayConnection({silent:true})))return;
+    const due=(nodesCache.managed||[]).filter(n=>{
+      const id=n.id||n.script_name, score=Number(n.health_score)||0, last=nodeHealthAutoAt.get(id)||0;
+      return score<9 && Date.now()-last>5*60*1000;
+    });
+    if(!due.length)return;
+    nodeHealthAutoRunning=true;
+    try{
+      for(const n of due){
+        const id=n.id||n.script_name; nodeHealthAutoAt.set(id,Date.now());
+        try{await api("/api/nodes/"+encodeURIComponent(id)+"/test",{method:"POST",body:"{}"});}catch{}
+      }
+      const fresh=await api("/api/nodes");nodesCache={managed:fresh.managed||[],alive:fresh.alive||[]};renderNodes(nodesPage);
+    }finally{nodeHealthAutoRunning=false;}
+  }
   async function loadNodes(){
     try{
       const data=await api("/api/nodes");nodesCache={managed:data.managed||[],alive:data.alive||[]};
       document.getElementById("navNodesCount").textContent=faNum(nodesCache.managed.length);
       renderNodes(1);
+      autoCheckNodeHealth().catch(()=>{});
     }catch(e){toast("خطا نودها: "+e.message,"err");}
   }
   function renderNodes(page){
@@ -3658,8 +3678,19 @@ function openMapProvince(provinceName){
         }
         if(!r||!r.ok)throw new Error((r&&r.err)||"ناموفق");
       }
-      toast("بروزرسانی انجام شد · v"+(r.v||""),"ok");
-      setTimeout(()=>location.reload(),1500);
+      toast("بروزرسانی انجام شد؛ در حال خواندن نسخه‌ی جدید…","ok");
+      await new Promise(resolve=>setTimeout(resolve,1800));
+      let installed=r.v||"";
+      try{
+        const vr=await api("/version?ts="+Date.now());
+        installed=vr.v||vr.version||installed;
+      }catch{}
+      if(installed){
+        const sv=document.getElementById("sysVersion");if(sv)sv.textContent=installed;
+        const foot=document.getElementById("sidebarFoot");if(foot)foot.textContent="v"+installed+" · Push Mode";
+      }
+      await checkVersionsSilent();
+      toast("نسخه‌ی فعال: "+(installed||"در حال اعمال"),"ok");
     }catch(e){toast(e.message||"خطا","err");}
     finally{if(btn){btn.disabled=false;btn.textContent=prev||"بروزرسانی پنل";}}
   });
@@ -3912,13 +3943,35 @@ function openMapProvince(provinceName){
 
   topActions.railway={label:'',action:'none'};
   topActions.monitor={label:'',action:'none'};
+  function setRailwayUi(ok,message){
+    const el=document.getElementById("railwayStatus"),dot=document.getElementById("railwayDot"),badge=document.getElementById("terminalBadge");
+    if(el)el.textContent=message|| (ok?"ترمینال متصل است":"ترمینال ریلوی متصل نیست");
+    if(dot)dot.className="railway-dot "+(ok?"ok":"bad");
+    if(badge){badge.className="badge "+(ok?"badge-ok":"badge-off");badge.textContent=ok?"متصل":"قطع";}
+    window.__saowRailwayConnected=!!ok;
+  }
+  async function verifyRailwayConnection(opts={}){
+    let relayUrl=(opts.url??document.getElementById("railwayUrl")?.value??"").trim();
+    let relayToken=(opts.token??document.getElementById("railwayToken")?.value??"").trim();
+    if(!relayUrl){
+      try{const saved=await api("/api/railway");relayUrl=String(saved.terminal_url||"").trim();if(document.getElementById("railwayUrl"))document.getElementById("railwayUrl").value=relayUrl;}catch{}
+    }
+    if(!relayUrl){setRailwayUi(false,"آدرس ترمینال ریلوی ذخیره نشده است");return false;}
+    try{
+      const r=await api("/api/railway/test",{method:"POST",body:JSON.stringify({terminal_url:relayUrl,api_token:relayToken})});
+      const ok=!!r.ok; setRailwayUi(ok,ok?"ترمینال متصل است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر"));
+      if(ok && !opts.silent)appendTerminal("اتصال برقرار شد.","ok");
+      return ok;
+    }catch(e){setRailwayUi(false,e.message);return false;}
+  }
   async function loadRailway(){
     try{
       const r=await api("/api/railway");
       document.getElementById("railwayUrl").value=r.terminal_url||"";
       document.getElementById("railwayToken").value="";
       document.getElementById("railwayToken").dataset.configured=r.has_token?"1":"0";
-      document.getElementById("railwayStatus").textContent=r.configured?"Relay تنظیم شده است":"Relay هنوز تنظیم نشده است";
+      if(r.configured&&r.has_token) await verifyRailwayConnection({url:r.terminal_url,token:"",silent:true});
+      else setRailwayUi(false,"ترمینال ریلوی هنوز تنظیم نشده است");
     }catch(e){document.getElementById("railwayStatus").textContent=e.message;}
   }
   document.getElementById("railwaySave")?.addEventListener("click",async()=>{
@@ -3936,8 +3989,7 @@ function openMapProvince(provinceName){
     if(!/^https:\/\/[^/]+/i.test(relayUrl)){el.textContent="آدرس معتبر نیست؛ فقط دامنه‌ی https ریلوی را وارد کنید.";dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";return;}
     if(!relayToken && document.getElementById("railwayToken").dataset.configured!=="1"){el.textContent="کلید ترمینال خالی است؛ مقدار RELAY_TOKEN را وارد کنید.";dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";return;}
     el.textContent="در حال تست..."; dot.className="railway-dot"; badge.className="badge badge-warn"; badge.textContent="در حال اتصال";
-    try{const r=await api("/api/railway/test",{method:"POST",body:JSON.stringify({terminal_url:relayUrl,api_token:relayToken})}); const ok=!!r.ok; el.textContent=ok?"ترمینال متصل است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر"); dot.className="railway-dot "+(ok?"ok":"bad"); badge.className="badge "+(ok?"badge-ok":"badge-off"); badge.textContent=ok?"متصل":"قطع"; if(ok) appendTerminal("اتصال برقرار شد.","ok");}
-    catch(e){el.textContent=e.message;dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";}
+    await verifyRailwayConnection({url:relayUrl,token:relayToken});
   });
   function appendTerminal(text, cls){
     const out=document.getElementById("terminalOutput"); if(!out)return;
