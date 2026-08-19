@@ -45,6 +45,7 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .railway-layout{display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,2fr);gap:16px;align-items:stretch}
 .railway-card{height:100%;margin-bottom:0}
 .railway-connect{display:flex;flex-direction:column;gap:12px}
+.railway-connect .field{margin:0}.railway-connect .field input{padding:10px 12px;font-size:13.5px;line-height:1.5;border-radius:8px}
 .railway-steps{display:grid;gap:8px;margin-top:4px}
 .railway-step{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.018);font-size:12px;color:var(--text-secondary)}
 .railway-step>.step-num{display:grid;place-items:center;min-width:22px;height:22px;border-radius:50%;background:var(--accent-dim);color:var(--accent);font-size:11px;font-weight:700}
@@ -835,6 +836,7 @@ table tbody tr{height:auto}
       <div class="nav-item active" data-sec="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>داشبورد</div>
       <div class="nav-item" data-sec="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>کاربران<span class="count" id="navUsersCount">—</span></div>
       <div class="nav-item" data-sec="nodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>نودها<span class="count" id="navNodesCount">—</span></div>
+      <div class="nav-item" data-sec="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-6 4 12 2-6h6"/><path d="M3 3v18h18"/></svg>مانیتور</div>
       <div class="nav-section">عملیات</div>
       <div class="nav-item" data-sec="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>فروشگاه</div>
       <div class="nav-item" data-sec="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>بکاپ</div>
@@ -932,6 +934,16 @@ table tbody tr{height:auto}
         <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>نسخه</th><th>کاربران</th><th>ریکوست امروز</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
         <tbody id="nodesBody"><tr><td colspan="7" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
         <div class="pager" id="nodesPager" style="display:none"></div>
+      </div>
+    </section>
+    <section class="section" id="monitor">
+      <div class="card" id="monitorGate">
+        <div class="card-head"><h3>مانیتور شبکه</h3><span class="badge badge-warn" id="monitorBadge">نیازمند ترمینال ریلوی</span></div>
+        <div style="padding:28px 20px;text-align:center">
+          <div style="font-size:30px;margin-bottom:10px">⌁</div>
+          <h3 style="font-size:16px;margin-bottom:8px" id="monitorTitle">ترمینال ریلوی متصل نیست</h3>
+          <p style="font-size:13px;color:var(--text-muted);max-width:480px;margin:0 auto;line-height:1.8" id="monitorText">برای مانیتورینگ نودها با Check-host، ابتدا از بخش «ترمینال ریلوی» اتصال را تکمیل کنید.</p>
+        </div>
       </div>
     </section>
     <section class="section" id="shop">
@@ -1165,7 +1177,7 @@ table tbody tr{height:auto}
       <div class="railway-steps">
         <div class="railway-step"><span class="step-num">۱</span><span>در Railway روی <strong>New Project</strong> و سپس <strong>Deploy from GitHub Repo</strong> بزنید؛ ریپوی <a href="https://github.com/isfwic10-arch/railway-relay-terminal" target="_blank" rel="noopener">railway-relay-terminal</a> را انتخاب و Deploy کنید.</span></div>
         <div class="railway-step"><span class="step-num">۲</span><span>بعد از پایان Deploy، وارد سرویس شوید و در <strong>Variables</strong> یک متغیر بسازید: نام <code>RELAY_TOKEN</code> و مقدار یک کلید بلند و تصادفی. مقدار کلید را کپی نگه دارید.</span></div>
-        <div class="railway-step"><span class="step-num">۳</span><span>از بالای همان سرویس وارد <strong>Settings → Networking</strong> شوید و <strong>Generate Domain</strong> را بزنید. آدرس تولیدشده شبیه <code>https://xxxxx.up.railway.app</code> است؛ آن را کامل کپی کنید.</span></div>
+        <div class="railway-step"><span class="step-num">۳</span><span>از بالای همان سرویس وارد <strong>Settings → Networking</strong> شوید و <strong>Generate Domain</strong> را بزنید. اگر پورت پرسید، همان <code>8080</code> را انتخاب کنید؛ چیز دیگری لازم نیست. آدرس تولیدشده شبیه <code>https://xxxxx.up.railway.app</code> است؛ آن را کامل کپی کنید.</span></div>
         <div class="railway-step"><span class="step-num">۴</span><span>در همین صفحه، آدرس مرحله قبل و کلید <code>RELAY_TOKEN</code> را وارد کنید؛ اول <strong>ذخیره اتصال</strong> و بعد <strong>بررسی اتصال</strong> را بزنید. پس از سبز شدن وضعیت، ترمینال آماده است.</span></div>
       </div>
       <div class="field"><label>آدرس سرویس Railway</label><input id="railwayUrl" dir="ltr" style="text-align:left" placeholder="https://....up.railway.app" /></div>
@@ -1659,7 +1671,7 @@ table tbody tr{height:auto}
     el.querySelector('[data-pg="next"]')?.addEventListener("click",()=>onPage(info.page+1));
   }
 
-  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',telegram:'ربات تلگرام',railway:'Railway relay',settings:'تنظیمات'};
+  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',monitor:'مانیتور شبکه',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',telegram:'ربات تلگرام',railway:'ترمینال ریلوی',settings:'تنظیمات'};
   const topActions={
     dash:{label:'+ کاربر جدید',action:'user'}, users:{label:'+ کاربر جدید',action:'user'},
     nodes:{label:'+ افزودن نود',action:'node'}, shop:{label:'بروزرسانی',action:'shop'},
@@ -2807,6 +2819,8 @@ function openMapProvince(provinceName){
           <div class="row"><span>URL</span><span style="direction:ltr;font-size:12px">${esc(r.url||"—")}</span></div>
           <div class="row"><span>نسخه</span><span>${esc(r.version||"—")}</span></div>
           <div class="row"><span>کاربران فعال</span><span>${faNum(r.active_users??"—")}</span></div>
+          ${r.health_score!=null?`<div class="row"><span>سلامت</span><span>${faNum(r.health_score)}/${faNum(r.health_total||9)}${r.check_host?.iran_only?" · سرورهای ایران":""}</span></div>`:""}
+          ${r.check_host?.permanent_link?`<div class="row"><span>گزارش Check-host</span><a href="${esc(r.check_host.permanent_link)}" target="_blank" rel="noopener" style="color:var(--accent);direction:ltr">باز کردن گزارش</a></div>`:""}
           ${r.err?`<div class="row"><span>خطا</span><span style="color:var(--danger)">${esc(r.err)}</span></div>`:""}
           ${r.body?`<div class="row"><span>پاسخ</span><span style="direction:ltr;font-size:11px;max-width:60%;word-break:break-all">${esc(r.body)}</span></div>`:""}
         </div>`;
@@ -3897,6 +3911,7 @@ function openMapProvince(provinceName){
   // remove old swShopEnable handler if any - replaced by feature gate only
 
   topActions.railway={label:'',action:'none'};
+  topActions.monitor={label:'',action:'none'};
   async function loadRailway(){
     try{
       const r=await api("/api/railway");
@@ -3929,11 +3944,28 @@ function openMapProvince(provinceName){
     const line=document.createElement("div"); line.className="terminal-line "+(cls||""); line.textContent=String(text||""); out.appendChild(line); out.scrollTop=out.scrollHeight;
   }
   document.getElementById("terminalForm")?.addEventListener("submit",async(e)=>{
-    e.preventDefault(); const input=document.getElementById("terminalCommand"), cmd=input.value.trim(); if(!cmd)return;
+    e.preventDefault(); const input=document.getElementById("terminalCommand"); let cmd=input.value.trim(); if(!cmd)return;
+    if(/^ping\s+/i.test(cmd) && !/\s-(?:c|n)\s*\d+/i.test(cmd)) cmd+=" -c 4";
     appendTerminal("$ "+cmd); input.value=""; input.disabled=true;
     try{const r=await api("/api/railway/exec",{method:"POST",body:JSON.stringify({command:cmd})}); appendTerminal(r.output||r.err||"بدون خروجی",r.ok?"ok":"err");}
     catch(err){appendTerminal(err.message,"err");} finally{input.disabled=false;input.focus();}
   });
+  async function loadMonitor(){
+    const badge=document.getElementById("monitorBadge"), title=document.getElementById("monitorTitle"), text=document.getElementById("monitorText");
+    badge.className="badge badge-warn"; badge.textContent="در حال بررسی";
+    title.textContent="در حال بررسی ترمینال ریلوی"; text.textContent="وضعیت اتصال relay در حال بررسی است...";
+    try{
+      const r=await api("/api/railway/test",{method:"POST",body:"{}"});
+      if(!r.ok) throw new Error(r.err||"relay unavailable");
+      badge.className="badge badge-ok";badge.textContent="متصل";
+      title.textContent="در حال ساخت";
+      text.textContent="ترمینال ریلوی متصل است. صفحه‌ی کامل مانیتورینگ Check-host در مرحله‌ی بعدی روی همین بخش ساخته می‌شود.";
+    }catch(e){
+      badge.className="badge badge-off";badge.textContent="قفل";
+      title.textContent="ترمینال ریلوی متصل نیست";
+      text.textContent="برای فعال شدن مانیتور، ابتدا اتصال ترمینال ریلوی را کامل کنید. "+e.message;
+    }
+  }
   function onSectionEnter(sec){
     if(sec==="dash")loadDashboard(true);
     else if(sec==="users")loadUsers();
@@ -3945,6 +3977,7 @@ function openMapProvince(provinceName){
     }
     else if(sec==="telegram")loadTelegram();
     else if(sec==="railway")loadRailway();
+    else if(sec==="monitor")loadMonitor();
     else if(sec==="settings"){loadRules();loadProxySettings();}
   }
   function boot(){
