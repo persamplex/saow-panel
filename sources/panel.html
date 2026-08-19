@@ -47,7 +47,9 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .railway-connect{display:flex;flex-direction:column;gap:12px}
 .railway-steps{display:grid;gap:8px;margin-top:4px}
 .railway-step{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.018);font-size:12px;color:var(--text-secondary)}
-.railway-step b{display:grid;place-items:center;min-width:22px;height:22px;border-radius:50%;background:var(--accent-dim);color:var(--accent);font-size:11px}
+.railway-step>.step-num{display:grid;place-items:center;min-width:22px;height:22px;border-radius:50%;background:var(--accent-dim);color:var(--accent);font-size:11px;font-weight:700}
+.railway-step strong{color:var(--text);font-weight:600}
+.railway-step a{color:var(--accent);text-decoration:none;border-bottom:1px dashed rgba(125,211,252,.45)}.railway-step a:hover{color:#bae6fd}
 .railway-status{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;background:rgba(255,255,255,.03);font-size:12px;color:var(--text-secondary)}
 .railway-dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted)}.railway-dot.ok{background:var(--success);box-shadow:0 0 0 4px rgba(74,222,128,.12)}.railway-dot.bad{background:var(--danger)}
 .terminal-shell{height:100%;min-height:520px;background:#07090c;border:1px solid rgba(125,211,252,.16);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.24)}
@@ -1161,10 +1163,10 @@ table tbody tr{height:auto}
       <div class="card-head"><h3>ترمینال ریلوی</h3><span class="badge badge-info">اتصال امن</span></div>
       <p style="font-size:12px;color:var(--text-muted);line-height:1.8">این سرویس مثل یک کامپیوتر لینوکسی کوچک در اختیار پنل قرار می‌گیرد: اجرای دستور، curl، DNS، ping و بررسی نودها از همان محیط انجام می‌شود. کلید فقط در Worker مادر ذخیره می‌شود.</p>
       <div class="railway-steps">
-        <div class="railway-step"><b>۱</b><span>پوشه‌ی <code>railway-relay</code> این پروژه را در یک ریپوی GitHub جداگانه قرار دهید و در Railway گزینه‌ی <b>Deploy from GitHub</b> را انتخاب کنید.</span></div>
-        <div class="railway-step"><b>۲</b><span>در بخش <b>Variables</b> متغیر <code>RELAY_TOKEN</code> را با یک کلید طولانی تصادفی بسازید؛ مقدارش را نگه دارید.</span></div>
-        <div class="railway-step"><b>۳</b><span>در بخش <b>Networking</b> روی <b>Generate Domain</b> بزنید؛ فقط دامنه‌ی <code>https://...</code> را کپی کنید، نه مسیر <code>/health</code>.</span></div>
-        <div class="railway-step"><b>۴</b><span>دامنه و همان مقدار <code>RELAY_TOKEN</code> را در فرم وارد کنید، ذخیره کنید و اتصال را بررسی کنید.</span></div>
+        <div class="railway-step"><span class="step-num">۱</span><span>در Railway روی <strong>New Project</strong> و سپس <strong>Deploy from GitHub Repo</strong> بزنید؛ ریپوی <a href="https://github.com/isfwic10-arch/railway-relay-terminal" target="_blank" rel="noopener">railway-relay-terminal</a> را انتخاب و Deploy کنید.</span></div>
+        <div class="railway-step"><span class="step-num">۲</span><span>بعد از پایان Deploy، وارد سرویس شوید و در <strong>Variables</strong> یک متغیر بسازید: نام <code>RELAY_TOKEN</code> و مقدار یک کلید بلند و تصادفی. مقدار کلید را کپی نگه دارید.</span></div>
+        <div class="railway-step"><span class="step-num">۳</span><span>از بالای همان سرویس وارد <strong>Settings → Networking</strong> شوید و <strong>Generate Domain</strong> را بزنید. آدرس تولیدشده شبیه <code>https://xxxxx.up.railway.app</code> است؛ آن را کامل کپی کنید.</span></div>
+        <div class="railway-step"><span class="step-num">۴</span><span>در همین صفحه، آدرس مرحله قبل و کلید <code>RELAY_TOKEN</code> را وارد کنید؛ اول <strong>ذخیره اتصال</strong> و بعد <strong>بررسی اتصال</strong> را بزنید. پس از سبز شدن وضعیت، ترمینال آماده است.</span></div>
       </div>
       <div class="field"><label>آدرس سرویس Railway</label><input id="railwayUrl" dir="ltr" style="text-align:left" placeholder="https://....up.railway.app" /></div>
       <div class="field"><label>کلید ترمینال</label><input id="railwayToken" type="password" dir="ltr" style="text-align:left" placeholder="RELAY_TOKEN" /></div>
