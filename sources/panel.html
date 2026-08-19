@@ -4067,6 +4067,7 @@ function openMapProvince(provinceName){
     if(sec&&sec!=="dash"&&document.getElementById(sec)) goSection(sec,true);
     else loadDashboard(true);
     startDashPoll();
+    setInterval(()=>{if(currentSec==="monitor")loadMonitor();},60000);
     refreshRulesLocal().then(()=>{
       try{ localStorage.setItem("saow_panel_rules", JSON.stringify(PANEL_RULES||{})); }catch{}
       // بعد از rules، gates را دوباره هم‌تراز کن (race با موبایل)
