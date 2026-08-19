@@ -3921,7 +3921,7 @@ function openMapProvince(provinceName){
     if(!/^https:\/\/[^/]+/i.test(relayUrl)){el.textContent="آدرس معتبر نیست؛ فقط دامنه‌ی https ریلوی را وارد کنید.";dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";return;}
     if(!relayToken && document.getElementById("railwayToken").dataset.configured!=="1"){el.textContent="کلید ترمینال خالی است؛ مقدار RELAY_TOKEN را وارد کنید.";dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";return;}
     el.textContent="در حال تست..."; dot.className="railway-dot"; badge.className="badge badge-warn"; badge.textContent="در حال اتصال";
-    try{const r=await api("/api/railway/test",{method:"POST"}); const ok=!!r.ok; el.textContent=ok?"ترمینال متصل است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر"); dot.className="railway-dot "+(ok?"ok":"bad"); badge.className="badge "+(ok?"badge-ok":"badge-off"); badge.textContent=ok?"متصل":"قطع"; if(ok) appendTerminal("اتصال برقرار شد.","ok");}
+    try{const r=await api("/api/railway/test",{method:"POST",body:JSON.stringify({terminal_url:relayUrl,api_token:relayToken})}); const ok=!!r.ok; el.textContent=ok?"ترمینال متصل است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر"); dot.className="railway-dot "+(ok?"ok":"bad"); badge.className="badge "+(ok?"badge-ok":"badge-off"); badge.textContent=ok?"متصل":"قطع"; if(ok) appendTerminal("اتصال برقرار شد.","ok");}
     catch(e){el.textContent=e.message;dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";}
   });
   function appendTerminal(text, cls){
