@@ -1159,17 +1159,18 @@ table tbody tr{height:auto}
   <div class="railway-layout">
     <div class="card railway-card railway-connect">
       <div class="card-head"><h3>ترمینال ریلوی</h3><span class="badge badge-info">اتصال امن</span></div>
-      <p style="font-size:12px;color:var(--text-muted);line-height:1.8">یک سرویس کوچک در Railway بسازید و آدرس عمومی و کلید آن را اینجا وارد کنید. کلید فقط در مادر ذخیره می‌شود.</p>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.8">این سرویس مثل یک کامپیوتر لینوکسی کوچک در اختیار پنل قرار می‌گیرد: اجرای دستور، curl، DNS، ping و بررسی نودها از همان محیط انجام می‌شود. کلید فقط در Worker مادر ذخیره می‌شود.</p>
       <div class="railway-steps">
-        <div class="railway-step"><b>۱</b><span>در Railway یک سرویس از قالب/ریپوی relay بسازید و متغیر <code>RELAY_TOKEN</code> را تنظیم کنید.</span></div>
-        <div class="railway-step"><b>۲</b><span>دامنه عمومی سرویس را از بخش <b>Networking</b> کپی کنید.</span></div>
-        <div class="railway-step"><b>۳</b><span>آدرس و همان کلید را ذخیره و «بررسی اتصال» را بزنید.</span></div>
+        <div class="railway-step"><b>۱</b><span>پوشه‌ی <code>railway-relay</code> این پروژه را در یک ریپوی GitHub جداگانه قرار دهید و در Railway گزینه‌ی <b>Deploy from GitHub</b> را انتخاب کنید.</span></div>
+        <div class="railway-step"><b>۲</b><span>در بخش <b>Variables</b> متغیر <code>RELAY_TOKEN</code> را با یک کلید طولانی تصادفی بسازید؛ مقدارش را نگه دارید.</span></div>
+        <div class="railway-step"><b>۳</b><span>در بخش <b>Networking</b> روی <b>Generate Domain</b> بزنید؛ فقط دامنه‌ی <code>https://...</code> را کپی کنید، نه مسیر <code>/health</code>.</span></div>
+        <div class="railway-step"><b>۴</b><span>دامنه و همان مقدار <code>RELAY_TOKEN</code> را در فرم وارد کنید، ذخیره کنید و اتصال را بررسی کنید.</span></div>
       </div>
       <div class="field"><label>آدرس سرویس Railway</label><input id="railwayUrl" dir="ltr" style="text-align:left" placeholder="https://....up.railway.app" /></div>
       <div class="field"><label>کلید ترمینال</label><input id="railwayToken" type="password" dir="ltr" style="text-align:left" placeholder="RELAY_TOKEN" /></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="railwaySave" type="button">ذخیره اتصال</button><button class="btn" id="railwayTest" type="button">بررسی اتصال</button></div>
       <div class="railway-status"><i class="railway-dot" id="railwayDot"></i><span id="railwayStatus">اتصال بررسی نشده است</span></div>
-      <p style="font-size:11px;color:var(--text-muted);line-height:1.7">برای ساخت خودکار کامل، در مرحله بعد API Token ریلوی و شناسه پروژه به همین فرم اضافه می‌شود؛ سپس مادر سرویس و دامنه را از API ریلوی می‌سازد.</p>
+      <p style="font-size:11px;color:var(--text-muted);line-height:1.7">اگر دامنه یا کلید خالی باشد، پنل دیگر درخواست نامعتبر نمی‌فرستد و علت را همین‌جا نشان می‌دهد.</p>
     </div>
     <div class="terminal-shell">
       <div class="terminal-head"><div class="terminal-title"><span class="terminal-lights"><i></i><i></i><i></i></span><span>saow@railway:~$</span></div><span class="badge badge-off" id="terminalBadge">قطع</span></div>
@@ -1767,7 +1768,7 @@ table tbody tr{height:auto}
       }
       throw new Error((data&&data.err)||"unauthorized");
     }
-    if(!res.ok&&data&&data.ok===false)throw new Error(humanizeError(data.err||data.message||("HTTP "+res.status)));
+    if(!res.ok&&data&&data.ok===false)throw new Error(humanizeError(data.err||data.message||("HTTP "+res.status))+" ["+res.status+"]");
     return data;
   }
   async function showApp(){
@@ -3899,6 +3900,7 @@ function openMapProvince(provinceName){
       const r=await api("/api/railway");
       document.getElementById("railwayUrl").value=r.terminal_url||"";
       document.getElementById("railwayToken").value="";
+      document.getElementById("railwayToken").dataset.configured=r.has_token?"1":"0";
       document.getElementById("railwayStatus").textContent=r.configured?"Relay تنظیم شده است":"Relay هنوز تنظیم نشده است";
     }catch(e){document.getElementById("railwayStatus").textContent=e.message;}
   }
@@ -3913,6 +3915,9 @@ function openMapProvince(provinceName){
   });
   document.getElementById("railwayTest")?.addEventListener("click",async()=>{
     const el=document.getElementById("railwayStatus"), dot=document.getElementById("railwayDot"), badge=document.getElementById("terminalBadge");
+    const relayUrl=document.getElementById("railwayUrl").value.trim(), relayToken=document.getElementById("railwayToken").value.trim();
+    if(!/^https:\/\/[^/]+/i.test(relayUrl)){el.textContent="آدرس معتبر نیست؛ فقط دامنه‌ی https ریلوی را وارد کنید.";dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";return;}
+    if(!relayToken && document.getElementById("railwayToken").dataset.configured!=="1"){el.textContent="کلید ترمینال خالی است؛ مقدار RELAY_TOKEN را وارد کنید.";dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";return;}
     el.textContent="در حال تست..."; dot.className="railway-dot"; badge.className="badge badge-warn"; badge.textContent="در حال اتصال";
     try{const r=await api("/api/railway/test",{method:"POST"}); const ok=!!r.ok; el.textContent=ok?"ترمینال متصل است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر"); dot.className="railway-dot "+(ok?"ok":"bad"); badge.className="badge "+(ok?"badge-ok":"badge-off"); badge.textContent=ok?"متصل":"قطع"; if(ok) appendTerminal("اتصال برقرار شد.","ok");}
     catch(e){el.textContent=e.message;dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";}
