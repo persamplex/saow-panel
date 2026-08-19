@@ -30,15 +30,33 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .brand-name{font-size:17px;font-weight:600}
 .brand-sub{font-size:11px;color:var(--text-muted);margin-top:1px}
 .nav{flex:1;padding:8px 12px;overflow-y:auto}
+.nav{mask-image:linear-gradient(to bottom,#000 0,#000 calc(100% - 22px),transparent 100%)}
 .nav-section{font-size:11px;color:var(--text-muted);padding:16px 12px 8px}
 .nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;color:var(--text-secondary);cursor:pointer;transition:all .2s;font-size:14px;margin-bottom:2px}
 .nav-item:hover{background:rgba(255,255,255,.04);color:var(--text)}
 .nav-item.active{background:var(--accent-dim);color:var(--accent)}
+.nav-item[data-sec="railway"]{color:#a5f3fc;border:1px solid rgba(125,211,252,.08);margin-top:6px}
+.nav-item[data-sec="railway"]::before{content:"⌁";font-size:20px;line-height:0;color:var(--accent)}
 .nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.85}
 .nav-item .count{margin-right:auto;font-size:11px;background:rgba(255,255,255,.08);color:var(--text-secondary);padding:2px 7px;border-radius:10px;font-weight:500}
 .nav-item.active .count{background:rgba(125,211,252,.2);color:var(--accent)}
 .sidebar-foot{padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)}
 .main{flex:1;margin-right:var(--sidebar-w);padding:28px 32px 48px;max-width:1400px}
+.railway-layout{display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,2fr);gap:16px;align-items:stretch}
+.railway-card{height:100%;margin-bottom:0}
+.railway-connect{display:flex;flex-direction:column;gap:12px}
+.railway-steps{display:grid;gap:8px;margin-top:4px}
+.railway-step{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.018);font-size:12px;color:var(--text-secondary)}
+.railway-step b{display:grid;place-items:center;min-width:22px;height:22px;border-radius:50%;background:var(--accent-dim);color:var(--accent);font-size:11px}
+.railway-status{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;background:rgba(255,255,255,.03);font-size:12px;color:var(--text-secondary)}
+.railway-dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted)}.railway-dot.ok{background:var(--success);box-shadow:0 0 0 4px rgba(74,222,128,.12)}.railway-dot.bad{background:var(--danger)}
+.terminal-shell{height:100%;min-height:520px;background:#07090c;border:1px solid rgba(125,211,252,.16);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.24)}
+.terminal-head{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.08);background:#0d1117}
+.terminal-title{display:flex;align-items:center;gap:8px;font:600 12px ui-monospace,SFMono-Regular,Consolas,monospace;color:#c9d1d9;direction:ltr}
+.terminal-lights{display:flex;gap:5px}.terminal-lights i{width:9px;height:9px;border-radius:50%;display:block}.terminal-lights i:nth-child(1){background:#ff5f56}.terminal-lights i:nth-child(2){background:#ffbd2e}.terminal-lights i:nth-child(3){background:#27c93f}
+.terminal-output{flex:1;overflow:auto;padding:16px;color:#b8c4d1;font:13px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-word}
+.terminal-line{color:#8b949e}.terminal-line.ok{color:#7ee787}.terminal-line.err{color:#ff7b72}.terminal-form{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.08);background:#0d1117;direction:ltr}.terminal-form input{flex:1;background:#05070a;border:1px solid rgba(255,255,255,.1);color:#e6edf3;border-radius:8px;padding:10px 11px;outline:none;font:13px ui-monospace,SFMono-Regular,Consolas,monospace}.terminal-form input:focus{border-color:rgba(125,211,252,.5)}.terminal-form .btn{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+@media(max-width:900px){.railway-layout{grid-template-columns:1fr}.terminal-shell{min-height:440px}.railway-card{height:auto}}
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap}
 .page-title{font-size:22px;font-weight:600}
 .page-title span{color:var(--text-muted);font-weight:400;font-size:15px;margin-right:8px}
@@ -821,7 +839,7 @@ table tbody tr{height:auto}
       <div class="nav-item" data-sec="logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>لاگ‌ها</div>
             <div class="nav-item" data-sec="telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>ربات تلگرام</div>
 <div class="nav-item" data-sec="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>تنظیمات</div>
-      <div class="nav-item" data-sec="railway">⌘ Railway relay</div>
+      <div class="nav-item" data-sec="railway">⌁ ترمینال ریلوی</div>
     </nav>
     <div class="sidebar-foot" id="sidebarFoot">— · Push Mode</div>
   </aside>
@@ -1138,19 +1156,26 @@ table tbody tr{height:auto}
     </section>
 
 <section class="section" id="railway">
-  <div class="card">
-    <div class="card-head"><h3>Railway relay / ترمینال ریلوی</h3></div>
-    <p style="font-size:12px;color:var(--text-muted);line-height:1.7">
-      این بخش به یک سرویس Railway شما وصل می‌شود که فقط <code>/health</code> و <code>/check</code> را ارائه می‌کند.
-      اجرای دستور آزاد از پنل عمداً پشتیبانی نمی‌شود.
-    </p>
-    <div class="field"><label>آدرس relay</label><input id="railwayUrl" dir="ltr" style="text-align:left" placeholder="https://your-service.up.railway.app" /></div>
-    <div class="field"><label>کلید API / Bearer</label><input id="railwayToken" type="password" dir="ltr" style="text-align:left" /></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary" id="railwaySave" type="button">ذخیره</button>
-      <button class="btn" id="railwayTest" type="button">تست اتصال</button>
+  <div class="railway-layout">
+    <div class="card railway-card railway-connect">
+      <div class="card-head"><h3>ترمینال ریلوی</h3><span class="badge badge-info">اتصال امن</span></div>
+      <p style="font-size:12px;color:var(--text-muted);line-height:1.8">یک سرویس کوچک در Railway بسازید و آدرس عمومی و کلید آن را اینجا وارد کنید. کلید فقط در مادر ذخیره می‌شود.</p>
+      <div class="railway-steps">
+        <div class="railway-step"><b>۱</b><span>در Railway یک سرویس از قالب/ریپوی relay بسازید و متغیر <code>RELAY_TOKEN</code> را تنظیم کنید.</span></div>
+        <div class="railway-step"><b>۲</b><span>دامنه عمومی سرویس را از بخش <b>Networking</b> کپی کنید.</span></div>
+        <div class="railway-step"><b>۳</b><span>آدرس و همان کلید را ذخیره و «بررسی اتصال» را بزنید.</span></div>
+      </div>
+      <div class="field"><label>آدرس سرویس Railway</label><input id="railwayUrl" dir="ltr" style="text-align:left" placeholder="https://....up.railway.app" /></div>
+      <div class="field"><label>کلید ترمینال</label><input id="railwayToken" type="password" dir="ltr" style="text-align:left" placeholder="RELAY_TOKEN" /></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="railwaySave" type="button">ذخیره اتصال</button><button class="btn" id="railwayTest" type="button">بررسی اتصال</button></div>
+      <div class="railway-status"><i class="railway-dot" id="railwayDot"></i><span id="railwayStatus">اتصال بررسی نشده است</span></div>
+      <p style="font-size:11px;color:var(--text-muted);line-height:1.7">برای ساخت خودکار کامل، در مرحله بعد API Token ریلوی و شناسه پروژه به همین فرم اضافه می‌شود؛ سپس مادر سرویس و دامنه را از API ریلوی می‌سازد.</p>
     </div>
-    <p id="railwayStatus" style="font-size:12px;color:var(--text-muted);margin-top:10px"></p>
+    <div class="terminal-shell">
+      <div class="terminal-head"><div class="terminal-title"><span class="terminal-lights"><i></i><i></i><i></i></span><span>saow@railway:~$</span></div><span class="badge badge-off" id="terminalBadge">قطع</span></div>
+      <div class="terminal-output" id="terminalOutput"><div class="terminal-line">SAOW Railway Terminal</div><div class="terminal-line">برای شروع، ابتدا relay را از ستون سمت راست وصل کنید.</div></div>
+      <form class="terminal-form" id="terminalForm"><input id="terminalCommand" autocomplete="off" spellcheck="false" placeholder="command ..."/><button class="btn btn-primary" type="submit">اجرا</button></form>
+    </div>
   </div>
 </section>
 <section class="section" id="settings">
@@ -3887,9 +3912,20 @@ function openMapProvince(provinceName){
     }catch(e){toast(e.message,"err");}
   });
   document.getElementById("railwayTest")?.addEventListener("click",async()=>{
-    const el=document.getElementById("railwayStatus"); el.textContent="در حال تست...";
-    try{const r=await api("/api/railway/test",{method:"POST"});el.textContent=r.ok?"اتصال سالم است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر");}
-    catch(e){el.textContent=e.message;}
+    const el=document.getElementById("railwayStatus"), dot=document.getElementById("railwayDot"), badge=document.getElementById("terminalBadge");
+    el.textContent="در حال تست..."; dot.className="railway-dot"; badge.className="badge badge-warn"; badge.textContent="در حال اتصال";
+    try{const r=await api("/api/railway/test",{method:"POST"}); const ok=!!r.ok; el.textContent=ok?"ترمینال متصل است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر"); dot.className="railway-dot "+(ok?"ok":"bad"); badge.className="badge "+(ok?"badge-ok":"badge-off"); badge.textContent=ok?"متصل":"قطع"; if(ok) appendTerminal("اتصال برقرار شد.","ok");}
+    catch(e){el.textContent=e.message;dot.className="railway-dot bad";badge.className="badge badge-off";badge.textContent="قطع";}
+  });
+  function appendTerminal(text, cls){
+    const out=document.getElementById("terminalOutput"); if(!out)return;
+    const line=document.createElement("div"); line.className="terminal-line "+(cls||""); line.textContent=String(text||""); out.appendChild(line); out.scrollTop=out.scrollHeight;
+  }
+  document.getElementById("terminalForm")?.addEventListener("submit",async(e)=>{
+    e.preventDefault(); const input=document.getElementById("terminalCommand"), cmd=input.value.trim(); if(!cmd)return;
+    appendTerminal("$ "+cmd); input.value=""; input.disabled=true;
+    try{const r=await api("/api/railway/exec",{method:"POST",body:JSON.stringify({command:cmd})}); appendTerminal(r.output||r.err||"بدون خروجی",r.ok?"ok":"err");}
+    catch(err){appendTerminal(err.message,"err");} finally{input.disabled=false;input.focus();}
   });
   function onSectionEnter(sec){
     if(sec==="dash")loadDashboard(true);
