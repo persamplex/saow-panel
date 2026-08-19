@@ -2703,7 +2703,7 @@ function openMapProvince(provinceName){
   const nodeHealthAutoAt=new Map();
   async function autoCheckNodeHealth(){
     if(nodeHealthAutoRunning)return;
-    if(!(await verifyRailwayConnection({silent:true})))return;
+    if(!(await verifyRailwayConnection({silent:true,noAuto:true})))return;
     const due=(nodesCache.managed||[]).filter(n=>{
       const id=n.id||n.script_name, score=Number(n.health_score)||0, last=nodeHealthAutoAt.get(id)||0;
       return score<9 && Date.now()-last>5*60*1000;
@@ -3961,6 +3961,7 @@ function openMapProvince(provinceName){
       const r=await api("/api/railway/test",{method:"POST",body:JSON.stringify({terminal_url:relayUrl,api_token:relayToken})});
       const ok=!!r.ok; setRailwayUi(ok,ok?"ترمینال متصل است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر"));
       if(ok && !opts.silent)appendTerminal("اتصال برقرار شد.","ok");
+      if(ok&&!opts.noAuto) setTimeout(()=>{try{autoCheckNodeHealth().catch(()=>{});}catch{}},0);
       return ok;
     }catch(e){setRailwayUi(false,e.message);return false;}
   }
