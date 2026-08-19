@@ -792,25 +792,6 @@ table tbody tr{height:auto}
   .nodes-head-hint{order:-1}
 }
 
-
-.fb-row{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:4px}
-.fb-side{font-size:13px;font-weight:600;color:var(--text-muted);min-width:52px;text-align:center;transition:color .15s}
-.fb-side.active{color:var(--accent)}
-.fb-switch{position:relative;width:52px;height:30px;border-radius:999px;border:none;cursor:pointer;padding:0;background:#3b3f55;transition:background .18s ease;flex-shrink:0}
-.fb-switch .fb-knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.35);transition:transform .18s ease}
-.fb-switch.on{background:#6366f1}
-.fb-switch.on .fb-knob{transform:translateX(22px)}
-.fb-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.ch-ratio{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;direction:ltr}
-.ch-ratio.ok{background:rgba(34,197,94,.15);color:#4ade80}
-.ch-ratio.mid{background:rgba(234,179,8,.15);color:#facc15}
-.ch-ratio.bad{background:rgba(239,68,68,.15);color:#f87171}
-.ch-ratio.na{background:rgba(255,255,255,.06);color:var(--text-muted)}
-.ch-bars{display:flex;gap:3px;align-items:flex-end;height:28px;margin-top:10px;flex-wrap:nowrap;overflow-x:auto}
-.ch-bars span{flex:1;min-width:8px;max-width:14px;border-radius:3px 3px 1px 1px;background:rgba(255,255,255,.12)}
-.ch-bars span.on{background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.4)}
-.ch-bars span.off{background:rgba(248,113,113,.35)}
-
 </style>
 </head>
 <body>
@@ -834,13 +815,13 @@ table tbody tr{height:auto}
       <div class="nav-item active" data-sec="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>داشبورد</div>
       <div class="nav-item" data-sec="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>کاربران<span class="count" id="navUsersCount">—</span></div>
       <div class="nav-item" data-sec="nodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>نودها<span class="count" id="navNodesCount">—</span></div>
-      <div class="nav-item" data-sec="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>مانیتور</div>
       <div class="nav-section">عملیات</div>
       <div class="nav-item" data-sec="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>فروشگاه</div>
       <div class="nav-item" data-sec="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>بکاپ</div>
       <div class="nav-item" data-sec="logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>لاگ‌ها</div>
             <div class="nav-item" data-sec="telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>ربات تلگرام</div>
 <div class="nav-item" data-sec="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>تنظیمات</div>
+      <div class="nav-item" data-sec="railway">⌘ Railway relay</div>
     </nav>
     <div class="sidebar-foot" id="sidebarFoot">— · Push Mode</div>
   </aside>
@@ -923,7 +904,6 @@ table tbody tr{height:auto}
           <div class="nodes-head-actions">
             <span class="nodes-head-hint">سالم = همگام‌سازی موفق اخیر</span>
             <div class="nodes-head-btns">
-              <button class="btn" type="button" id="btnCheckHostAll">وضعیت پروب ایران</button>
               <button class="btn" type="button" id="btnUpdateAllNodes">آپدیت همه نودها</button>
               <a class="btn" id="btnCfTokenCreate" href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22user_details%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Saow%20Node" target="_blank" rel="noopener">ساخت توکن کلودفلر</a>
             </div>
@@ -932,12 +912,6 @@ table tbody tr{height:auto}
         <div class="table-scroll"><table><thead><tr><th>نام</th><th>وضعیت</th><th>نسخه</th><th>کاربران</th><th>ریکوست امروز</th><th>آخرین دیده‌شدن</th><th></th></tr></thead>
         <tbody id="nodesBody"><tr><td colspan="7" class="empty-msg">در حال بارگذاری...</td></tr></tbody></table></div>
         <div class="pager" id="nodesPager" style="display:none"></div>
-      </div>
-    </section>
-    <section class="section" id="monitor">
-      <div class="page-head"><div><h2>مانیتور</h2><p class="page-desc">به‌زودی — مانیتورینگ زنده نودها</p></div></div>
-      <div class="card" style="padding:48px 20px;text-align:center">
-        <p class="empty-msg" style="margin:0;font-size:15px;color:var(--text-muted)">این بخش به‌زودی فعال می‌شود</p>
       </div>
     </section>
     <section class="section" id="shop">
@@ -1163,6 +1137,22 @@ table tbody tr{height:auto}
       </div>
     </section>
 
+<section class="section" id="railway">
+  <div class="card">
+    <div class="card-head"><h3>Railway relay / ترمینال ریلوی</h3></div>
+    <p style="font-size:12px;color:var(--text-muted);line-height:1.7">
+      این بخش به یک سرویس Railway شما وصل می‌شود که فقط <code>/health</code> و <code>/check</code> را ارائه می‌کند.
+      اجرای دستور آزاد از پنل عمداً پشتیبانی نمی‌شود.
+    </p>
+    <div class="field"><label>آدرس relay</label><input id="railwayUrl" dir="ltr" style="text-align:left" placeholder="https://your-service.up.railway.app" /></div>
+    <div class="field"><label>کلید API / Bearer</label><input id="railwayToken" type="password" dir="ltr" style="text-align:left" /></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="railwaySave" type="button">ذخیره</button>
+      <button class="btn" id="railwayTest" type="button">تست اتصال</button>
+    </div>
+    <p id="railwayStatus" style="font-size:12px;color:var(--text-muted);margin-top:10px"></p>
+  </div>
+</section>
 <section class="section" id="settings">
       <div class="grid-3" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
         <div class="setting-block"><h4>امنیت ورود</h4>
@@ -1197,20 +1187,9 @@ table tbody tr{height:auto}
               <button type="button" class="btn" id="btnTestProxy" style="white-space:nowrap;flex-shrink:0">تست پروکسی</button>
             </div>
           </div>
-          <div class="field" style="margin-top:10px">
-            <label style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;justify-content:center">
-              <span>Fallback Proxy</span>
-              <span class="stat-warn" data-tip="خودکار: همه ترافیک (به‌جز استثناها) از پروکسی خروجی.&#10;دستی: فقط دامنه‌های لیست از پروکسی می‌روند.">!</span>
-            </label>
-            <div class="fb-row">
-              <span class="fb-side" id="fbLabelAuto">خودکار</span>
-              <button type="button" id="egressFallback" class="fb-switch off" aria-pressed="false" title="Fallback Proxy"><span class="fb-knob"></span></button>
-              <span class="fb-side active" id="fbLabelManual">دستی</span>
-            </div>
-          </div>
-          <div id="egressDomainsWrap" class="field" style="margin-top:8px;overflow:hidden;transition:max-height .28s ease,opacity .28s ease,margin .28s ease">
+          <div class="field" style="margin-top:8px">
             <label style="display:flex;align-items:center;gap:6px">دامنه‌ها (با کاما جدا کنید)
-              <span class="stat-warn" data-tip="این دامنه‌ها از طریق پروکسی تنظیم‌شده رد می‌شوند. بقیه ترافیک مستقیم است.&#10;از وایلدکارد مثل *.chatgpt.com پشتیبانی می‌شود.">!</span>
+              <span class="stat-warn" data-tip="این دامنه‌ها از طریق پروکسی تنظیم‌شده رد می‌شوند. بقیه ترافیک مستقیم است.&#10;از وایلدکارد مثل *.chatgpt.com پشتیبانی می‌شود.&#10;مثال: *.openai.com, speedtest.net, chatgpt.com">!</span>
             </label>
             <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
           </div>
@@ -1340,40 +1319,8 @@ table tbody tr{height:auto}
       <button class="btn" type="button" id="nodeDetailSync">همگام‌سازی</button>
       <button class="btn btn-warn-soft" type="button" id="nodeDetailExclude">خارج از ساب</button>
       <button class="btn btn-ok-soft" type="button" id="nodeDetailToggle">قفل / باز</button>
-      <button class="btn" type="button" id="nodeDetailLiveLog" title="لاگ زنده نود (حداکثر ۵ دقیقه)">لاگ زنده</button>
-      <button class="btn" type="button" id="nodeDetailUpdate" title="فقط آپدیت کد — بدون حذف D1 و بایندینگ">آپدیت نود</button>
-      <button class="btn btn-warn-soft" type="button" id="nodeDetailReinstall" title="حذف ورکر و D1 قبلی و ساخت آدرس جدید">نصب مجدد</button>
+      <button class="btn" type="button" id="nodeDetailUpdate" title="نصب مجدد از گیت‌هاب">آپدیت نود</button>
       <button class="btn" type="button" id="nodeDetailClose2">بستن</button>
-    </div>
-  </div>
-</div>
-<div class="overlay" id="chDetailOverlay">
-  <div class="modal" style="max-width:min(420px,94vw)">
-    <div class="modal-h">
-      <h3 id="chDetailTitle" style="margin:0">دسترسی از ایران</h3>
-      <button class="icon-btn" type="button" id="chDetailClose">✕</button>
-    </div>
-    <div class="modal-b">
-      <p id="chDetailRatio" style="margin:0 0 8px;font-size:14px;font-weight:600"></p>
-      <div id="chDetailBars" class="ch-bars"></div>
-      <div id="chDetailList" style="margin-top:14px;display:grid;gap:6px;font-size:12.5px"></div>
-      <p id="chDetailLink" style="margin-top:12px;font-size:11px;color:var(--text-muted)"></p>
-    </div>
-  </div>
-</div>
-<div class="overlay" id="liveLogOverlay">
-  <div class="modal" style="max-width:min(720px,96vw);max-height:90vh;display:flex;flex-direction:column">
-    <div class="modal-h">
-      <h3 id="liveLogTitle" style="margin:0">لاگ زنده نود</h3>
-      <button class="icon-btn" type="button" id="liveLogClose">✕</button>
-    </div>
-    <div class="modal-b" style="flex:1;overflow:auto;padding-top:8px">
-      <p id="liveLogStatus" style="font-size:12px;color:var(--text-muted);margin:0 0 8px">در حال اتصال…</p>
-      <pre id="liveLogBody" dir="ltr" style="text-align:left;font-size:11px;line-height:1.45;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;max-height:55vh;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:0"></pre>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" type="button" id="liveLogRefresh">تازه‌سازی</button>
-      <button class="btn btn-primary" type="button" id="liveLogClose2">بستن و خاموش کردن لاگ</button>
     </div>
   </div>
 </div>
@@ -1684,7 +1631,7 @@ table tbody tr{height:auto}
     el.querySelector('[data-pg="next"]')?.addEventListener("click",()=>onPage(info.page+1));
   }
 
-  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',telegram:'ربات تلگرام',settings:'تنظیمات'};
+  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',telegram:'ربات تلگرام',railway:'Railway relay',settings:'تنظیمات'};
   const topActions={
     dash:{label:'+ کاربر جدید',action:'user'}, users:{label:'+ کاربر جدید',action:'user'},
     nodes:{label:'+ افزودن نود',action:'node'}, shop:{label:'بروزرسانی',action:'shop'},
@@ -2712,32 +2659,6 @@ function openMapProvince(provinceName){
     }
     return null;
   }
-  let _nodesCheckHostRunning=false;
-  async function runCheckHostAllSilent(){
-    if(_nodesCheckHostRunning) return;
-    const list=nodesCache.managed||[];
-    if(!list.length) return;
-    _nodesCheckHostRunning=true;
-    try{
-      const r=await api("/api/nodes/check-host",{method:"POST"});
-      if(r&&r.ok){
-        for(const row of (r.results||[])){
-          const n=(nodesCache.managed||[]).find(x=>String(x.id)===String(row.id)||String(x.script_name)===String(row.script_name));
-          if(n) n.check_host={ok:row.ok,ok_count:row.ok_count,total:row.total,ratio:row.ratio,details:row.details,at:Date.now(),permanent_link:row.permanent_link,err:row.err,status:row.status,via:row.via};
-          if(row&&row.err&&!row.ok){
-            // یک‌بار toast برای خطای سراسری مثل 403
-            if(/گزارش پروب|پروب منطقه/i.test(String(row.err))) toast(String(row.err).slice(0,120),"err");
-          }
-        }
-        renderNodes(nodesPage||1);
-      } else if(r&&r.err){
-        toast(r.err,"err");
-      }
-    }catch(e){
-      toast("پروب ایران: "+(e.message||e),"err");
-    }
-    _nodesCheckHostRunning=false;
-  }
   async function loadNodes(){
     try{
       const data=await api("/api/nodes");nodesCache={managed:data.managed||[],alive:data.alive||[]};
@@ -2761,15 +2682,14 @@ function openMapProvince(provinceName){
         const id=n.id||n.script_name;
         const alive=matchAlive(n);
         const disabled=n.is_disabled===1;
-        const online=n.health?.ok===true;
+        const online=n.online===true||!!alive;
+        const healthScore=Number(n.health_score ?? (online?1:0));
+        const healthWarn=healthScore<9;
         let statusHtml;
         if(disabled) statusHtml='<span class="badge badge-off">قفل</span>';
-        else if(online) statusHtml='<span class="badge badge-ok" title="نود و API کلودفلر در دسترس‌اند">سالم</span>';
-        else {
-          const nodeErr=n.health?.node?.err||"—";
-          const cfErr=n.health?.cloudflare?.err||"—";
-          statusHtml=`<span class="badge badge-off" title="نود: ${esc(nodeErr)} | Cloudflare: ${esc(cfErr)}">قطع</span>`;
-        }
+        else if(online) statusHtml='<span class="badge badge-ok">سالم</span>';
+        else statusHtml='<span class="badge badge-off">آفلاین</span>';
+        if(healthWarn && !disabled) statusHtml += ` <span class="stat-warn" tabindex="0" data-tip="${esc(n.health_error||("سلامت کامل نیست: "+healthScore+"/9"))}">!</span>`;
         const activeUsers=online?(alive?.activeUsers??alive?.active_users??n.active_users??0):(n.active_users??"—");
         const lastSeenTs=alive?.lastSeen||alive?.last_seen||n.last_seen;
         const lastSeen=lastSeenTs?relTime(lastSeenTs):"—";
@@ -2801,32 +2721,6 @@ function openMapProvince(provinceName){
     tbody.querySelectorAll("[data-nact]").forEach(btn=>btn.addEventListener("click",()=>onNodeAction(btn.dataset.nact,btn.dataset.nid)));
   }
 
-  function openCheckHostDetail(nodeId){
-    const n=(nodesCache.managed||[]).find(x=>String(x.id||x.script_name)===String(nodeId));
-    const ch=n&&n.check_host;
-    const ov=document.getElementById("chDetailOverlay");
-    document.getElementById("chDetailTitle").textContent="دسترسی ایران · "+(n?.script_name||nodeId);
-    if(!ch||!ch.details){
-      document.getElementById("chDetailRatio").textContent="هنوز گزارش تازه‌ای از پروب ایران ثبت نشده است";
-      document.getElementById("chDetailBars").innerHTML="";
-      document.getElementById("chDetailList").innerHTML="";
-      document.getElementById("chDetailLink").textContent="";
-      ov.classList.add("open");
-      return;
-    }
-    document.getElementById("chDetailRatio").textContent=(ch.ok_count||0)+" از "+(ch.total||0)+" پروب منطقه‌ای موفق";
-    document.getElementById("chDetailBars").innerHTML=(ch.details||[]).map(d=>`<span class="${d.ok?"on":"off"}" title="${esc(d.city||"")}"></span>`).join("");
-    document.getElementById("chDetailList").innerHTML=(ch.details||[]).map(d=>{
-      const tms=d.time!=null?(Math.round(d.time*1000)+"ms"):"—";
-      return `<div class="row"><span>${esc(d.city||d.city_en||d.node)}</span><span style="direction:ltr">${d.ok?"✓ "+tms:"✗"}</span></div>`;
-    }).join("");
-    document.getElementById("chDetailLink").textContent="";
-    ov.classList.add("open");
-  }
-  document.getElementById("chDetailClose")?.addEventListener("click",()=>document.getElementById("chDetailOverlay")?.classList.remove("open"));
-  document.getElementById("chDetailOverlay")?.addEventListener("click",e=>{if(e.target.id==="chDetailOverlay")e.currentTarget.classList.remove("open");});
-
-
   function closeNodeDetail(){document.getElementById("nodeDetailOverlay").classList.remove("open");selectedNodeId=null;}
   document.getElementById("nodeDetailClose").addEventListener("click",closeNodeDetail);
   document.getElementById("nodeDetailClose2").addEventListener("click",closeNodeDetail);
@@ -2839,14 +2733,12 @@ function openMapProvince(provinceName){
     try{
       const data=await api("/api/nodes/"+encodeURIComponent(id));
       const n=data.node||{};
-      const online=!!n.health?.ok;
+      const online=!!n.online;
       const rows=[
         ["شناسه",n.id||"—"],
         ["نام اسکریپت",n.script_name||"—"],
         ["URL",n.url||"—"],
-        ["وضعیت",n.is_disabled===1?"🔒 قفل":(online?"✅ سالم":"🔴 قطع")],
-        ["پاسخ /health نود",n.health?.node?.ok?"✅ موفق":("🔴 "+(n.health?.node?.err||"ناموفق"))],
-        ["دسترسی API کلودفلر",n.health?.cloudflare?.ok?"✅ موفق":("🔴 "+(n.health?.cloudflare?.err||"ناموفق"))],
+        ["وضعیت",n.is_disabled===1?"🔒 قفل":(online?"✅ سالم / آنلاین":"⚠️ آفلاین")],
         ["آخرین دیده‌شدن",n.last_seen?relTime(n.last_seen)+` (${new Date(Number(n.last_seen)).toLocaleString("fa-IR")})`:"هنوز همگام‌سازی موفق نداشته"],
         ["نسخه فرزند",n.version||"—"],
         ["کاربران فعال",n.active_users??"—"],
@@ -2854,16 +2746,6 @@ function openMapProvince(provinceName){
         ["خارج از ساب",n.exclude_sub===1?"بله (در ساب نمی‌آید)":"خیر (در ساب هست)"],
         ["Account ID",n.account_id||"—"],
         ["DB",n.db_name||n.db_id||"—"],
-        ["D1 خواندن امروز", (function(){
-          const m=n.d1_metrics;
-          if(!m||!m.ok) return m&&m.err?("خطا: "+m.err):"—";
-          return faNum(m.rowsRead)+" / "+faNum(m.readLimit)+" ("+faNum(m.readPct)+"%)";
-        })()],
-        ["D1 نوشتن امروز", (function(){
-          const m=n.d1_metrics;
-          if(!m||!m.ok) return "—";
-          return faNum(m.rowsWritten)+" / "+faNum(m.writeLimit)+" ("+faNum(m.writePct)+"%)";
-        })()],
         ["ایجاد",n.created_at?new Date(Number(n.created_at)).toLocaleString("fa-IR"):"—"],
       ];
       const exclBtn=document.getElementById("nodeDetailExclude");
@@ -2889,22 +2771,14 @@ function openMapProvince(provinceName){
     try{
       const r=await api("/api/nodes/"+encodeURIComponent(id)+"/test",{method:"POST"});
       const ok=!!r.ok;
-      const ratio=r.ratio||((r.ok_count!=null&&r.total!=null)?(r.ok_count+"/"+r.total):"");
-      toast(ok?("کنترل مادر موفق · "+(r.latency_ms||"?")+"ms"):("ناموفق: "+(r.err||"")),ok?"ok":"err");
-      // نتیجهٔ کنترل مادر و آخرین گزارش منطقه‌ای را جدا نگه دار.
-      const n=(nodesCache.managed||[]).find(x=>String(x.id||x.script_name)===String(id));
-      if(n && r.details){ n.check_host={ok:r.ok_count>0,ok_count:r.ok_count,total:r.total,ratio:r.ratio,details:r.details,at:Date.now()}; n.regional_probe=r.regional_probe||null; renderNodes(nodesPage); }
+      toast(ok?("متصل · "+(r.latency_ms||"?")+"ms"):("ناموفق: "+(r.err||"")),ok?"ok":"err");
       if(box){
         box.innerHTML=`<div class="setting-block" style="padding:12px;margin-top:8px">
           <div class="row"><span>نتیجه</span><span class="badge ${ok?"badge-ok":"badge-off"}">${ok?"موفق":"ناموفق"}</span></div>
-          <div class="row"><span>کنترل از مادر</span><span>${r.sync_ok?"موفق":"ناموفق"}</span></div>
-          <div class="row"><span>پروب ایران</span><span>${r.regional_probe?.stale?"گزارش قدیمی":(r.regional_probe?.ok===true?"موفق":(r.regional_probe?.ok===false?"ناموفق":"ثبت نشده"))}</span></div>
           <div class="row"><span>تأخیر</span><span>${r.latency_ms!=null?faNum(r.latency_ms)+" ms":"—"}</span></div>
           <div class="row"><span>URL</span><span style="direction:ltr;font-size:12px">${esc(r.url||"—")}</span></div>
           <div class="row"><span>نسخه</span><span>${esc(r.version||"—")}</span></div>
           <div class="row"><span>کاربران فعال</span><span>${faNum(r.active_users??"—")}</span></div>
-          ${r.via?`<div class="row"><span>مسیر</span><span style="direction:ltr">${esc(String(r.via))}</span></div>`:""}
-          ${r.status?`<div class="row"><span>HTTP</span><span>${faNum(r.status)}</span></div>`:""}
           ${r.err?`<div class="row"><span>خطا</span><span style="color:var(--danger)">${esc(r.err)}</span></div>`:""}
           ${r.body?`<div class="row"><span>پاسخ</span><span style="direction:ltr;font-size:11px;max-width:60%;word-break:break-all">${esc(r.body)}</span></div>`:""}
         </div>`;
@@ -2941,107 +2815,14 @@ function openMapProvince(provinceName){
   });
   document.getElementById("nodeDetailUpdate").addEventListener("click",async()=>{
     if(!selectedNodeId)return;
-    if(!confirm("فقط کد ورکر به آخرین نسخه آپدیت می‌شود.\nD1 و بایندینگ‌ها حفظ می‌شوند."))return;
-    toast("در حال آپدیت کد نود...","ok");
+    if(!confirm("آپدیت/نصب مجدد این نود؟ ممکن است چند دقیقه طول بکشد."))return;
+    toast("در حال آپدیت نود...","ok");
     try{
       const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/update",{method:"POST"});
-
-  document.getElementById("nodeDetailReinstall")?.addEventListener("click",async()=>{
-    if(!selectedNodeId)return;
-    if(!confirm("نصب مجدد؟\nورکر و D1 فعلی حذف و نود با آدرس جدید ساخته می‌شود.\nبرای دامنه فیلترشده استفاده کنید."))return;
-    toast("در حال نصب مجدد...","ok");
-    try{
-      const r=await api("/api/nodes/"+encodeURIComponent(selectedNodeId)+"/reinstall",{method:"POST"});
-      toast(r.ok?("نصب شد → "+(r.new||r.url||"")):(r.err||"ناموفق"),r.ok?"ok":"err");
+      toast(r.ok?("آپدیت شد → "+(r.new||"")):(r.err||"ناموفق"),r.ok?"ok":"err");
       closeNodeDetail();loadNodes();
     }catch(e){toast(e.message,"err");}
   });
-  document.getElementById("btnCheckHostAll")?.addEventListener("click",async()=>{
-    await loadNodes();
-    return;
-    const btn=document.getElementById("btnCheckHostAll");
-    if(btn){btn.disabled=true;btn.textContent="در حال دریافت...";}
-    toast("خواندن آخرین گزارش پروب ایران...","ok");
-    try{
-      const r=await api("/api/nodes/check-host",{method:"POST"});
-      if(r&&r.ok){
-        // merge into cache
-        for(const row of (r.results||[])){
-          const n=(nodesCache.managed||[]).find(x=>String(x.id)===String(row.id)||String(x.script_name)===String(row.script_name));
-          if(n) n.check_host={ok:row.ok,ok_count:row.ok_count,total:row.total,ratio:row.ratio,details:row.details,at:Date.now(),permanent_link:row.permanent_link};
-        }
-        renderNodes(nodesPage);
-        toast("گزارش به‌روز شد: "+faNum((r.results||[]).length)+" نود","ok");
-      } else toast(r.err||"ناموفق","err");
-    }catch(e){toast(e.message,"err");}
-    if(btn){btn.disabled=false;btn.textContent="وضعیت پروب ایران";}
-  });
-      toast(r.ok?("کد آپدیت شد"+(r.version?(" · v"+r.version):"")):(r.err||"ناموفق"),r.ok?"ok":"err");
-      openNodeDetail(selectedNodeId);loadNodes();
-    }catch(e){toast(e.message,"err");}
-  });
-
-  let _liveLogTimer=null,_liveLogNodeId=null,_liveLogDeadline=0;
-  async function stopLiveLog(nodeId){
-    if(_liveLogTimer){clearInterval(_liveLogTimer);_liveLogTimer=null;}
-    const id=nodeId||_liveLogNodeId;
-    _liveLogNodeId=null;
-    if(!id) return;
-    try{
-      await api("/api/nodes/"+encodeURIComponent(id)+"/live-log",{method:"POST",body:JSON.stringify({enable:false})});
-    }catch{}
-  }
-  async function refreshLiveLogBody(){
-    if(!_liveLogNodeId) return;
-    if(_liveLogDeadline && Date.now()>_liveLogDeadline){
-      document.getElementById("liveLogStatus").textContent="زمان لاگ زنده تمام شد (۵ دقیقه) — خاموش شد";
-      await stopLiveLog(_liveLogNodeId);
-      return;
-    }
-    try{
-      const r=await api("/api/nodes/"+encodeURIComponent(_liveLogNodeId)+"/live-log?limit=100");
-      const lines=(r.mem||[]).map(x=>{
-        const t=x.ts?new Date(x.ts).toISOString().slice(11,19):"";
-        return `[${t}] ${x.level||"info"} ${x.msg||""} ${x.extra||""}`;
-      });
-      const pre=document.getElementById("liveLogBody");
-      if(pre){ pre.textContent=lines.length?lines.join("\n"):"(هنوز لاگی نیست — ترافیک بفرستید)"; pre.scrollTop=pre.scrollHeight; }
-      const left=_liveLogDeadline?Math.max(0,Math.floor((_liveLogDeadline-Date.now())/1000)):0;
-      document.getElementById("liveLogStatus").textContent="زنده · باقی‌مانده "+left+"s · لاگ کامل (D1 مشترک بین isolateها)";
-    }catch(e){
-      document.getElementById("liveLogStatus").textContent="خطا: "+(e.message||e);
-    }
-  }
-  async function openLiveLog(nodeId, title){
-    _liveLogNodeId=nodeId;
-    _liveLogDeadline=Date.now()+5*60*1000;
-    document.getElementById("liveLogTitle").textContent="لاگ زنده — "+(title||nodeId);
-    document.getElementById("liveLogStatus").textContent="در حال فعال‌سازی لاگ…";
-    document.getElementById("liveLogBody").textContent="";
-    document.getElementById("liveLogOverlay").classList.add("open");
-    try{
-      await api("/api/nodes/"+encodeURIComponent(nodeId)+"/live-log",{method:"POST",body:JSON.stringify({enable:true,ttl_sec:300})});
-      document.getElementById("liveLogStatus").textContent="متصل شد";
-      await refreshLiveLogBody();
-      if(_liveLogTimer) clearInterval(_liveLogTimer);
-      _liveLogTimer=setInterval(refreshLiveLogBody, 2500);
-    }catch(e){
-      document.getElementById("liveLogStatus").textContent="اتصال ناموفق: "+(e.message||e);
-    }
-  }
-  function closeLiveLogUI(){
-    document.getElementById("liveLogOverlay")?.classList.remove("open");
-    stopLiveLog(_liveLogNodeId);
-  }
-  document.getElementById("nodeDetailLiveLog")?.addEventListener("click",()=>{
-    if(!selectedNodeId)return;
-    const n=(window._nodesCache||[]).find(x=>String(x.id)===String(selectedNodeId));
-    openLiveLog(selectedNodeId, n?.script_name||selectedNodeId);
-  });
-  document.getElementById("liveLogClose")?.addEventListener("click",closeLiveLogUI);
-  document.getElementById("liveLogClose2")?.addEventListener("click",closeLiveLogUI);
-  document.getElementById("liveLogRefresh")?.addEventListener("click",()=>refreshLiveLogBody());
-  document.getElementById("liveLogOverlay")?.addEventListener("click",e=>{ if(e.target.id==="liveLogOverlay") closeLiveLogUI(); });
   document.getElementById("btnUpdateAllNodes").addEventListener("click",async()=>{
     const list=nodesCache.managed||[];
     if(!list.length){toast("نودی نیست","err");return;}
@@ -3439,48 +3220,6 @@ function openMapProvince(provinceName){
     }
   });
   
-  function setEgressDomainsVisible(show){
-    const wrap=document.getElementById("egressDomainsWrap");
-    if(!wrap) return;
-    if(show){
-      wrap.style.maxHeight=wrap.scrollHeight+80+"px";
-      wrap.style.opacity="1";
-      wrap.style.marginTop="8px";
-      wrap.style.pointerEvents="auto";
-    }else{
-      wrap.style.maxHeight="0px";
-      wrap.style.opacity="0";
-      wrap.style.marginTop="0";
-      wrap.style.pointerEvents="none";
-    }
-  }
-  function isEgressFallbackOn(){
-    return document.getElementById("egressFallback")?.classList.contains("on");
-  }
-  function setEgressFallbackBtn(on){
-    const btn=document.getElementById("egressFallback");
-    if(!btn) return;
-    // knob: HTML structure — ensure knob exists
-    if(!btn.querySelector(".fb-knob")){
-      const k=document.createElement("span");
-      k.className="fb-knob";
-      btn.appendChild(k);
-    }
-    btn.classList.toggle("on",!!on);
-    btn.classList.toggle("off",!on);
-    btn.setAttribute("aria-pressed", on?"true":"false");
-    const a=document.getElementById("fbLabelAuto");
-    const m=document.getElementById("fbLabelManual");
-    if(a) a.classList.toggle("active", !!on);
-    if(m) m.classList.toggle("active", !on);
-  }
-  function syncEgressFallbackUI(){
-    setEgressDomainsVisible(!isEgressFallbackOn());
-  }
-  document.getElementById("egressFallback")?.addEventListener("click",()=>{
-    setEgressFallbackBtn(!isEgressFallbackOn());
-    syncEgressFallbackUI();
-  });
   async function loadProxySettings(){
     try{
       const r=await api("/api/proxy-settings");
@@ -3495,8 +3234,6 @@ function openMapProvince(provinceName){
       }
       const de=document.getElementById("egressDomains");
       if(de) de.value=r.domains||"";
-      setEgressFallbackBtn(!!r.fallback);
-      requestAnimationFrame(()=>syncEgressFallbackUI());
     }catch{}
   }
   document.getElementById("btnSaveProxy")?.addEventListener("click",async()=>{
@@ -3508,8 +3245,7 @@ function openMapProvince(provinceName){
       }
       const r=await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
         proxy:proxyVal,
-        domains:document.getElementById("egressDomains")?.value?.trim()||"",
-        fallback:isEgressFallbackOn()
+        domains:document.getElementById("egressDomains")?.value?.trim()||""
       })});
       const pu=r&&r.nodes_updated;
       if(pu&&pu.errors&&pu.errors.length){
@@ -4132,6 +3868,29 @@ function openMapProvince(provinceName){
   });
   // remove old swShopEnable handler if any - replaced by feature gate only
 
+  topActions.railway={label:'',action:'none'};
+  async function loadRailway(){
+    try{
+      const r=await api("/api/railway");
+      document.getElementById("railwayUrl").value=r.terminal_url||"";
+      document.getElementById("railwayToken").value="";
+      document.getElementById("railwayStatus").textContent=r.configured?"Relay تنظیم شده است":"Relay هنوز تنظیم نشده است";
+    }catch(e){document.getElementById("railwayStatus").textContent=e.message;}
+  }
+  document.getElementById("railwaySave")?.addEventListener("click",async()=>{
+    try{
+      await api("/api/railway",{method:"POST",body:JSON.stringify({
+        terminal_url:document.getElementById("railwayUrl").value.trim(),
+        api_token:document.getElementById("railwayToken").value.trim()
+      })});
+      toast("تنظیمات Railway ذخیره شد","ok"); loadRailway();
+    }catch(e){toast(e.message,"err");}
+  });
+  document.getElementById("railwayTest")?.addEventListener("click",async()=>{
+    const el=document.getElementById("railwayStatus"); el.textContent="در حال تست...";
+    try{const r=await api("/api/railway/test",{method:"POST"});el.textContent=r.ok?"اتصال سالم است: "+(r.preview||"ok"):(r.err||"پاسخ نامعتبر");}
+    catch(e){el.textContent=e.message;}
+  });
   function onSectionEnter(sec){
     if(sec==="dash")loadDashboard(true);
     else if(sec==="users")loadUsers();
@@ -4142,6 +3901,7 @@ function openMapProvince(provinceName){
       refreshFeatureGates().finally(()=>loadShop());
     }
     else if(sec==="telegram")loadTelegram();
+    else if(sec==="railway")loadRailway();
     else if(sec==="settings"){loadRules();loadProxySettings();}
   }
   function boot(){
