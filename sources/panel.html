@@ -1299,7 +1299,7 @@ table tbody tr{height:auto}
       </div>
       <div class="field-grid">
         <div class="field"><label>سقف سرعت (KB/s)</label><input type="number" id="fSpeed" value="0" min="0" placeholder="۰ = نامحدود" /></div>
-        <div class="field"><label>آی‌پی تمیز (اختیاری)</label><input type="text" id="fCleanIp" placeholder="1.2.3.4" dir="ltr" style="text-align:left" /></div>
+        <div class="field"><label>آدرس تمیز — IP یا دامنه (اختیاری)</label><input type="text" id="fCleanIp" placeholder="1.2.3.4 یا mci.example.com" dir="ltr" style="text-align:left" /><p style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.6">اگر دامنه بگذارید، هنگام ساخت ساب به IPv4 آن resolve می‌شود و همان IPها به‌عنوان address کانفیگ می‌آیند.</p></div>
       </div>
       <div class="field">
         <label>قفل روی یک نود</label>
@@ -2433,7 +2433,7 @@ function openMapProvince(provinceName){
         ["IP فعال", (u.activeIPs??0)+" / "+(u.ipLimit||1)],
         ["سقف سرعت",u.speedLimitKBps? (u.speedLimitKBps+" KB/s"):"نامحدود"],
         ["قفل نود",u.forcedNode||"آزاد"],
-        ["Clean IP",u.cleanIp||"—"],
+        ["آدرس تمیز (IP/دامنه)",u.cleanIp||"—"],
         ["مسدود تبلیغات",u.blockAds!==false?"بله":"خیر"],
         ["یادداشت",u.notes||"—"],
         ["ساخته‌شده",u.createdAt?new Date(u.createdAt).toLocaleString("fa-IR"):"—"],
@@ -4043,10 +4043,11 @@ function openMapProvince(provinceName){
     if(s<=7) return "اختلال";
     return "متصل";
   }
-  function buildStripCells(history, rangeKey){
+  function buildStripCells(history, rangeKey, nodeId){
     const now=Date.now();
+    // ۱س: ۱دقیقه · ۲۴س: ۵دقیقه (جلوگیری از سرریز) · ۷روز: ۱ساعت
     const spanMs=rangeKey==="1h"?3600000:(rangeKey==="7d"?7*86400000:86400000);
-    const slotMs=rangeKey==="1h"?60000:(rangeKey==="7d"?3600000:60000); // 1m / 1h / 1m
+    const slotMs=rangeKey==="1h"?60000:(rangeKey==="7d"?3600000:5*60000);
     const slots=Math.max(1, Math.floor(spanMs/slotMs));
     const start=Math.floor((now-spanMs)/slotMs)*slotMs;
     const map=new Map();
@@ -4055,20 +4056,69 @@ function openMapProvince(provinceName){
       if(b<start) continue;
       const key=Math.floor(b/slotMs)*slotMs;
       const prev=map.get(key);
-      if(!prev || (Number(x.score)||0)<prev.score){
-        map.set(key,{score:Number(x.score)||0,total:Number(x.total)||9,failed_servers:Number(x.failed_servers)||0});
+      const cur={
+        score:Number(x.score)||0, total:Number(x.total)||9,
+        failed_servers:Number(x.failed_servers)||0,
+        sample_count:Number(x.sample_count)||1,
+        direct_ok:Number(x.direct_ok)||0,
+        error:x.error||"", detail:x.detail||null, bucket:b,
+      };
+      if(!prev || cur.score<prev.score) map.set(key, cur);
+      else if(prev){
+        prev.sample_count=(prev.sample_count||1)+(cur.sample_count||1);
+        if(cur.detail && !prev.detail) prev.detail=cur.detail;
       }
     }
     const cells=[];
     for(let i=0;i<slots;i++){
       const key=start+i*slotMs;
       const x=map.get(key);
-      if(!x){ cells.push('<i class="monitor-cell" title="بدون داده"></i>'); continue; }
+      if(!x){
+        cells.push('<i class="monitor-cell" data-empty="1" data-bucket="'+key+'" data-nid="'+esc(nodeId||'')+'" title="بدون داده"></i>');
+        continue;
+      }
       const cls=scoreClass(x.score,x.total);
       const tip=faNum(x.score)+"/"+faNum(x.total)+" · "+scoreLabel(x.score,x.total);
-      cells.push('<i class="monitor-cell '+cls+'" title="'+tip+'"></i>');
+      cells.push('<i class="monitor-cell '+cls+'" data-bucket="'+key+'" data-nid="'+esc(nodeId||'')+'" data-score="'+x.score+'" data-total="'+x.total+'" data-fs="'+x.failed_servers+'" data-sc="'+x.sample_count+'" data-dok="'+x.direct_ok+'" title="'+tip+'"></i>');
     }
-    return {html:cells.join(""), slots, slotMs};
+    return {html:cells.join(""), slots, slotMs, map, start};
+  }
+  function openCellDetail(nid, bucket, el){
+    const n=monitorNodesCache.find(x=>String(x.id)===String(nid));
+    if(!n)return;
+    const b=Number(bucket)||0;
+    const hist=n.history||[];
+    const range=monitorRange||"1d";
+    const slotMs=range==="1h"?60000:(range==="7d"?3600000:5*60000);
+    const slotStart=Math.floor(b/slotMs)*slotMs;
+    const inSlot=hist.filter(x=>{const bx=Number(x.bucket)||0; return bx>=slotStart && bx<slotStart+slotMs;});
+    const best=inSlot.length?inSlot.reduce((a,c)=>(Number(c.score)<Number(a.score)?c:a)):null;
+    const score=el?.dataset.score!=null?Number(el.dataset.score):(best?Number(best.score):null);
+    const total=el?.dataset.total!=null?Number(el.dataset.total):(best?Number(best.total):9);
+    const detail=best?.detail||null;
+    const timeStr=new Date(slotStart).toLocaleString("fa-IR",{weekday:"short",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+    const endStr=new Date(slotStart+slotMs-1).toLocaleTimeString("fa-IR",{hour:"2-digit",minute:"2-digit"});
+    const chOk=detail?.ch_ok, chTotal=detail?.ch_total, chLink=detail?.ch_link;
+    const directOk=detail?.direct_ok ?? (el?.dataset.dok==="1");
+    const samples=inSlot.length||Number(el?.dataset.sc)||0;
+    const close=()=>document.getElementById("monitorCellOverlay")?.remove();
+    document.getElementById("monitorCellOverlay")?.remove();
+    const overlay=document.createElement("div"); overlay.id="monitorCellOverlay"; overlay.className="monitor-modal-backdrop";
+    let body=
+      '<div class="monitor-detail-grid">'+
+        '<div class="monitor-detail-stat"><span>بازه زمانی</span><b style="font-size:13px">'+esc(timeStr)+' – '+esc(endStr)+'</b></div>'+
+        '<div class="monitor-detail-stat"><span>امتیاز</span><b>'+(score==null?"—":faNum(score)+"/"+faNum(total))+' <small style="font-weight:400;color:var(--text-muted)">'+esc(score==null?"بدون داده":scoreLabel(score,total))+'</small></b></div>'+
+        '<div class="monitor-detail-stat"><span>تست مستقیم نود</span><b>'+(score==null?"—":(directOk?"موفق":"ناموفق"))+'</b></div>'+
+        '<div class="monitor-detail-stat"><span>Check-host مثبت</span><b>'+(chOk!=null?faNum(chOk)+(chTotal!=null?" از "+faNum(chTotal):""):(score==null?"—":"ثبت نشده"))+'</b></div>'+
+        '<div class="monitor-detail-stat"><span>نمونه در این خانه</span><b>'+faNum(samples)+'</b></div>'+
+        '<div class="monitor-detail-stat"><span>تأخیر</span><b>'+(detail?.latency_ms!=null?faNum(detail.latency_ms)+" ms":"—")+'</b></div>'+
+      '</div>';
+    if(best?.error) body+='<p style="margin-top:12px;font-size:12px;color:var(--danger)">خطا: '+esc(best.error)+'</p>';
+    if(chLink) body+='<p style="margin-top:12px"><a class="btn btn-sm btn-primary" href="'+esc(chLink)+'" target="_blank" rel="noopener">گزارش کامل Check-host</a></p>';
+    else if(score!=null) body+='<p style="margin-top:12px;font-size:11px;color:var(--text-muted)">لینک Check-host برای این خانه ذخیره نشده (داده‌های قدیمی‌تر). پس از چک‌های بعدی در دسترس است.</p>';
+    overlay.innerHTML='<div class="monitor-modal" role="dialog"><div class="monitor-modal-head"><div><b>'+esc(n.name||"نود")+'</b><span style="display:block;color:var(--text-muted);font-size:11px;margin-top:2px">جزئیات خانه</span></div><button class="btn btn-sm" type="button" data-close-cell>بستن</button></div><div class="monitor-modal-body">'+body+'</div></div>';
+    overlay.addEventListener("click",e=>{if(e.target===overlay||e.target.closest("[data-close-cell]"))close();});
+    document.body.appendChild(overlay);
   }
   function openMonitorDetail(id){
     const n=monitorNodesCache.find(x=>String(x.id)===String(id)); if(!n)return;
@@ -4081,7 +4131,7 @@ function openMapProvince(provinceName){
     overlay.addEventListener("click",e=>{if(e.target===overlay||e.target.closest("[data-close-monitor]"))close();});
     document.body.appendChild(overlay);
   }
-  function statusBadge(st){
+  function monitorStatusBadge(st){
     if(st==="up") return '<span class="badge badge-ok">سالم</span>';
     if(st==="down") return '<span class="badge badge-off">قطع</span>';
     return '<span class="badge badge-warn">نامشخص</span>';
@@ -4102,17 +4152,19 @@ function openMapProvince(provinceName){
       nodesHtml='<div class="monitor-locked" style="padding:18px 12px"><div class="lock-ico">⌁</div><h3 style="font-size:14px;margin-bottom:6px">مانیتور نودها قفل است</h3><p style="font-size:12px;color:var(--text-muted);max-width:520px;margin:0 auto;line-height:1.7">برای تاریخچه و تست چندمنطقه‌ای نودها، ترمینال ریلوی را وصل کنید. مانیتورهای دستی زیر همچنان کار می‌کنند.</p></div>';
     } else {
       nodesHtml=nodes.map((n,i)=>{
-        const strip=buildStripCells(n.history||[], range);
+        const strip=buildStripCells(n.history||[], range, n.id);
         const s=n.summary||{};
         const last=s.last_score;
         const cls=last==null?"":scoreClass(last,9);
-        return '<div class="monitor-node" data-monitor-node="'+esc(n.id)+'" tabindex="0">'+
-          '<div class="monitor-node-head"><div class="monitor-node-name"><b>'+esc(n.name||("نود "+(i+1)))+'</b><span>'+esc(n.url||"")+'</span></div>'+
+        const cellHint=range==="1h"?"هر خانه ۱ دقیقه":(range==="7d"?"هر خانه ۱ ساعت":"هر خانه ۵ دقیقه");
+        return '<div class="monitor-node">'+
+          '<div class="monitor-node-head" data-monitor-node="'+esc(n.id)+'" tabindex="0" style="cursor:pointer">'+
+          '<div class="monitor-node-name"><b>'+esc(n.name||("نود "+(i+1)))+'</b><span>'+esc(n.url||"")+'</span></div>'+
           '<div class="monitor-node-stats"><span><strong class="hs-'+cls+'">'+faNum(last==null?"—":last+"/9")+'</strong> '+esc(scoreLabel(last,9))+'</span>'+
           '<span><strong>'+faNum(s.failed_servers||0)+'</strong> سرور قطع</span>'+
           '<span><strong>'+faNum(s.outage_minutes||0)+'</strong> دقیقه</span></div></div>'+
-          '<div class="monitor-strip" style="grid-template-columns:repeat('+strip.slots+',minmax(1px,1fr))">'+strip.html+'</div>'+
-          '<div class="monitor-node-detail"><span>'+(range==="1h"?"هر خانه ۱ دقیقه":(range==="7d"?"هر خانه ۱ ساعت":"هر خانه ۱ دقیقه"))+' · برای جزئیات لمس کنید</span><span>'+faNum(s.failed_slots||0)+' تست ناقص</span></div></div>';
+          '<div class="monitor-strip" style="--slots:'+strip.slots+'">'+strip.html+'</div>'+
+          '<div class="monitor-node-detail"><span>'+cellHint+' · روی خانه بزنید برای جزئیات</span><span>'+faNum(s.failed_slots||0)+' تست ناقص</span></div></div>';
       }).join("") || '<div class="empty-msg">نودی برای نمایش وجود ندارد.</div>';
     }
 
@@ -4130,7 +4182,7 @@ function openMapProvince(provinceName){
         else cells.push('<i class="monitor-cell '+(x.ok?'ok':'bad')+'" title="'+(x.ok?'OK':'FAIL')+(x.latency_ms?(' · '+x.latency_ms+'ms'):'')+'"></i>');
       }
       const lastChk=c.last_check?new Date(c.last_check).toLocaleString("fa-IR",{hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"}):"—";
-      return '<div class="monitor-node" data-cm-id="'+esc(c.id)+'"><div class="monitor-node-head"><div class="monitor-node-name"><b>'+esc(c.name)+'</b><span>'+esc(c.url)+'</span></div><div class="monitor-node-stats">'+statusBadge(c.last_status)+'<span><strong>'+faNum(c.last_latency_ms||0)+'</strong> ms</span><span>هر '+faNum(c.interval_min||5)+' دقیقه</span><span>'+esc(lastChk)+'</span></div></div><div class="monitor-strip" style="grid-template-columns:repeat('+slots+',minmax(1px,1fr))">'+cells.join("")+'</div><div class="monitor-node-detail"><span>'+(c.last_error?esc(c.last_error):'بدون خطا')+(c.notify_tg?' · اعلان تلگرام':'')+'</span><span><button class="btn btn-sm" type="button" data-cm-check="'+esc(c.id)+'">تست الان</button> <button class="btn btn-sm" type="button" data-cm-del="'+esc(c.id)+'">حذف</button></span></div></div>';
+      return '<div class="monitor-node" data-cm-id="'+esc(c.id)+'"><div class="monitor-node-head"><div class="monitor-node-name"><b>'+esc(c.name)+'</b><span>'+esc(c.url)+'</span></div><div class="monitor-node-stats">'+monitorStatusBadge(c.last_status)+'<span><strong>'+faNum(c.last_latency_ms||0)+'</strong> ms</span><span>هر '+faNum(c.interval_min||5)+' دقیقه</span><span>'+esc(lastChk)+'</span></div></div><div class="monitor-strip" style="grid-template-columns:repeat('+slots+',minmax(1px,1fr))">'+cells.join("")+'</div><div class="monitor-node-detail"><span>'+(c.last_error?esc(c.last_error):'بدون خطا')+(c.notify_tg?' · اعلان تلگرام':'')+'</span><span><button class="btn btn-sm" type="button" data-cm-check="'+esc(c.id)+'">تست الان</button> <button class="btn btn-sm" type="button" data-cm-del="'+esc(c.id)+'">حذف</button></span></div></div>';
     }).join("") || '<div class="empty-msg" style="padding:16px">هنوز مانیتور دستی اضافه نشده.</div>';
 
     const rangeBtns=
@@ -4178,10 +4230,14 @@ function openMapProvince(provinceName){
         '</div>'+
       '</div>';
 
-    // رنگ فیلتر ایران
     if(!document.getElementById("monFilterCss")){
       const st=document.createElement("style"); st.id="monFilterCss";
-      st.textContent=".monitor-cell.filter{background:rgba(167,139,250,.9)!important}.hs-filter{color:#c4b5fd}.hs-bad{color:var(--danger)}.hs-warn{color:var(--warning)}.hs-ok{color:var(--success)}"+
+      st.textContent=
+        ".monitor-strip{display:flex!important;width:100%;max-width:100%;gap:1px;padding:0 13px 12px;overflow:hidden;box-sizing:border-box}"+
+        ".monitor-cell{flex:1 1 0;min-width:0!important;width:auto!important;height:17px;border-radius:2px;background:rgba(255,255,255,.08);cursor:pointer}"+
+        ".monitor-cell.filter{background:rgba(167,139,250,.9)!important}"+
+        ".monitor-cell.ok{background:rgba(74,222,128,.85)}.monitor-cell.warn{background:rgba(251,191,36,.9)}.monitor-cell.bad{background:rgba(248,113,113,.9)}"+
+        ".hs-filter{color:#c4b5fd}.hs-bad{color:var(--danger)}.hs-warn{color:var(--warning)}.hs-ok{color:var(--success)}"+
         ".switch{position:relative;width:42px;height:24px;border-radius:999px;background:rgba(255,255,255,.12);border:none;cursor:pointer;flex-shrink:0;transition:.2s}"+
         ".switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}"+
         ".switch[data-on='1']{background:var(--success)}.switch[data-on='1']::after{left:21px}";
@@ -4194,6 +4250,12 @@ function openMapProvince(provinceName){
     gate.querySelectorAll("[data-monitor-node]").forEach(el=>{
       el.addEventListener("click",()=>openMonitorDetail(el.dataset.monitorNode));
       el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openMonitorDetail(el.dataset.monitorNode);}});
+    });
+    gate.querySelectorAll(".monitor-cell[data-bucket]").forEach(cell=>{
+      cell.addEventListener("click",e=>{
+        e.stopPropagation();
+        openCellDetail(cell.dataset.nid, cell.dataset.bucket, cell);
+      });
     });
     const sw=document.getElementById("cmNotifySwitch");
     if(sw){
