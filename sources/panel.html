@@ -1299,7 +1299,7 @@ table tbody tr{height:auto}
       </div>
       <div class="field-grid">
         <div class="field"><label>سقف سرعت (KB/s)</label><input type="number" id="fSpeed" value="0" min="0" placeholder="۰ = نامحدود" /></div>
-        <div class="field"><label>آدرس تمیز — IP یا دامنه (اختیاری)</label><input type="text" id="fCleanIp" placeholder="1.2.3.4 یا mci.example.com" dir="ltr" style="text-align:left" /><p style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.6">اگر دامنه بگذارید، هنگام ساخت ساب به IPv4 آن resolve می‌شود و همان IPها به‌عنوان address کانفیگ می‌آیند.</p></div>
+        <div class="field"><label style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">آدرس تمیز — IP یا دامنه (اختیاری) <span class="stat-warn" tabindex="0" data-tip="اگر دامنه بگذارید، هنگام ساخت ساب فقط به IPv4 همان دامنه resolve می‌شود و همان IPها (حداکثر ۲) به‌عنوان address همه کانفیگ‌ها می‌آیند — بدون مخلوط با IRCF عمومی." title="اگر دامنه بگذارید، هنگام ساخت ساب فقط به IPv4 همان دامنه resolve می‌شود و همان IPها (حداکثر ۲) به‌عنوان address همه کانفیگ‌ها می‌آیند — بدون مخلوط با IRCF عمومی.">!</span></label><input type="text" id="fCleanIp" placeholder="1.2.3.4 یا ipv4.ircf.space" dir="ltr" style="text-align:left" /></div>
       </div>
       <div class="field">
         <label>قفل روی یک نود</label>
@@ -4052,7 +4052,7 @@ function openMapProvince(provinceName){
     // ساعت سرور (ورکر) — نه clock مرورگر کاربر
     const now=Number(monitorServerNow)||Date.now();
     const spanMs=rangeKey==="1h"?3600000:(rangeKey==="7d"?7*86400000:86400000);
-    const slotMs=rangeKey==="1h"?60000:(rangeKey==="7d"?3600000:5*60000);
+    const slotMs=rangeKey==="1h"?60000:(rangeKey==="7d"?6*3600000:3600000);
     const slots=Math.max(1, Math.floor(spanMs/slotMs));
     const start=Math.floor((now-spanMs)/slotMs)*slotMs;
     const map=new Map();
@@ -4094,7 +4094,7 @@ function openMapProvince(provinceName){
     const b=Number(bucket)||0;
     const hist=n.history||[];
     const range=monitorRange||"1d";
-    const slotMs=range==="1h"?60000:(range==="7d"?3600000:5*60000);
+    const slotMs=range==="1h"?60000:(range==="7d"?6*3600000:3600000);
     const slotStart=Math.floor(b/slotMs)*slotMs;
     const inSlot=hist.filter(x=>{const bx=Number(x.bucket)||0; return bx>=slotStart && bx<slotStart+slotMs;});
     const best=inSlot.length?inSlot.reduce((a,c)=>(Number(c.score)<Number(a.score)?c:a)):null;
@@ -4163,7 +4163,7 @@ function openMapProvince(provinceName){
         const s=n.summary||{};
         const last=s.last_score;
         const cls=last==null?"":scoreClass(last,9);
-        const cellHint=range==="1h"?"هر خانه ۱ دقیقه":(range==="7d"?"هر خانه ۱ ساعت":"هر خانه ۵ دقیقه");
+        const cellHint=range==="1h"?"هر خانه ۱ دقیقه":(range==="7d"?"هر خانه ۶ ساعت":"هر خانه ۱ ساعت");
         return '<div class="monitor-node">'+
           '<div class="monitor-node-head" data-monitor-node="'+esc(n.id)+'" tabindex="0" style="cursor:pointer">'+
           '<div class="monitor-node-name"><b>'+esc(n.name||("نود "+(i+1)))+'</b><span>'+esc(n.url||"")+'</span></div>'+
