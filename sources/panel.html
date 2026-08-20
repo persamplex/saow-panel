@@ -4016,23 +4016,9 @@ function openMapProvince(provinceName){
     try{const r=await api("/api/railway/exec",{method:"POST",body:JSON.stringify({command:cmd})}); appendTerminal(r.output||r.err||"بدون خروجی",r.ok?"ok":"err");}
     catch(err){appendTerminal(err.message,"err");} finally{input.disabled=false;input.focus();}
   });
-  async function loadMonitor(){
-    const badge=document.getElementById("monitorBadge"), title=document.getElementById("monitorTitle"), text=document.getElementById("monitorText");
-    badge.className="badge badge-warn"; badge.textContent="در حال بررسی";
-    title.textContent="در حال بررسی ترمینال ریلوی"; text.textContent="وضعیت اتصال relay در حال بررسی است...";
-    try{
-      const r=await api("/api/railway/test",{method:"POST",body:"{}"});
-      if(!r.ok) throw new Error(r.err||"relay unavailable");
-      badge.className="badge badge-ok";badge.textContent="متصل";
-      title.textContent="در حال ساخت";
-      text.textContent="ترمینال ریلوی متصل است. صفحه‌ی کامل مانیتورینگ Check-host در مرحله‌ی بعدی روی همین بخش ساخته می‌شود.";
-    }catch(e){
-      badge.className="badge badge-off";badge.textContent="قفل";
-      title.textContent="ترمینال ریلوی متصل نیست";
-      text.textContent="برای فعال شدن مانیتور، ابتدا اتصال ترمینال ریلوی را کامل کنید. "+e.message;
-    }
-  }
   let monitorNodesCache=[];
+  let monitorCustomCache=[];
+  let monitorTgReady=false;
   function openMonitorDetail(id){
     const n=monitorNodesCache.find(x=>String(x.id)===String(id)); if(!n)return;
     const s=n.summary||{}, failed=(n.history||[]).filter(x=>x.score<x.total).slice(-80).reverse();
@@ -4043,20 +4029,109 @@ function openMapProvince(provinceName){
     overlay.addEventListener("click",e=>{if(e.target===overlay||e.target.closest("[data-close-monitor]"))close();});
     document.body.appendChild(overlay);
   }
+  function statusBadge(st){
+    if(st==="up") return '<span class="badge badge-ok">سالم</span>';
+    if(st==="down") return '<span class="badge badge-off">قطع</span>';
+    return '<span class="badge badge-warn">نامشخص</span>';
+  }
   function renderMonitorData(data){
     const gate=document.getElementById("monitorGate"); if(!gate)return;
-    if(data.locked){
-      gate.innerHTML='<div class="card-head"><h3>مانیتور شبکه</h3><span class="badge badge-off">قفل</span></div><div class="monitor-locked"><div class="lock-ico">⌁</div><h3 style="font-size:16px;margin-bottom:8px">ترمینال ریلیوی متصل نیست</h3><p style="font-size:13px;color:var(--text-muted);max-width:520px;margin:0 auto;line-height:1.8">برای ذخیره و نمایش تست‌های ۲۴ ساعت گذشته، ابتدا ترمینال ریلیوی را وصل کنید.</p></div>';
-      return;
-    }
     const nodes=data.nodes||[]; monitorNodesCache=nodes;
+    const customs=data.custom_monitors||[]; monitorCustomCache=customs;
+    monitorTgReady=!!data.telegram_ready;
+    const locked=!!data.locked;
     const bad=nodes.reduce((s,n)=>s+(n.summary?.failed_slots||0),0), mins=nodes.reduce((s,n)=>s+(n.summary?.outage_minutes||0),0);
-    const html=nodes.map((n,i)=>{
-      const h=n.history||[], cells=Array.from({length:1440},(_,j)=>{const x=h[h.length-1440+j];if(!x)return '<i class="monitor-cell"></i>';const c=x.score>=x.total?'ok':(x.score>=Math.ceil(x.total/2)?'warn':'bad');return '<i class="monitor-cell '+c+'" title="'+faNum(x.score)+'/'+faNum(x.total)+'"></i>';}).join("");
-      const s=n.summary||{}; return '<div class="monitor-node" data-monitor-node="'+esc(n.id)+'" tabindex="0"><div class="monitor-node-head"><div class="monitor-node-name"><b>'+esc(n.name||("نود "+(i+1)))+'</b><span>'+esc(n.url||"")+'</span></div><div class="monitor-node-stats"><span><strong>'+faNum(s.last_score==null?"—":s.last_score+"/9")+'</strong> آخرین</span><span><strong>'+faNum(s.failed_servers||0)+'</strong> سرور قطع</span><span><strong>'+faNum(s.outage_minutes||0)+'</strong> دقیقه</span></div></div><div class="monitor-strip">'+cells+'</div><div class="monitor-node-detail"><span>هر خانه ۱ دقیقه · برای جزئیات لمس کنید</span><span>'+faNum(s.failed_slots||0)+' تست ناقص</span></div></div>';
-    }).join("");
-    gate.innerHTML='<div class="card-head"><h3>مانیتور شبکه</h3><span class="badge badge-ok">ترمینال متصل</span></div><div class="monitor-wrap"><div class="monitor-summary"><div class="monitor-kpi"><b>'+faNum(nodes.length)+'</b><span>نود تحت نظر</span></div><div class="monitor-kpi"><b>'+faNum(bad)+'</b><span>دقیقه ناقص در ۲۴ ساعت</span></div><div class="monitor-kpi"><b>'+faNum(mins)+' دقیقه</b><span>مدت تقریبی قطعی</span></div></div><div class="monitor-legend"><span><i style="background:var(--success)"></i>سالم</span><span><i style="background:var(--warning)"></i>افت بخشی</span><span><i style="background:var(--danger)"></i>قطع یا افت شدید</span><span><i style="background:rgba(255,255,255,.12)"></i>بدون داده</span></div><div class="monitor-list">'+(html||'<div class="empty-msg">نودی برای نمایش وجود ندارد.</div>')+'</div></div>';
-    gate.querySelectorAll("[data-monitor-node]").forEach(el=>{el.addEventListener("click",()=>openMonitorDetail(el.dataset.monitorNode));el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openMonitorDetail(el.dataset.monitorNode);}});});
+    const upCm=customs.filter(c=>c.last_status==="up").length;
+    const downCm=customs.filter(c=>c.last_status==="down").length;
+
+    let nodesHtml="";
+    if(locked){
+      nodesHtml='<div class="monitor-locked" style="padding:18px 12px"><div class="lock-ico">⌁</div><h3 style="font-size:14px;margin-bottom:6px">مانیتور نودها (Check-host) قفل است</h3><p style="font-size:12px;color:var(--text-muted);max-width:520px;margin:0 auto;line-height:1.7">برای تاریخچه ۲۴ساعته و تست چندمنطقه‌ای نودها، ترمینال ریلوی را وصل کنید. مانیتورهای دستی زیر همچنان کار می‌کنند.</p></div>';
+    } else {
+      nodesHtml=nodes.map((n,i)=>{
+        const h=n.history||[], cells=Array.from({length:1440},(_,j)=>{const x=h[h.length-1440+j];if(!x)return '<i class="monitor-cell"></i>';const c=x.score>=x.total?'ok':(x.score>=Math.ceil(x.total/2)?'warn':'bad');return '<i class="monitor-cell '+c+'" title="'+faNum(x.score)+'/'+faNum(x.total)+'"></i>';}).join("");
+        const s=n.summary||{}; return '<div class="monitor-node" data-monitor-node="'+esc(n.id)+'" tabindex="0"><div class="monitor-node-head"><div class="monitor-node-name"><b>'+esc(n.name||("نود "+(i+1)))+'</b><span>'+esc(n.url||"")+'</span></div><div class="monitor-node-stats"><span><strong>'+faNum(s.last_score==null?"—":s.last_score+"/9")+'</strong> آخرین</span><span><strong>'+faNum(s.failed_servers||0)+'</strong> سرور قطع</span><span><strong>'+faNum(s.outage_minutes||0)+'</strong> دقیقه</span></div></div><div class="monitor-strip">'+cells+'</div><div class="monitor-node-detail"><span>هر خانه ۱ دقیقه · برای جزئیات لمس کنید</span><span>'+faNum(s.failed_slots||0)+' تست ناقص</span></div></div>';
+      }).join("") || '<div class="empty-msg">نودی برای نمایش وجود ندارد.</div>';
+    }
+
+    const cmRows=customs.map(c=>{
+      const hist=c.history||[];
+      const cells=Array.from({length:120},(_,j)=>{
+        const x=hist[hist.length-120+j];
+        if(!x) return '<i class="monitor-cell"></i>';
+        return '<i class="monitor-cell '+(x.ok?'ok':'bad')+'" title="'+(x.ok?'OK':'FAIL')+(x.latency_ms?(' · '+x.latency_ms+'ms'):'')+'"></i>';
+      }).join("");
+      const lastChk=c.last_check?new Date(c.last_check).toLocaleString("fa-IR",{hour:"2-digit",minute:"2-digit",month:"short",day:"numeric"}):"—";
+      return '<div class="monitor-node" data-cm-id="'+esc(c.id)+'"><div class="monitor-node-head"><div class="monitor-node-name"><b>'+esc(c.name)+'</b><span>'+esc(c.url)+'</span></div><div class="monitor-node-stats">'+statusBadge(c.last_status)+'<span><strong>'+faNum(c.last_latency_ms||0)+'</strong> ms</span><span>هر '+faNum(c.interval_min||5)+' دقیقه</span><span>'+esc(lastChk)+'</span></div></div><div class="monitor-strip" style="grid-template-columns:repeat(120,minmax(1px,1fr))">'+cells+'</div><div class="monitor-node-detail"><span>'+(c.last_error?esc(c.last_error):'بدون خطا')+(c.notify_tg&&monitorTgReady?' · اعلان تلگرام فعال':'')+'</span><span><button class="btn btn-sm" type="button" data-cm-check="'+esc(c.id)+'">تست الان</button> <button class="btn btn-sm" type="button" data-cm-del="'+esc(c.id)+'">حذف</button></span></div></div>';
+    }).join("") || '<div class="empty-msg" style="padding:16px">هنوز مانیتور دستی اضافه نشده. یک آدرس HTTP/HTTPS وارد کنید.</div>';
+
+    const tgHint=monitorTgReady
+      ? '<span class="badge badge-ok" style="margin-right:6px">ربات تلگرام آماده اعلان</span>'
+      : '<span class="badge badge-warn" style="margin-right:6px">برای اعلان خرابی، ربات تلگرام + chat ادمین را وصل کنید</span>';
+
+    gate.innerHTML=
+      '<div class="card-head"><h3>مانیتور شبکه</h3><span class="badge '+(locked?'badge-warn':'badge-ok')+'">'+(locked?'نودها: ریلوی لازم':'ترمینال متصل')+'</span></div>'+
+      '<div class="monitor-wrap">'+
+        '<div class="monitor-summary">'+
+          '<div class="monitor-kpi"><b>'+faNum(nodes.length)+'</b><span>نود تحت نظر</span></div>'+
+          '<div class="monitor-kpi"><b>'+faNum(bad)+'</b><span>دقیقه ناقص نودها</span></div>'+
+          '<div class="monitor-kpi"><b>'+faNum(upCm)+'/'+faNum(customs.length)+'</b><span>مانیتور دستی سالم</span></div>'+
+        '</div>'+
+        '<div class="monitor-legend"><span><i style="background:var(--success)"></i>سالم</span><span><i style="background:var(--warning)"></i>افت بخشی</span><span><i style="background:var(--danger)"></i>قطع</span><span><i style="background:rgba(255,255,255,.12)"></i>بدون داده</span></div>'+
+        '<h4 style="font-size:13px;margin:8px 0 10px;color:var(--text-secondary)">نودهای Worker</h4>'+
+        '<div class="monitor-list">'+nodesHtml+'</div>'+
+        '<div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--border)">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
+            '<div><h4 style="font-size:13px;margin:0 0 4px">مانیتورهای دستی <span style="font-weight:400;color:var(--text-muted)">(شبیه Uptime Kuma)</span></h4>'+tgHint+'</div>'+
+          '</div>'+
+          '<div class="grid-2" style="gap:10px;margin-bottom:12px">'+
+            '<div class="field" style="margin:0"><label>نام</label><input id="cmName" placeholder="مثلاً سایت اصلی" /></div>'+
+            '<div class="field" style="margin:0"><label>آدرس (HTTP/HTTPS)</label><input id="cmUrl" dir="ltr" style="text-align:left" placeholder="https://example.com" /></div>'+
+            '<div class="field" style="margin:0"><label>فاصله بررسی (دقیقه)</label><input id="cmInterval" type="number" min="1" max="60" value="5" /></div>'+
+            '<div class="field" style="margin:0;display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">'+
+              '<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" id="cmNotify" '+(monitorTgReady?'checked':'disabled')+' /> اعلان تلگرام هنگام قطع</label>'+
+              '<button class="btn btn-primary" type="button" id="cmAddBtn">افزودن مانیتور</button>'+
+            '</div>'+
+          '</div>'+
+          '<div class="monitor-list" id="cmList">'+cmRows+'</div>'+
+        '</div>'+
+      '</div>';
+
+    gate.querySelectorAll("[data-monitor-node]").forEach(el=>{
+      el.addEventListener("click",()=>openMonitorDetail(el.dataset.monitorNode));
+      el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openMonitorDetail(el.dataset.monitorNode);}});
+    });
+    document.getElementById("cmAddBtn")?.addEventListener("click",async()=>{
+      const name=(document.getElementById("cmName")?.value||"").trim()||"monitor";
+      const url=(document.getElementById("cmUrl")?.value||"").trim();
+      const interval=Number(document.getElementById("cmInterval")?.value)||5;
+      const notify=!!document.getElementById("cmNotify")?.checked;
+      if(!url){toast("آدرس لازم است","err");return;}
+      try{
+        const r=await api("/api/custom-monitors",{method:"POST",body:JSON.stringify({name,url,interval_min:interval,notify_tg:notify,check_now:true})});
+        if(!r.ok) throw new Error(r.err||"failed");
+        toast("مانیتور اضافه شد","ok");
+        loadMonitor();
+      }catch(e){toast(e.message,"err");}
+    });
+    gate.querySelectorAll("[data-cm-del]").forEach(btn=>{
+      btn.addEventListener("click",async(e)=>{
+        e.stopPropagation();
+        if(!confirm("حذف این مانیتور؟"))return;
+        try{await api("/api/custom-monitors/"+encodeURIComponent(btn.dataset.cmDel),{method:"DELETE"});toast("حذف شد","ok");loadMonitor();}
+        catch(err){toast(err.message,"err");}
+      });
+    });
+    gate.querySelectorAll("[data-cm-check]").forEach(btn=>{
+      btn.addEventListener("click",async(e)=>{
+        e.stopPropagation();
+        btn.disabled=true; btn.textContent="...";
+        try{
+          await api("/api/custom-monitors/check",{method:"POST",body:JSON.stringify({id:btn.dataset.cmCheck})});
+          loadMonitor();
+        }catch(err){toast(err.message,"err");btn.disabled=false;btn.textContent="تست الان";}
+      });
+    });
   }
   async function loadMonitor(){
     try{ const r=await api("/api/monitor"); renderMonitorData(r); }
