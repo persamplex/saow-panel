@@ -4163,8 +4163,12 @@ function openMapProvince(provinceName){
           '<div class="monitor-node-stats"><span><strong class="hs-'+cls+'">'+faNum(last==null?"—":last+"/9")+'</strong> '+esc(scoreLabel(last,9))+'</span>'+
           '<span><strong>'+faNum(s.failed_servers||0)+'</strong> سرور قطع</span>'+
           '<span><strong>'+faNum(s.outage_minutes||0)+'</strong> دقیقه</span></div></div>'+
-          '<div class="monitor-strip" style="--slots:'+strip.slots+'">'+strip.html+'</div>'+
-          '<div class="monitor-node-detail"><span>'+cellHint+' · روی خانه بزنید برای جزئیات</span><span>'+faNum(s.failed_slots||0)+' تست ناقص</span></div></div>';
+          '<div class="monitor-strip-wrap">'+
+            '<span class="monitor-strip-edge old">قدیمی</span>'+
+            '<div class="monitor-strip">'+strip.html+'</div>'+
+            '<span class="monitor-strip-edge new">جدید</span>'+
+          '</div>'+
+          '<div class="monitor-node-detail"><span>'+cellHint+' · روی خانه بزنید</span><span>'+faNum(s.failed_slots||0)+' تست ناقص</span></div></div>';
       }).join("") || '<div class="empty-msg">نودی برای نمایش وجود ندارد.</div>';
     }
 
@@ -4185,18 +4189,37 @@ function openMapProvince(provinceName){
       return '<div class="monitor-node" data-cm-id="'+esc(c.id)+'"><div class="monitor-node-head"><div class="monitor-node-name"><b>'+esc(c.name)+'</b><span>'+esc(c.url)+'</span></div><div class="monitor-node-stats">'+monitorStatusBadge(c.last_status)+'<span><strong>'+faNum(c.last_latency_ms||0)+'</strong> ms</span><span>هر '+faNum(c.interval_min||5)+' دقیقه</span><span>'+esc(lastChk)+'</span></div></div><div class="monitor-strip" style="grid-template-columns:repeat('+slots+',minmax(1px,1fr))">'+cells.join("")+'</div><div class="monitor-node-detail"><span>'+(c.last_error?esc(c.last_error):'بدون خطا')+(c.notify_tg?' · اعلان تلگرام':'')+'</span><span><button class="btn btn-sm" type="button" data-cm-check="'+esc(c.id)+'">تست الان</button> <button class="btn btn-sm" type="button" data-cm-del="'+esc(c.id)+'">حذف</button></span></div></div>';
     }).join("") || '<div class="empty-msg" style="padding:16px">هنوز مانیتور دستی اضافه نشده.</div>';
 
+    const health=data.health||{};
+    const healthInterval=Number(health.interval_min)===1?1:5;
+    const lastRun=Number(health.last_run)||0;
+    const lastRunTxt=lastRun?(Math.max(0,Math.round((Date.now()-lastRun)/60000))+" دقیقه پیش"):"هنوز اجرا نشده";
+
     const rangeBtns=
-      '<div class="monitor-range" style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 12px">'+
+      '<div class="monitor-range">'+
         [['1h','۱ ساعت'],['1d','۲۴ ساعت'],['7d','۷ روز']].map(([k,l])=>
           '<button type="button" class="btn btn-sm'+(range===k?' btn-primary':'')+'" data-mrange="'+k+'">'+l+'</button>'
         ).join("")+
       '</div>';
 
+    const healthControls=
+      '<div class="monitor-health-bar">'+
+        '<div class="monitor-health-left">'+
+          '<span class="monitor-health-label">بازه چک خودکار</span>'+
+          '<div class="monitor-interval-seg">'+
+            '<button type="button" class="btn btn-sm'+(healthInterval===1?' btn-primary':'')+'" data-hinterval="1">هر ۱ دقیقه</button>'+
+            '<button type="button" class="btn btn-sm'+(healthInterval===5?' btn-primary':'')+'" data-hinterval="5">هر ۵ دقیقه</button>'+
+          '</div>'+
+          '<p class="monitor-health-warn">⚠ چک دقیقه‌ای ممکن است باعث محدودیت/بن موقت از Check-host شود. برای استفاده عادی ۵ دقیقه توصیه می‌شود.</p>'+
+          '<span class="monitor-health-meta">آخرین اجرای خودکار: '+esc(lastRunTxt)+'</span>'+
+        '</div>'+
+        '<button type="button" class="btn btn-primary" id="btnHealthCheckNow">تست همه الان</button>'+
+      '</div>';
+
     const tgToggle=
-      '<div class="cm-notify-card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);margin-bottom:12px">'+
+      '<div class="cm-notify-card">'+
         '<div style="min-width:0"><b style="font-size:13px;display:block">اعلان قطع در تلگرام</b>'+
           '<span style="font-size:11px;color:var(--text-muted)">'+(monitorTgReady?'ربات و chat ادمین وصل است':'ابتدا ربات تلگرام و chat ادمین را در بخش ربات وصل کنید')+'</span></div>'+
-        '<button type="button" class="switch'+(monitorTgReady?'':' is-disabled')+'" id="cmNotifySwitch" data-on="1" aria-pressed="true" title="اعلان تلگرام" style="'+(monitorTgReady?'':'opacity:.45;pointer-events:none')+'"></button>'+
+        '<button type="button" class="saow-switch'+(monitorTgReady?'':' is-disabled')+'" id="cmNotifySwitch" data-on="1" aria-pressed="true" '+(monitorTgReady?'':'disabled')+'></button>'+
       '</div>';
 
     gate.innerHTML=
@@ -4207,6 +4230,7 @@ function openMapProvince(provinceName){
           '<div class="monitor-kpi"><b>'+faNum(bad)+'</b><span>دقیقه ناقص نودها</span></div>'+
           '<div class="monitor-kpi"><b>'+faNum(upCm)+'/'+faNum(customs.length)+'</b><span>مانیتور دستی سالم</span></div>'+
         '</div>'+
+        healthControls+
         rangeBtns+
         '<div class="monitor-legend">'+
           '<span><i style="background:var(--success)"></i>متصل (۸–۹)</span>'+
@@ -4233,19 +4257,55 @@ function openMapProvince(provinceName){
     if(!document.getElementById("monFilterCss")){
       const st=document.createElement("style"); st.id="monFilterCss";
       st.textContent=
-        ".monitor-strip{display:flex!important;width:100%;max-width:100%;gap:1px;padding:0 13px 12px;overflow:hidden;box-sizing:border-box}"+
+        ".monitor-range{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:10px 0 12px}"+
+        ".monitor-legend{justify-content:center;text-align:center}"+
+        ".monitor-health-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.02);margin-bottom:12px}"+
+        ".monitor-health-label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px}"+
+        ".monitor-interval-seg{display:flex;gap:6px;flex-wrap:wrap}"+
+        ".monitor-health-warn{font-size:11px;color:var(--warning);margin:8px 0 4px;line-height:1.6;max-width:520px}"+
+        ".monitor-health-meta{font-size:11px;color:var(--text-muted)}"+
+        ".monitor-strip-wrap{display:flex;align-items:center;gap:6px;padding:0 10px 10px;direction:ltr}"+
+        ".monitor-strip-edge{font-size:9px;color:var(--text-muted);flex-shrink:0;min-width:28px}"+
+        ".monitor-strip-edge.new{color:var(--accent);text-align:right}"+
+        ".monitor-strip{display:flex!important;flex:1;min-width:0;gap:1px;overflow:hidden;box-sizing:border-box;direction:ltr}"+
         ".monitor-cell{flex:1 1 0;min-width:0!important;width:auto!important;height:17px;border-radius:2px;background:rgba(255,255,255,.08);cursor:pointer}"+
         ".monitor-cell.filter{background:rgba(167,139,250,.9)!important}"+
         ".monitor-cell.ok{background:rgba(74,222,128,.85)}.monitor-cell.warn{background:rgba(251,191,36,.9)}.monitor-cell.bad{background:rgba(248,113,113,.9)}"+
         ".hs-filter{color:#c4b5fd}.hs-bad{color:var(--danger)}.hs-warn{color:var(--warning)}.hs-ok{color:var(--success)}"+
-        ".switch{position:relative;width:42px;height:24px;border-radius:999px;background:rgba(255,255,255,.12);border:none;cursor:pointer;flex-shrink:0;transition:.2s}"+
-        ".switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}"+
-        ".switch[data-on='1']{background:var(--success)}.switch[data-on='1']::after{left:21px}";
+        ".cm-notify-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);margin-bottom:12px}"+
+        ".saow-switch{position:relative;width:46px;height:26px;border-radius:999px;background:rgba(255,255,255,.14);border:none;cursor:pointer;flex-shrink:0;padding:0;transition:background .2s}"+
+        ".saow-switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .2s ease}"+
+        ".saow-switch[data-on='1']{background:var(--success)}"+
+        ".saow-switch[data-on='1']::after{transform:translateX(20px)}"+
+        ".saow-switch.is-disabled,.saow-switch:disabled{opacity:.4;pointer-events:none}"+
+        "@media(max-width:700px){.monitor-health-bar{flex-direction:column}.monitor-range{width:100%}.monitor-range .btn{flex:1;text-align:center}}";
       document.head.appendChild(st);
     }
 
     gate.querySelectorAll("[data-mrange]").forEach(btn=>{
       btn.addEventListener("click",()=>{ monitorRange=btn.dataset.mrange; if(monitorLastData) renderMonitorData(monitorLastData); });
+    });
+    gate.querySelectorAll("[data-hinterval]").forEach(btn=>{
+      btn.addEventListener("click",async()=>{
+        const v=Number(btn.dataset.hinterval)===1?1:5;
+        try{
+          await api("/api/monitor/settings",{method:"POST",body:JSON.stringify({interval_min:v})});
+          toast(v===1?"بازه روی ۱ دقیقه تنظیم شد — مراقب بن Check-host باشید":"بازه روی ۵ دقیقه تنظیم شد","ok");
+          if(monitorLastData){ monitorLastData.health=monitorLastData.health||{}; monitorLastData.health.interval_min=v; renderMonitorData(monitorLastData); }
+        }catch(e){toast(e.message,"err");}
+      });
+    });
+    document.getElementById("btnHealthCheckNow")?.addEventListener("click",async()=>{
+      const btn=document.getElementById("btnHealthCheckNow");
+      if(btn){btn.disabled=true;btn.textContent="در حال تست…";}
+      try{
+        const r=await api("/api/monitor/check-now",{method:"POST",body:"{}"});
+        if(r.skipped && r.reason==="relay_missing") toast("ترمینال ریلوی وصل نیست","err");
+        else if(r.skipped && r.reason==="already_running") toast("یک تست در حال اجراست","warn");
+        else toast("تست انجام شد · "+faNum(r.n||0)+" نود","ok");
+        loadMonitor();
+      }catch(e){toast(e.message,"err");}
+      finally{if(btn){btn.disabled=false;btn.textContent="تست همه الان";}}
     });
     gate.querySelectorAll("[data-monitor-node]").forEach(el=>{
       el.addEventListener("click",()=>openMonitorDetail(el.dataset.monitorNode));
@@ -4260,7 +4320,11 @@ function openMapProvince(provinceName){
     const sw=document.getElementById("cmNotifySwitch");
     if(sw){
       sw.dataset.on="1";
-      sw.addEventListener("click",()=>{ sw.dataset.on=sw.dataset.on==="1"?"0":"1"; });
+      sw.addEventListener("click",()=>{
+        const next=sw.dataset.on==="1"?"0":"1";
+        sw.dataset.on=next;
+        sw.setAttribute("aria-pressed", next==="1"?"true":"false");
+      });
     }
     document.getElementById("cmAddBtn")?.addEventListener("click",async()=>{
       const name=(document.getElementById("cmName")?.value||"").trim()||"monitor";
