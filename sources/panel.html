@@ -4043,9 +4043,14 @@ function openMapProvince(provinceName){
     if(s<=7) return "اختلال";
     return "متصل";
   }
+  let monitorServerNow=0;
+  function tehranTime(ts, opts){
+    try{ return new Date(Number(ts)||Date.now()).toLocaleString("fa-IR",{timeZone:"Asia/Tehran",...(opts||{})}); }
+    catch{ return new Date(Number(ts)||Date.now()).toLocaleString("fa-IR",opts||{}); }
+  }
   function buildStripCells(history, rangeKey, nodeId){
-    const now=Date.now();
-    // ۱س: ۱دقیقه · ۲۴س: ۵دقیقه (جلوگیری از سرریز) · ۷روز: ۱ساعت
+    // ساعت سرور (ورکر) — نه clock مرورگر کاربر
+    const now=Number(monitorServerNow)||Date.now();
     const spanMs=rangeKey==="1h"?3600000:(rangeKey==="7d"?7*86400000:86400000);
     const slotMs=rangeKey==="1h"?60000:(rangeKey==="7d"?3600000:5*60000);
     const slots=Math.max(1, Math.floor(spanMs/slotMs));
@@ -4096,8 +4101,8 @@ function openMapProvince(provinceName){
     const score=el?.dataset.score!=null?Number(el.dataset.score):(best?Number(best.score):null);
     const total=el?.dataset.total!=null?Number(el.dataset.total):(best?Number(best.total):9);
     const detail=best?.detail||null;
-    const timeStr=new Date(slotStart).toLocaleString("fa-IR",{weekday:"short",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
-    const endStr=new Date(slotStart+slotMs-1).toLocaleTimeString("fa-IR",{hour:"2-digit",minute:"2-digit"});
+    const timeStr=tehranTime(slotStart,{weekday:"short",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+    const endStr=tehranTime(slotStart+slotMs-1,{hour:"2-digit",minute:"2-digit"});
     const chOk=detail?.ch_ok, chTotal=detail?.ch_total, chLink=detail?.ch_link;
     const directOk=detail?.direct_ok ?? (el?.dataset.dok==="1");
     const samples=inSlot.length||Number(el?.dataset.sc)||0;
@@ -4139,6 +4144,8 @@ function openMapProvince(provinceName){
   function renderMonitorData(data){
     const gate=document.getElementById("monitorGate"); if(!gate)return;
     monitorLastData=data;
+    if(data && data.server_now) monitorServerNow=Number(data.server_now);
+    else if(!monitorServerNow) monitorServerNow=Date.now();
     const nodes=data.nodes||[]; monitorNodesCache=nodes;
     const customs=data.custom_monitors||[]; monitorCustomCache=customs;
     monitorTgReady=!!data.telegram_ready;
@@ -4278,7 +4285,16 @@ function openMapProvince(provinceName){
         ".saow-switch[data-on='1']{background:var(--success)}"+
         ".saow-switch[data-on='1']::after{transform:translateX(20px)}"+
         ".saow-switch.is-disabled,.saow-switch:disabled{opacity:.4;pointer-events:none}"+
-        "@media(max-width:700px){.monitor-health-bar{flex-direction:column}.monitor-range{width:100%}.monitor-range .btn{flex:1;text-align:center}}";
+        "@media(max-width:700px){"+
+          ".monitor-health-bar{flex-direction:column}"+
+          ".monitor-range{width:100%;justify-content:center}"+
+          ".monitor-range .btn{flex:1 1 auto;min-width:28%;text-align:center}"+
+          ".monitor-node-stats{flex-wrap:wrap;gap:6px 10px;white-space:normal}"+
+          ".monitor-strip-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}"+
+          ".monitor-strip{overflow:visible;min-width:max(100%,240px);gap:2px}"+
+          ".monitor-cell{flex:0 0 auto!important;width:6px!important;min-width:6px!important;height:22px}"+
+          ".monitor-strip-edge{font-size:10px}"+
+        "}";
       document.head.appendChild(st);
     }
 
