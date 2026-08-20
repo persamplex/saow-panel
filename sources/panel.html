@@ -1299,7 +1299,7 @@ table tbody tr{height:auto}
       </div>
       <div class="field-grid">
         <div class="field"><label>سقف سرعت (KB/s)</label><input type="number" id="fSpeed" value="0" min="0" placeholder="۰ = نامحدود" /></div>
-        <div class="field"><label style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">آدرس تمیز — IP یا دامنه (اختیاری) <span class="stat-warn" tabindex="0" data-tip="اگر دامنه بگذارید، هنگام ساخت ساب فقط به IPv4 همان دامنه resolve می‌شود و همان IPها (حداکثر ۲) به‌عنوان address همه کانفیگ‌ها می‌آیند — بدون مخلوط با IRCF عمومی." title="اگر دامنه بگذارید، هنگام ساخت ساب فقط به IPv4 همان دامنه resolve می‌شود و همان IPها (حداکثر ۲) به‌عنوان address همه کانفیگ‌ها می‌آیند — بدون مخلوط با IRCF عمومی.">!</span></label><input type="text" id="fCleanIp" placeholder="1.2.3.4 یا ipv4.ircf.space" dir="ltr" style="text-align:left" /></div>
+        <div class="field"><label style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">تمیز — IP یا دامنه (اختیاری) <span class="stat-warn" tabindex="0" data-tip="اگر دامنه بگذارید، هنگام ساخت ساب فقط به IPv4 همان دامنه resolve می‌شود و همان IPها (حداکثر ۲) به‌عنوان address همه کانفیگ‌ها می‌آیند — بدون مخلوط با IRCF عمومی." title="اگر دامنه بگذارید، هنگام ساخت ساب فقط به IPv4 همان دامنه resolve می‌شود و همان IPها (حداکثر ۲) به‌عنوان address همه کانفیگ‌ها می‌آیند — بدون مخلوط با IRCF عمومی.">!</span></label><input type="text" id="fCleanIp" placeholder="1.2.3.4 یا ipv4.ircf.space" dir="ltr" style="text-align:left" /></div>
       </div>
       <div class="field">
         <label>قفل روی یک نود</label>
@@ -4239,12 +4239,12 @@ function openMapProvince(provinceName){
         '</div>'+
         healthControls+
         rangeBtns+
-        '<div class="monitor-legend">'+
-          '<span><i style="background:var(--success)"></i>متصل (۸–۹)</span>'+
-          '<span><i style="background:var(--warning)"></i>اختلال (۲–۷)</span>'+
-          '<span><i class="monitor-cell filter" style="display:inline-block;width:10px;height:10px;border-radius:2px"></i>فیلتر ایران (۱)</span>'+
-          '<span><i style="background:var(--danger)"></i>قطع (۰)</span>'+
-          '<span><i style="background:rgba(255,255,255,.12)"></i>بدون داده</span>'+
+        '<div class="monitor-legend" title="سبز متصل · زرد اختلال · بنفش فیلتر ایران · قرمز قطع · خاکستری بدون داده">'+
+          '<i style="background:var(--success)" title="متصل"></i>'+
+          '<i style="background:var(--warning)" title="اختلال"></i>'+
+          '<i style="background:rgba(167,139,250,.95)" title="فیلتر ایران"></i>'+
+          '<i style="background:var(--danger)" title="قطع"></i>'+
+          '<i style="background:rgba(255,255,255,.12)" title="بدون داده"></i>'+
         '</div>'+
         '<h4 style="font-size:13px;margin:8px 0 10px;color:var(--text-secondary)">نودهای Worker</h4>'+
         '<div class="monitor-list">'+nodesHtml+'</div>'+
@@ -4265,7 +4265,7 @@ function openMapProvince(provinceName){
       const st=document.createElement("style"); st.id="monFilterCss";
       st.textContent=
         ".monitor-range{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:10px 0 12px}"+
-        ".monitor-legend{justify-content:center;text-align:center}"+
+        ".monitor-legend{justify-content:center;text-align:center;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.monitor-legend>i{display:inline-block;width:11px;height:11px;border-radius:3px}"+
         ".monitor-health-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.02);margin-bottom:12px}"+
         ".monitor-health-label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px}"+
         ".monitor-interval-seg{display:flex;gap:6px;flex-wrap:wrap}"+
