@@ -1232,7 +1232,7 @@ table tbody tr{height:auto}
           <div class="row" style="margin:10px 0 4px">
             <div>
               <span>حالت فالبک</span>
-              <small style="display:block;color:var(--text-muted);font-size:10px;margin-top:2px">اتصال مستقیم ابتدا امتحان می‌شود؛ در صورت خطای TCP، پروکسی استفاده می‌شود.</small>
+              <small style="display:block;color:var(--text-muted);font-size:10px;margin-top:2px">روشن: ابتدا direct؛ اگر fail یا بدون پاسخ (blackhole) شد → ProxyIP با همان SNI. خاموش: فقط دامنه‌های وایلدکارد همیشه از پروکسی.</small>
             </div>
             <div class="switch" id="swEgressFallback"></div>
           </div>
@@ -2913,16 +2913,18 @@ function openMapProvince(provinceName){
     btn.disabled=true;btn.textContent="در حال آپدیت نرم...";
     try{
       const r=await api("/api/nodes/update-all-soft",{method:"POST"});
-      if(r.ok===false && r.err) throw new Error(r.err);
+      if(!r) throw new Error("پاسخ خالی از سرور");
+      if(r.ok===false && !(r.success>0)) throw new Error(r.err||"آپدیت ناموفق");
       const ver=r.version_hint?(" · v"+r.version_hint):"";
       let msg="آپدیت نرم: "+faNum(r.success||0)+" موفق / "+faNum(r.fail||0)+" ناموفق"+ver;
+      if(r.code_source) msg+=" · منبع:"+r.code_source;
       if(r.errors&&r.errors.length){
         msg+=" — "+r.errors.slice(0,3).map(e=>(e.node||"?")+": "+(e.err||"")).join(" | ");
       }
       toast(msg,(r.fail? (r.success?"warn":"err"):"ok"));
     }catch(e){toast(e.message||"آپدیت همه ناموفق","err");}
     btn.disabled=false;btn.textContent="آپدیت همه نودها";
-    loadNodes();
+    try{ await loadNodes(); }catch{}
   });
   async function onNodeAction(act,id){
     if(act==="detail"){openNodeDetail(id);return;}
