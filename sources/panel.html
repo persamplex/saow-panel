@@ -38,6 +38,24 @@ input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .nav-item[data-sec="railway"]{color:#a5f3fc;border:1px solid rgba(125,211,252,.08);margin-top:6px}
 .nav-item[data-sec="railway"]::before{content:"⌁";font-size:20px;line-height:0;color:var(--accent)}
 .nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.85}
+.nav-item[data-plugin]{display:none}
+.nav-item[data-plugin].plugin-on{display:flex}
+/* ── افزونه‌ها / App grid ── */
+.plugins-hero{margin-bottom:16px}
+.plugins-hero h3{font-size:16px;margin:0 0 6px}
+.plugins-hero p{font-size:13px;color:var(--text-muted);margin:0;line-height:1.7}
+.plugins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.plugin-card{position:relative;border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:16px;padding:18px 14px 14px;text-align:center;transition:border-color .18s,background .18s,transform .18s;cursor:default;min-height:148px;display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+.plugin-card:hover{border-color:rgba(125,211,252,.28);background:rgba(125,211,252,.04);transform:translateY(-2px)}
+.plugin-card.is-on{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.06)}
+.plugin-ico{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:22px;margin-bottom:10px;background:rgba(255,255,255,.06)}
+.plugin-card b{display:block;font-size:13px;font-weight:600;margin-bottom:4px}
+.plugin-card span.desc{display:block;font-size:11px;color:var(--text-muted);line-height:1.45;min-height:32px}
+.plugin-card .plugin-actions{display:flex;gap:6px;width:100%;margin-top:12px}
+.plugin-card .plugin-actions .btn{flex:1;padding:7px 8px;font-size:11px;border-radius:9px}
+.plugin-badge{position:absolute;top:10px;left:10px;font-size:10px;padding:2px 7px;border-radius:8px;background:rgba(74,222,128,.15);color:var(--success)}
+.plugin-card:not(.is-on) .plugin-badge{background:rgba(255,255,255,.06);color:var(--text-muted)}
+@media(max-width:600px){.plugins-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.plugin-card{min-height:136px;padding:14px 10px 12px}}
 .nav-item .count{margin-right:auto;font-size:11px;background:rgba(255,255,255,.08);color:var(--text-secondary);padding:2px 7px;border-radius:10px;font-weight:500}
 .nav-item.active .count{background:rgba(125,211,252,.2);color:var(--accent)}
 .sidebar-foot{padding:16px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)}
@@ -838,14 +856,16 @@ table tbody tr{height:auto}
       <div class="nav-item active" data-sec="dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>داشبورد</div>
       <div class="nav-item" data-sec="users"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>کاربران<span class="count" id="navUsersCount">—</span></div>
       <div class="nav-item" data-sec="nodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>نودها<span class="count" id="navNodesCount">—</span></div>
-      <div class="nav-item" data-sec="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-6 4 12 2-6h6"/><path d="M3 3v18h18"/></svg>مانیتور</div>
-      <div class="nav-section">عملیات</div>
-      <div class="nav-item" data-sec="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>فروشگاه</div>
-      <div class="nav-item" data-sec="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>بکاپ</div>
-      <div class="nav-item" data-sec="logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>لاگ‌ها</div>
-            <div class="nav-item" data-sec="telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>ربات تلگرام</div>
-<div class="nav-item" data-sec="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>تنظیمات</div>
-      <div class="nav-item" data-sec="railway">⌁ ترمینال ریلوی</div>
+      <div class="nav-item" data-sec="extensions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>افزونه‌ها</div>
+      <div class="nav-section" id="navSecPlugins">افزونه‌های فعال</div>
+      <div class="nav-item" data-sec="monitor" data-plugin="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l2-6 4 12 2-6h6"/><path d="M3 3v18h18"/></svg>مانیتور</div>
+      <div class="nav-item" data-sec="shop" data-plugin="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>فروشگاه</div>
+      <div class="nav-item" data-sec="backup" data-plugin="backup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>بکاپ</div>
+      <div class="nav-item" data-sec="logs" data-plugin="logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>لاگ‌ها</div>
+      <div class="nav-item" data-sec="telegram" data-plugin="telegram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>ربات تلگرام</div>
+      <div class="nav-item" data-sec="railway" data-plugin="railway">⌁ ترمینال ریلوی</div>
+      <div class="nav-section">سیستم</div>
+      <div class="nav-item" data-sec="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>تنظیمات</div>
     </nav>
     <div class="sidebar-foot" id="sidebarFoot">— · Push Mode</div>
   </aside>
@@ -1194,6 +1214,13 @@ table tbody tr{height:auto}
       <form class="terminal-form" id="terminalForm"><input id="terminalCommand" autocomplete="off" spellcheck="false" placeholder="command ..."/><button class="btn btn-primary" type="submit">اجرا</button></form>
     </div>
   </div>
+</section>
+<section class="section" id="extensions">
+  <div class="plugins-hero">
+    <h3>مرکز افزونه‌ها</h3>
+    <p>مثل وردپرس: هر بخش اختیاری را فعال کنید تا تبش به منوی کناری اضافه شود. هستهٔ پنل (داشبورد، کاربران، نودها، تنظیمات) همیشه در دسترس است.</p>
+  </div>
+  <div class="plugins-grid" id="pluginsGrid"></div>
 </section>
 <section class="section" id="settings">
       <div class="grid-3" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px">
@@ -1681,12 +1708,86 @@ table tbody tr{height:auto}
     el.querySelector('[data-pg="next"]')?.addEventListener("click",()=>onPage(info.page+1));
   }
 
-  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',monitor:'مانیتور شبکه',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',telegram:'ربات تلگرام',railway:'ترمینال ریلوی',settings:'تنظیمات'};
+  const titles={dash:'داشبورد <span>زنده</span>',users:'کاربران',nodes:'نودها',extensions:'افزونه‌ها',monitor:'مانیتور شبکه',shop:'فروشگاه',backup:'بکاپ',logs:'لاگ‌ها',telegram:'ربات تلگرام',railway:'ترمینال ریلوی',settings:'تنظیمات'};
   const topActions={
     dash:{label:'+ کاربر جدید',action:'user'}, users:{label:'+ کاربر جدید',action:'user'},
-    nodes:{label:'+ افزودن نود',action:'node'}, shop:{label:'بروزرسانی',action:'shop'},
+    nodes:{label:'+ افزودن نود',action:'node'}, extensions:{label:'',action:'none'},
+    shop:{label:'بروزرسانی',action:'shop'},
     backup:{label:'دانلود بکاپ',action:'backup'}, logs:{label:'بروزرسانی',action:'logs'}, telegram:{label:'بروزرسانی',action:'telegram'},settings:{label:'',action:'none'}
   };
+
+  /* ── سیستم افزونه (مثل اپ‌استور / وردپرس) ── */
+  const PLUGIN_CATALOG=[
+    {id:"monitor", title:"مانیتور", desc:"وضعیت نودها و چک‌هاست", ico:"📡", sec:"monitor"},
+    {id:"shop", title:"فروشگاه", desc:"فروش اشتراک و کارت", ico:"🛒", sec:"shop"},
+    {id:"backup", title:"بکاپ", desc:"پشتیبان و بازیابی", ico:"💾", sec:"backup"},
+    {id:"logs", title:"لاگ‌ها", desc:"رویدادها و فعالیت‌ها", ico:"📋", sec:"logs"},
+    {id:"telegram", title:"ربات تلگرام", desc:"اعلان و مدیریت از تلگرام", ico:"✈️", sec:"telegram"},
+    {id:"railway", title:"ترمینال ریلوی", desc:"شل و چک شبکه", ico:"⌁", sec:"railway"},
+  ];
+  const CORE_SECS=new Set(["dash","users","nodes","settings","extensions"]);
+  let ENABLED_PLUGINS={};
+  try{
+    const raw=JSON.parse(localStorage.getItem("saow_plugins")||"null");
+    if(raw && typeof raw==="object") ENABLED_PLUGINS=raw;
+  }catch{}
+  // پیش‌فرض: همه روشن (سازگاری با پنل قبلی) مگر اینکه کاربر ذخیره کرده باشد
+  if(!localStorage.getItem("saow_plugins")){
+    PLUGIN_CATALOG.forEach(p=>{ ENABLED_PLUGINS[p.id]=true; });
+  }
+  function isPluginOn(id){ return !!ENABLED_PLUGINS[id]; }
+  function persistPlugins(){
+    try{ localStorage.setItem("saow_plugins", JSON.stringify(ENABLED_PLUGINS)); }catch{}
+  }
+  function applyPluginsNav(){
+    let any=false;
+    document.querySelectorAll(".nav-item[data-plugin]").forEach(el=>{
+      const id=el.getAttribute("data-plugin");
+      const on=isPluginOn(id);
+      el.classList.toggle("plugin-on", on);
+      if(on) any=true;
+    });
+    const secLabel=document.getElementById("navSecPlugins");
+    if(secLabel) secLabel.style.display=any?"":"none";
+    // اگر روی تب غیرفعال هستیم → برو افزونه‌ها
+    if(currentSec && !CORE_SECS.has(currentSec)){
+      const stillOn=PLUGIN_CATALOG.some(p=>p.sec===currentSec && isPluginOn(p.id));
+      if(!stillOn) goSection("extensions", true);
+    }
+  }
+  function setPlugin(id, on){
+    ENABLED_PLUGINS[id]=!!on;
+    persistPlugins();
+    applyPluginsNav();
+    renderPluginsGrid();
+    toast(on?("افزونه «"+(PLUGIN_CATALOG.find(p=>p.id===id)?.title||id)+"» فعال شد"):("افزونه غیرفعال شد"), on?"ok":"warn");
+  }
+  function renderPluginsGrid(){
+    const grid=document.getElementById("pluginsGrid");
+    if(!grid) return;
+    grid.innerHTML=PLUGIN_CATALOG.map(p=>{
+      const on=isPluginOn(p.id);
+      return `<div class="plugin-card ${on?"is-on":""}" data-pid="${p.id}">
+        <span class="plugin-badge">${on?"فعال":"غیرفعال"}</span>
+        <div class="plugin-ico">${p.ico}</div>
+        <div><b>${p.title}</b><span class="desc">${p.desc}</span></div>
+        <div class="plugin-actions">
+          ${on
+            ? `<button type="button" class="btn" data-plugin-off="${p.id}">غیرفعال</button><button type="button" class="btn btn-primary" data-plugin-open="${p.sec}">باز کردن</button>`
+            : `<button type="button" class="btn btn-primary" data-plugin-on="${p.id}" style="flex:1">فعال‌سازی</button>`}
+        </div>
+      </div>`;
+    }).join("");
+    grid.querySelectorAll("[data-plugin-on]").forEach(btn=>{
+      btn.addEventListener("click",()=>setPlugin(btn.getAttribute("data-plugin-on"), true));
+    });
+    grid.querySelectorAll("[data-plugin-off]").forEach(btn=>{
+      btn.addEventListener("click",()=>setPlugin(btn.getAttribute("data-plugin-off"), false));
+    });
+    grid.querySelectorAll("[data-plugin-open]").forEach(btn=>{
+      btn.addEventListener("click",()=>goSection(btn.getAttribute("data-plugin-open")));
+    });
+  }
   function faNum(n){if(n==null||n==="")return"—";return String(n).replace(/[0-9]/g,d=>"۰۱۲۳۴۵۶۷۸۹"[d]);}
   function setHealth(cardId,pct){
     const el=document.getElementById(cardId);if(!el)return;
@@ -1893,6 +1994,11 @@ table tbody tr{height:auto}
   document.getElementById("topActionBtn").addEventListener("click",handleTopAction);
   function goSection(sec,skipSave){
     if(!sec||!document.getElementById(sec))sec="dash";
+    // افزونهٔ غیرفعال → مرکز افزونه‌ها
+    if(!CORE_SECS.has(sec)){
+      const plug=PLUGIN_CATALOG.find(p=>p.sec===sec);
+      if(plug && !isPluginOn(plug.id)) sec="extensions";
+    }
     // اگر پنل قفل کامل است فقط settings مجاز است
     if(PANEL_RULES&&PANEL_RULES.lock_panel && sec!=="settings"){
       sec="settings";
@@ -1906,9 +2012,12 @@ table tbody tr{height:auto}
     document.getElementById("sidebarBackdrop").classList.remove("show");
     if(!skipSave) try{localStorage.setItem("saow_panel_sec",sec);}catch{}
     applyPanelLocksFromRules();
+    if(sec==="extensions") renderPluginsGrid();
     onSectionEnter(sec);
   }
   document.querySelectorAll(".nav-item").forEach(el=>{el.addEventListener("click",()=>goSection(el.dataset.sec));});
+  applyPluginsNav();
+  renderPluginsGrid();
   // دکمه‌های قفل فروشگاه/بکاپ → رفتن به بخش ربات
   document.addEventListener("click", function(e){
     const btn = e.target.closest("[data-go-sec]");
