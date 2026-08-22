@@ -184,10 +184,19 @@ tbody tr:hover td.row-actions{background:transparent!important}
 .row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13.5px}
 .row:last-child{border-bottom:none}
 .row span:last-child{color:var(--text-secondary)}
-.switch{width:40px;height:22px;background:rgba(255,255,255,.08);border-radius:11px;position:relative;cursor:pointer;transition:background .2s;border:1px solid transparent}
+.switch{width:40px;height:22px;min-width:40px;flex-shrink:0;background:rgba(255,255,255,.08);border-radius:11px;position:relative;cursor:pointer;transition:background .2s;border:1px solid transparent;overflow:hidden;box-sizing:border-box}
 .switch.on{background:rgba(125,211,252,.25);border-color:rgba(125,211,252,.3)}
-.switch::after{content:'';position:absolute;width:16px;height:16px;background:#a1a1aa;border-radius:50%;top:2px;right:3px;transition:all .2s}
-.switch.on::after{right:19px;background:var(--accent)}
+.switch::after{content:'';position:absolute;width:16px;height:16px;background:#a1a1aa;border-radius:50%;top:2px;left:3px;right:auto;transition:left .2s ease,background .2s;pointer-events:none}
+.switch.on::after{left:21px;right:auto;background:var(--accent)}
+/* پروکسی خروجی — حالت اتومات + کشویی */
+.egress-manual-wrap{overflow:hidden;max-height:0;opacity:0;transform:translateY(-6px);transition:max-height .35s ease,opacity .28s ease,transform .28s ease;pointer-events:none}
+.egress-manual-wrap.is-open{max-height:480px;opacity:1;transform:translateY(0);pointer-events:auto}
+.egress-manual-wrap.is-open .field input,
+.egress-manual-wrap.is-open textarea,
+.egress-manual-wrap.is-open .btn{pointer-events:auto}
+.egress-auto-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02)}
+.egress-auto-row>div:first-child{min-width:0;flex:1}
+.setting-block .row .switch{margin-top:2px}
 .sub-panel{display:none;margin:4px 0 8px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
 .sub-panel.open{display:block}
 .field{margin-bottom:14px}
@@ -1246,34 +1255,40 @@ table tbody tr{height:auto}
         </div>
         <div class="setting-block" style="margin:0">
           <h4>پروکسی خروجی</h4>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.55">فقط دامنه‌های لیست زیر از پروکسی می‌روند؛ بقیه (مثل google.com) مستقیم‌اند!</p>
-          <div class="field">
-            <label style="display:flex;align-items:center;gap:6px">آدرس پروکسی
-              <span class="stat-warn" data-tip="فرمت‌های قابل قبول:&#10;• proxyip.cmliussss.net (یا هر ProxyIP دامنه/IP)&#10;• socks5://user:pass@host:port&#10;• socks5://host:port&#10;• http://host:port&#10;&#10;SNI/Host هدف از پروکسی رد می‌شود (اتصال به مقصد با SNI اصلی).&#10;برای SOCKS5 احراز هویت user:pass پشتیبانی می‌شود.&#10;این پروکسی روی ورکر فرزند اعمال می‌شود و ترافیک دامنه‌های لیست را از آن عبور می‌دهد.">!</span>
-            </label>
-            <div style="display:flex;gap:8px;align-items:stretch">
-              <input type="text" id="egressProxy" value="" dir="ltr" style="text-align:left;flex:1" placeholder="socks5://user:pass@host:port یا proxyip.cmliussss.net" />
-              <button type="button" class="btn" id="btnTestProxy" style="white-space:nowrap;flex-shrink:0">تست پروکسی</button>
-            </div>
-          </div>
-          <div class="row" style="margin:10px 0 4px">
+          <div class="egress-auto-row">
             <div>
-              <span>حالت فالبک</span>
-              <small style="display:block;color:var(--text-muted);font-size:10px;margin-top:2px">روشن: منطق کامل BPB — direct سپس ProxyIP از bpb.yousef.isegaro.com و منابع مشابه. خاموش: فقط دامنه‌های وایلدکارد از پروکسی تنظیم‌شده.</small>
+              <span style="font-weight:600">حالت اتومات</span>
+              <small style="display:block;color:var(--text-muted);font-size:10px;margin-top:4px;line-height:1.55">روشن: منطق BPB (direct → ProxyIP خودکار). خاموش: پروکسی و وایلدکارد دستی.</small>
             </div>
-            <div class="switch" id="swEgressFallback"></div>
+            <div class="switch" id="swEgressFallback" title="حالت اتومات"></div>
           </div>
-          <div class="field" style="margin-top:8px">
-            <label style="display:flex;align-items:center;gap:6px">دامنه‌ها (با کاما جدا کنید)
-              <span class="stat-warn" data-tip="این دامنه‌ها از طریق پروکسی تنظیم‌شده رد می‌شوند. بقیه ترافیک مستقیم است.&#10;از وایلدکارد مثل *.chatgpt.com پشتیبانی می‌شود.&#10;مثال: *.openai.com, speedtest.net, chatgpt.com">!</span>
-            </label>
-            <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
+          <div class="egress-manual-wrap is-open" id="egressManualWrap">
+            <p style="font-size:12px;color:var(--text-muted);margin:0 0 10px;line-height:1.55">فقط دامنه‌های لیست زیر از پروکسی می‌روند؛ بقیه مستقیم‌اند.</p>
+            <div class="field">
+              <label style="display:flex;align-items:center;gap:6px">آدرس پروکسی
+                <span class="stat-warn" data-tip="فرمت‌های قابل قبول:&#10;• proxyip.cmliussss.net (یا هر ProxyIP دامنه/IP)&#10;• socks5://user:pass@host:port&#10;• socks5://host:port&#10;• http://host:port&#10;&#10;SNI/Host هدف از پروکسی رد می‌شود (اتصال به مقصد با SNI اصلی).&#10;برای SOCKS5 احراز هویت user:pass پشتیبانی می‌شود.">!</span>
+              </label>
+              <div style="display:flex;gap:8px;align-items:stretch">
+                <input type="text" id="egressProxy" value="" dir="ltr" style="text-align:left;flex:1;min-width:0" placeholder="socks5://user:pass@host:port یا proxyip…" />
+                <button type="button" class="btn" id="btnTestProxy" style="white-space:nowrap;flex-shrink:0">تست پروکسی</button>
+              </div>
+            </div>
+            <div class="field" style="margin-top:8px">
+              <label style="display:flex;align-items:center;gap:6px">دامنه‌ها (با کاما جدا کنید)
+                <span class="stat-warn" data-tip="این دامنه‌ها از طریق پروکسی تنظیم‌شده رد می‌شوند.&#10;از وایلدکارد مثل *.chatgpt.com پشتیبانی می‌شود.">!</span>
+              </label>
+              <textarea id="egressDomains" rows="3" dir="ltr" style="text-align:left;font-size:12px" placeholder="*.chatgpt.com, speedtest.net"></textarea>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button type="button" class="btn btn-primary" style="flex:1" id="btnSaveProxy">ذخیره پروکسی</button>
+              <button type="button" class="btn" style="flex:1" id="btnProxyStore">مخزن پروکسی</button>
+            </div>
+            <p id="proxyTestResult" style="font-size:11px;color:var(--text-muted);margin-top:6px;min-height:0"></p>
           </div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button type="button" class="btn btn-primary" style="flex:1" id="btnSaveProxy">ذخیره پروکسی</button>
-            <button type="button" class="btn" style="flex:1" id="btnProxyStore">مخزن پروکسی</button>
+          <div id="egressAutoHint" style="display:none;font-size:12px;color:var(--text-muted);line-height:1.6;padding:8px 2px">
+            حالت اتومات فعال است — ProxyIP از منابع BPB استفاده می‌شود. تنظیم دستی لازم نیست.
+            <div style="margin-top:10px"><button type="button" class="btn btn-primary" style="width:100%" id="btnSaveProxyAuto">ذخیره حالت اتومات</button></div>
           </div>
-          <p id="proxyTestResult" style="font-size:11px;color:var(--text-muted);margin-top:6px;min-height:0"></p>
         </div>
       </div>
     </section>
@@ -3515,20 +3530,38 @@ function openMapProvince(provinceName){
       if(de) de.value=r.domains||"";
       const fallback=document.getElementById("swEgressFallback");
       if(fallback) fallback.classList.toggle("on",r.mode==="fallback");
+      applyEgressAutoUi();
     }catch{}
   }
-  document.getElementById("swEgressFallback")?.addEventListener("click",function(){this.classList.toggle("on");});
+  function applyEgressAutoUi(){
+    const on=!!document.getElementById("swEgressFallback")?.classList.contains("on");
+    const wrap=document.getElementById("egressManualWrap");
+    const hint=document.getElementById("egressAutoHint");
+    if(wrap) wrap.classList.toggle("is-open", !on);
+    if(hint) hint.style.display=on?"block":"none";
+    ["egressProxy","egressDomains","btnTestProxy","btnSaveProxy","btnProxyStore"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el) return;
+      if(on){ el.setAttribute("disabled","disabled"); el.style.opacity=".55"; el.style.pointerEvents="none"; }
+      else { el.removeAttribute("disabled"); el.style.opacity=""; el.style.pointerEvents=""; }
+    });
+  }
+  document.getElementById("swEgressFallback")?.addEventListener("click",function(){
+    this.classList.toggle("on");
+    applyEgressAutoUi();
+  });
   document.getElementById("btnSaveProxy")?.addEventListener("click",async()=>{
     try{
+      const autoOn=!!document.getElementById("swEgressFallback")?.classList.contains("on");
       const proxyVal=(document.getElementById("egressProxy")?.value||"").trim();
-      if(!proxyVal){
+      if(!autoOn && !proxyVal){
         toast("آدرس پروکسی خالی است","warn");
         return;
       }
       const r=await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
         proxy:proxyVal,
         domains:document.getElementById("egressDomains")?.value?.trim()||"",
-        mode:document.getElementById("swEgressFallback")?.classList.contains("on")?"fallback":"manual"
+        mode:autoOn?"fallback":"manual"
       })});
       const pu=r&&r.nodes_updated;
       if(pu&&pu.errors&&pu.errors.length){
@@ -3541,7 +3574,19 @@ function openMapProvince(provinceName){
       }
     }catch(e){toast(e.message||"خطا","err");}
   });
-  
+  document.getElementById("btnSaveProxyAuto")?.addEventListener("click",async()=>{
+    try{
+      const r=await api("/api/proxy-settings",{method:"POST",body:JSON.stringify({
+        proxy:(document.getElementById("egressProxy")?.value||"").trim(),
+        domains:document.getElementById("egressDomains")?.value?.trim()||"",
+        mode:"fallback"
+      })});
+      const pu=r&&r.nodes_updated;
+      toast(pu?("حالت اتومات ذخیره · نودها "+faNum(pu.ok||0)+"/"+faNum(pu.total||0)):"حالت اتومات ذخیره شد","ok");
+    }catch(e){toast(e.message||"خطا","err");}
+  });
+  applyEgressAutoUi();
+
   document.getElementById("btnTestProxy")?.addEventListener("click",async()=>{
     const el=document.getElementById("proxyTestResult");
     if(el) el.textContent="در حال تست…";
