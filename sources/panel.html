@@ -1716,14 +1716,14 @@ table tbody tr{height:auto}
     backup:{label:'دانلود بکاپ',action:'backup'}, logs:{label:'بروزرسانی',action:'logs'}, telegram:{label:'بروزرسانی',action:'telegram'},settings:{label:'',action:'none'}
   };
 
-  /* ── سیستم افزونه (مثل اپ‌استور / وردپرس) ── */
+  /* ── سیستم افزونه (مثل اپ‌استور / وردپرس) + وابستگی ── */
   const PLUGIN_CATALOG=[
-    {id:"monitor", title:"مانیتور", desc:"وضعیت نودها و چک‌هاست", ico:"📡", sec:"monitor"},
-    {id:"shop", title:"فروشگاه", desc:"فروش اشتراک و کارت", ico:"🛒", sec:"shop"},
-    {id:"backup", title:"بکاپ", desc:"پشتیبان و بازیابی", ico:"💾", sec:"backup"},
-    {id:"logs", title:"لاگ‌ها", desc:"رویدادها و فعالیت‌ها", ico:"📋", sec:"logs"},
-    {id:"telegram", title:"ربات تلگرام", desc:"اعلان و مدیریت از تلگرام", ico:"✈️", sec:"telegram"},
-    {id:"railway", title:"ترمینال ریلوی", desc:"شل و چک شبکه", ico:"⌁", sec:"railway"},
+    {id:"railway", title:"ترمینال ریلوی", desc:"شل و چک شبکه — پایهٔ مانیتور", ico:"⌁", sec:"railway", requires:[]},
+    {id:"monitor", title:"مانیتور", desc:"وضعیت نودها و چک‌هاست", ico:"📡", sec:"monitor", requires:["railway"]},
+    {id:"telegram", title:"ربات تلگرام", desc:"اعلان و مدیریت — پایهٔ فروشگاه/بکاپ", ico:"✈️", sec:"telegram", requires:[]},
+    {id:"shop", title:"فروشگاه", desc:"فروش اشتراک و کارت", ico:"🛒", sec:"shop", requires:["telegram"]},
+    {id:"backup", title:"بکاپ", desc:"پشتیبان و بازیابی خودکار", ico:"💾", sec:"backup", requires:["telegram"]},
+    {id:"logs", title:"لاگ‌ها", desc:"رویدادها و فعالیت‌ها", ico:"📋", sec:"logs", requires:[]},
   ];
   const CORE_SECS=new Set(["dash","users","nodes","settings","extensions"]);
   let ENABLED_PLUGINS={};
@@ -1731,14 +1731,59 @@ table tbody tr{height:auto}
     const raw=JSON.parse(localStorage.getItem("saow_plugins")||"null");
     if(raw && typeof raw==="object") ENABLED_PLUGINS=raw;
   }catch{}
-  // پیش‌فرض: همه روشن (سازگاری با پنل قبلی) مگر اینکه کاربر ذخیره کرده باشد
   if(!localStorage.getItem("saow_plugins")){
     PLUGIN_CATALOG.forEach(p=>{ ENABLED_PLUGINS[p.id]=true; });
   }
+  function pluginById(id){ return PLUGIN_CATALOG.find(p=>p.id===id); }
+  function pluginTitle(id){ return pluginById(id)?.title||id; }
   function isPluginOn(id){ return !!ENABLED_PLUGINS[id]; }
   function persistPlugins(){
     try{ localStorage.setItem("saow_plugins", JSON.stringify(ENABLED_PLUGINS)); }catch{}
   }
+  /** افزونه‌هایی که به id وابسته‌اند */
+  function dependentsOf(id){
+    return PLUGIN_CATALOG.filter(p=>(p.requires||[]).includes(id)).map(p=>p.id);
+  }
+  /** همه وابسته‌های مستقیم و غیرمستقیم */
+  function allDependents(id, acc){
+    acc=acc||new Set();
+    for(const d of dependentsOf(id)){
+      if(acc.has(d)) continue;
+      acc.add(d);
+      allDependents(d, acc);
+    }
+    return acc;
+  }
+  /** وابستگی‌های لازم برای فعال‌سازی (ترتیب از پایه به بالا) */
+  function resolveRequires(id, acc){
+    acc=acc||[];
+    const p=pluginById(id);
+    if(!p) return acc;
+    for(const r of (p.requires||[])){
+      if(!acc.includes(r)){
+        resolveRequires(r, acc);
+        if(!acc.includes(r)) acc.push(r);
+      }
+    }
+    return acc;
+  }
+  /** اگر وابستگی خاموش است، وابسته را هم خاموش کن */
+  function enforcePluginDeps(){
+    let changed=false;
+    for(const p of PLUGIN_CATALOG){
+      if(!isPluginOn(p.id)) continue;
+      for(const r of (p.requires||[])){
+        if(!isPluginOn(r)){
+          ENABLED_PLUGINS[p.id]=false;
+          changed=true;
+          break;
+        }
+      }
+    }
+    if(changed) persistPlugins();
+    return changed;
+  }
+  enforcePluginDeps();
   function applyPluginsNav(){
     let any=false;
     document.querySelectorAll(".nav-item[data-plugin]").forEach(el=>{
@@ -1749,32 +1794,64 @@ table tbody tr{height:auto}
     });
     const secLabel=document.getElementById("navSecPlugins");
     if(secLabel) secLabel.style.display=any?"":"none";
-    // اگر روی تب غیرفعال هستیم → برو افزونه‌ها
     if(currentSec && !CORE_SECS.has(currentSec)){
       const stillOn=PLUGIN_CATALOG.some(p=>p.sec===currentSec && isPluginOn(p.id));
       if(!stillOn) goSection("extensions", true);
     }
   }
   function setPlugin(id, on){
-    ENABLED_PLUGINS[id]=!!on;
+    const p=pluginById(id);
+    if(!p) return;
+    if(on){
+      // فعال‌سازی: اول وابستگی‌ها
+      const needs=resolveRequires(id);
+      const autoOn=[];
+      for(const r of needs){
+        if(!isPluginOn(r)){
+          ENABLED_PLUGINS[r]=true;
+          autoOn.push(pluginTitle(r));
+        }
+      }
+      ENABLED_PLUGINS[id]=true;
+      persistPlugins();
+      applyPluginsNav();
+      renderPluginsGrid();
+      let msg="افزونه «"+p.title+"» فعال شد";
+      if(autoOn.length) msg+=" · وابستگی‌ها هم روشن شد: "+autoOn.join("، ");
+      toast(msg,"ok");
+      return;
+    }
+    // غیرفعال: خودش + همه وابسته‌ها
+    const deps=[...allDependents(id)];
+    const cascade=deps.filter(d=>isPluginOn(d)).map(pluginTitle);
+    ENABLED_PLUGINS[id]=false;
+    for(const d of deps) ENABLED_PLUGINS[d]=false;
     persistPlugins();
     applyPluginsNav();
     renderPluginsGrid();
-    toast(on?("افزونه «"+(PLUGIN_CATALOG.find(p=>p.id===id)?.title||id)+"» فعال شد"):("افزونه غیرفعال شد"), on?"ok":"warn");
+    let msg="افزونه «"+p.title+"» غیرفعال شد";
+    if(cascade.length) msg+=" · وابسته‌ها هم خاموش شد: "+cascade.join("، ");
+    toast(msg,"warn");
   }
   function renderPluginsGrid(){
     const grid=document.getElementById("pluginsGrid");
     if(!grid) return;
     grid.innerHTML=PLUGIN_CATALOG.map(p=>{
       const on=isPluginOn(p.id);
+      const reqs=(p.requires||[]).map(pluginTitle);
+      const deps=dependentsOf(p.id).map(pluginTitle);
+      let extra="";
+      if(reqs.length) extra+=`<span class="desc" style="color:var(--warning);margin-top:4px">نیاز به: ${reqs.join("، ")}</span>`;
+      if(deps.length) extra+=`<span class="desc" style="opacity:.85;margin-top:2px">وابسته: ${deps.join("، ")}</span>`;
+      const missingReq=(p.requires||[]).filter(r=>!isPluginOn(r));
       return `<div class="plugin-card ${on?"is-on":""}" data-pid="${p.id}">
         <span class="plugin-badge">${on?"فعال":"غیرفعال"}</span>
         <div class="plugin-ico">${p.ico}</div>
-        <div><b>${p.title}</b><span class="desc">${p.desc}</span></div>
+        <div><b>${p.title}</b><span class="desc">${p.desc}</span>${extra}</div>
         <div class="plugin-actions">
           ${on
             ? `<button type="button" class="btn" data-plugin-off="${p.id}">غیرفعال</button><button type="button" class="btn btn-primary" data-plugin-open="${p.sec}">باز کردن</button>`
-            : `<button type="button" class="btn btn-primary" data-plugin-on="${p.id}" style="flex:1">فعال‌سازی</button>`}
+            : `<button type="button" class="btn btn-primary" data-plugin-on="${p.id}" style="flex:1">${missingReq.length?"فعال + وابستگی":"فعال‌سازی"}</button>`}
         </div>
       </div>`;
     }).join("");
@@ -1782,7 +1859,15 @@ table tbody tr{height:auto}
       btn.addEventListener("click",()=>setPlugin(btn.getAttribute("data-plugin-on"), true));
     });
     grid.querySelectorAll("[data-plugin-off]").forEach(btn=>{
-      btn.addEventListener("click",()=>setPlugin(btn.getAttribute("data-plugin-off"), false));
+      btn.addEventListener("click",()=>{
+        const id=btn.getAttribute("data-plugin-off");
+        const cascade=[...allDependents(id)].filter(d=>isPluginOn(d));
+        if(cascade.length){
+          const names=cascade.map(pluginTitle).join("، ");
+          if(!confirm("با غیرفعال کردن، این افزونه‌ها هم خاموش می‌شوند:\n"+names+"\n\nادامه؟")) return;
+        }
+        setPlugin(id, false);
+      });
     });
     grid.querySelectorAll("[data-plugin-open]").forEach(btn=>{
       btn.addEventListener("click",()=>goSection(btn.getAttribute("data-plugin-open")));
